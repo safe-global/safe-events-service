@@ -3,6 +3,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 
 import { AboutModule } from './routes/about/about.module';
 import { WebhookModule } from './routes/webhook/webhook.module';
+import { AdminJsModule } from './admin/adminjs';
 
 @Module({
   imports: [
@@ -16,9 +17,10 @@ import { WebhookModule } from './routes/webhook/webhook.module';
       password: 'postgres',
       database: 'test',
       entities: [],
-      synchronize: true,  // TODO False in production
+      synchronize: true, // TODO False in production
       autoLoadEntities: true,
     }),
-  ]
+    AdminJsModule,
+  ],
 })
 export class AppModule {}
