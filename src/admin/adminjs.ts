@@ -19,13 +19,17 @@ async function buildAdminJsModule() {
   // https://stackoverflow.com/a/75287028/724991
 
   const { AdminJS } = await (eval(`import('adminjs')`) as Promise<any>);
-  const AdminJSTypeorm = await (eval(`import('@adminjs/typeorm')`) as Promise<any>);
+  const AdminJSTypeorm = await (eval(
+    `import('@adminjs/typeorm')`,
+  ) as Promise<any>);
   AdminJS.registerAdapter({
     Resource: AdminJSTypeorm.Resource,
     Database: AdminJSTypeorm.Database,
   });
-  const { AdminModule } = await (eval(`import('@adminjs/nestjs')`) as Promise<any>);
-    return AdminModule.createAdminAsync({
+  const { AdminModule } = await (eval(
+    `import('@adminjs/nestjs')`,
+  ) as Promise<any>);
+  return AdminModule.createAdminAsync({
     useFactory: () => ({
       adminJsOptions: {
         rootPath: '/admin',
@@ -42,7 +46,7 @@ async function buildAdminJsModule() {
         secret: 'secret',
       },
     }),
-  })
+  });
 }
 
-export const AdminJsModule = buildAdminJsModule()
+export const AdminJsModule = buildAdminJsModule();
