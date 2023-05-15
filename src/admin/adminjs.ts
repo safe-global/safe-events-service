@@ -13,13 +13,18 @@ const authenticate = async (email: string, password: string) => {
 };
 
 async function buildAdminJsModule() {
-  const AdminJSTypeorm = await import('@adminjs/typeorm');
-  const { AdminJS } = await import('adminjs');
+  // Nest.js does not support ESM modules
+  // This workaround is better than modifying tsconfig.json module resolution as
+  // it brings issues with another libraries
+  // https://stackoverflow.com/a/75287028/724991
+
+  const { AdminJS } = await (eval(`import('adminjs')`) as Promise<any>);
+  const AdminJSTypeorm = await (eval(`import('@adminjs/typeorm')`) as Promise<any>);
   AdminJS.registerAdapter({
     Resource: AdminJSTypeorm.Resource,
     Database: AdminJSTypeorm.Database,
   });
-  const { AdminModule } = await import('@adminjs/nestjs');
+  const { AdminModule } = await (eval(`import('@adminjs/nestjs')`) as Promise<any>);
     return AdminModule.createAdminAsync({
     useFactory: () => ({
       adminJsOptions: {
