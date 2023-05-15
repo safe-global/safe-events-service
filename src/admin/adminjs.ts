@@ -12,31 +12,32 @@ const authenticate = async (email: string, password: string) => {
   return null;
 };
 
-export const AdminJsModule = import('@adminjs/typeorm').then((AdminJSTypeorm) =>
-  import('adminjs').then(({ AdminJS }) => {
-    AdminJS.registerAdapter({
-      Resource: AdminJSTypeorm.Resource,
-      Database: AdminJSTypeorm.Database,
-    });
-    return import('@adminjs/nestjs').then(({ AdminModule }) =>
-      AdminModule.createAdminAsync({
-        useFactory: () => ({
-          adminJsOptions: {
-            rootPath: '/admin',
-            resources: [Webhook],
-          },
-          auth: {
-            authenticate,
-            cookieName: 'adminjs',
-            cookiePassword: 'secret',
-          },
-          sessionOptions: {
-            resave: true,
-            saveUninitialized: true,
-            secret: 'secret',
-          },
-        }),
-      }),
-    );
-  }),
-);
+async function buildAdminJsModule() {
+  const AdminJSTypeorm = await import('@adminjs/typeorm');
+  const { AdminJS } = await import('adminjs');
+  AdminJS.registerAdapter({
+    Resource: AdminJSTypeorm.Resource,
+    Database: AdminJSTypeorm.Database,
+  });
+  const { AdminModule } = await import('@adminjs/nestjs');
+    return AdminModule.createAdminAsync({
+    useFactory: () => ({
+      adminJsOptions: {
+        rootPath: '/admin',
+        resources: [Webhook],
+      },
+      auth: {
+        authenticate,
+        cookieName: 'adminjs',
+        cookiePassword: 'secret',
+      },
+      sessionOptions: {
+        resave: true,
+        saveUninitialized: true,
+        secret: 'secret',
+      },
+    }),
+  })
+}
+
+export const AdminJsModule = buildAdminJsModule()
