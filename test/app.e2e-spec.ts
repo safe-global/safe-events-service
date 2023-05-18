@@ -3,6 +3,10 @@ import { INestApplication } from '@nestjs/common';
 import * as request from 'supertest';
 import { AppModule } from './../src/app.module';
 
+/* eslint-disable */
+const { version } = require('../package.json');
+/* eslint-enable */
+
 describe('AppController (e2e)', () => {
   let app: INestApplication;
 
@@ -15,10 +19,11 @@ describe('AppController (e2e)', () => {
     await app.init();
   });
 
-  it('/ (GET)', () => {
+  it('/about (GET)', () => {
+    const expected = { name: 'Safe Events Service', version: version };
     return request(app.getHttpServer())
-      .get('/')
+      .get('/about')
       .expect(200)
-      .expect('Hello World!');
+      .expect(expected);
   });
 });

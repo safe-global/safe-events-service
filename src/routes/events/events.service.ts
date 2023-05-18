@@ -4,7 +4,6 @@ import { IAmqpConnectionManager } from 'amqp-connection-manager/dist/esm/AmqpCon
 import { Channel, ConsumeMessage } from 'amqplib';
 import { EXCHANGE, QUEUE } from './events.constants';
 import { WebhookService } from '../webhook/webhook.service';
-import { Webhook } from '../webhook/entities/webhook.entity';
 
 @Injectable()
 export class EventsService {
@@ -16,6 +15,10 @@ export class EventsService {
 
   onApplicationBootstrap() {
     this.subscribeToEvents();
+  }
+
+  beforeApplicationShutdown() {
+    this.unSubscribeToAllQueues();
   }
 
   async connect() {
@@ -49,18 +52,35 @@ export class EventsService {
     };
   }
 
-  async subscribeToEvents() {
-    this.logger.debug(`Subscribing to RabbitMQ exchange ${EXCHANGE} and queue ${QUEUE}`);
+  async subscribeToEvents(): Promise<string> {
+    /*
+    Return consumerTag
+    */
+
+    this.logger.debug(
+      `Subscribing to RabbitMQ exchange ${EXCHANGE} and queue ${QUEUE}`,
+    );
     const { channel } = await this.getConnection();
-    channel.consume(QUEUE, (message: ConsumeMessage) => this.processEvent(message) ,{
-      noAck: true,
-    });
+    const consumer = await channel.consume(
+      QUEUE,
+      (message: ConsumeMessage) => this.processEvent(message),
+      {
+        noAck: true,
+      },
+    );
+    return consumer.consumerTag;
+  }
+
+  async unSubscribeToAllQueues() {
+    this.logger.debug('Unsubscribing to every RabbitMQ queue');
+    const { channel } = await this.getConnection();
+    return channel.cancelAll();
   }
 
   async processEvent(message: ConsumeMessage) {
     if (message.content) {
-      let originalMessage: string = message.content.toString()
-      let parsedMessage: object = JSON.parse(originalMessage)
+      const originalMessage: string = message.content.toString();
+      const parsedMessage: object = JSON.parse(originalMessage);
       this.webhookService.postEveryWebhook(parsedMessage);
     }
   }

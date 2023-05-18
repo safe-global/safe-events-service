@@ -19,8 +19,8 @@ import { EventsModule } from './routes/events/events.module';
       password: 'postgres',
       database: 'test',
       entities: [],
-      synchronize: true, // TODO False in production
       autoLoadEntities: true,
+      synchronize: true, // TODO False in production
     }),
     AdminJsModule,
   ],

@@ -1,4 +1,4 @@
-import { Webhook } from 'src/routes/webhook/entities/webhook.entity';
+import { Webhook } from '../routes/webhook/entities/webhook.entity';
 
 const DEFAULT_ADMIN = {
   email: 'admin@example.com',
