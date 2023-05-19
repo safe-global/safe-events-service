@@ -1,4 +1,9 @@
-import { Injectable, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  OnApplicationBootstrap,
+  OnApplicationShutdown,
+} from '@nestjs/common';
 import amqp, { ChannelWrapper } from 'amqp-connection-manager';
 import { IAmqpConnectionManager } from 'amqp-connection-manager/dist/esm/AmqpConnectionManager';
 import { Channel, ConsumeMessage } from 'amqplib';
@@ -6,7 +11,9 @@ import { EXCHANGE, QUEUE } from './events.constants';
 import { WebhookService } from '../webhook/webhook.service';
 
 @Injectable()
-export class EventsService {
+export class EventsService
+  implements OnApplicationBootstrap, OnApplicationShutdown
+{
   private readonly logger = new Logger('EventsService');
   private connection: IAmqpConnectionManager;
   private channelWrapper: ChannelWrapper;
@@ -14,11 +21,14 @@ export class EventsService {
   constructor(private readonly webhookService: WebhookService) {}
 
   onApplicationBootstrap() {
-    this.subscribeToEvents();
+    return this.subscribeToEvents();
   }
 
-  beforeApplicationShutdown() {
-    this.unSubscribeToAllQueues();
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  onApplicationShutdown(signal?: string) {
+    // Not enabled by default
+    // https://docs.nestjs.com/fundamentals/lifecycle-events#application-shutdown
+    return this.disconnect();
   }
 
   async connect() {
@@ -39,6 +49,14 @@ export class EventsService {
         return channel.bindQueue(QUEUE, EXCHANGE, '');
       },
     });
+  }
+
+  public disconnect(): void {
+    this.channelWrapper && this.channelWrapper.close();
+    this.connection && this.connection.close();
+    // TODO Empty variables
+    // this.channelWrapper = undefined;
+    // this.connection = undefined;
   }
 
   async getConnection() {
