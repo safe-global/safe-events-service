@@ -5,10 +5,10 @@ import { EventsService } from '../src/routes/events/events.service';
 import { EXCHANGE } from '../src/routes/events/events.constants';
 import { WebhookService } from '../src/routes/webhook/webhook.service';
 import { Webhook } from '../src/routes/webhook/entities/webhook.entity';
-import {connect as amqplibConnect, Connection} from 'amqplib';
+import { connect as amqplibConnect, Connection } from 'amqplib';
 
 async function publishMessage(msg: object): Promise<boolean> {
-  const conn: Connection= await amqplibConnect('amqp://localhost:5672');
+  const conn: Connection = await amqplibConnect('amqp://localhost:5672');
   const channel = await conn.createChannel();
   await channel.assertExchange(EXCHANGE, 'fanout', { durable: true });
   const isMessagePublished = await channel.publish(

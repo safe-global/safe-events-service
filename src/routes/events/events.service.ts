@@ -75,10 +75,10 @@ export class EventsService
     Return consumerTag
     */
 
+    const { channel } = await this.getConnection();
     this.logger.debug(
       `Subscribing to RabbitMQ exchange ${EXCHANGE} and queue ${QUEUE}`,
     );
-    const { channel } = await this.getConnection();
     const consumer = await channel.consume(
       QUEUE,
       (message: ConsumeMessage) => {
