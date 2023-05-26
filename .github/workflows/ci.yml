@@ -43,6 +43,16 @@ jobs:
           --health-retries 5
         ports:
           - 5432:5432
+      rabbitmq:
+        image: rabbitmq:alpine
+        ports:
+          - 5672:5672
+        options: >-
+          --health-cmd "rabbitmqctl await_startup"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     strategy:
       fail-fast: false
       matrix:

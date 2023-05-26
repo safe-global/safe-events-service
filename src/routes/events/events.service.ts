@@ -81,7 +81,9 @@ export class EventsService
     const { channel } = await this.getConnection();
     const consumer = await channel.consume(
       QUEUE,
-      (message: ConsumeMessage) => this.processEvent(message),
+      (message: ConsumeMessage) => {
+        if (message.content) this.processEvent(message.content.toString());
+      },
       {
         noAck: true,
       },
@@ -95,11 +97,8 @@ export class EventsService
     return channel.cancelAll();
   }
 
-  async processEvent(message: ConsumeMessage) {
-    if (message.content) {
-      const originalMessage: string = message.content.toString();
-      const parsedMessage: object = JSON.parse(originalMessage);
-      this.webhookService.postEveryWebhook(parsedMessage);
-    }
+  async processEvent(message: string): Promise<Response[]> {
+    const parsedMessage: object = JSON.parse(message);
+    return this.webhookService.postEveryWebhook(parsedMessage);
   }
 }

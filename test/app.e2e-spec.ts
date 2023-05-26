@@ -18,7 +18,6 @@ describe('AppController (e2e)', () => {
     }).compile();
 
     eventsService = moduleFixture.get<EventsService>(EventsService);
-
     app = moduleFixture.createNestApplication();
     await app.init();
   });

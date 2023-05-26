@@ -20,6 +20,10 @@ export class WebhookService {
     return this.WebHooksRepository.find();
   }
 
+  findAllActive(): Promise<Webhook[]> {
+    return this.WebHooksRepository.findBy({ isActive: true });
+  }
+
   findOne(id: number): Promise<Webhook | null> {
     return this.WebHooksRepository.findOneBy({ id });
   }
@@ -28,7 +32,7 @@ export class WebhookService {
     await this.WebHooksRepository.delete(id);
   }
 
-  async getCachedWebhooks(): Promise<Webhook[]> {
+  async getCachedActiveWebhooks(): Promise<Webhook[]> {
     const key = 'webhooks';
     const value = await this.cacheManager.get<Webhook[] | null>('webhooks');
     if (value != null) {
@@ -36,15 +40,14 @@ export class WebhookService {
       return value;
     } else {
       this.logger.debug('Webhooks not cached, fetching them');
-      const webhooks = await this.findAll();
+      const webhooks = await this.findAllActive();
       this.cacheManager.set(key, webhooks, this.webhooksCache);
       return webhooks;
     }
   }
 
   async postEveryWebhook(parsedMessage: object): Promise<Response[]> {
-    // TODO Cache findAll
-    const webhooks: Webhook[] = await this.getCachedWebhooks();
+    const webhooks: Webhook[] = await this.getCachedActiveWebhooks();
     const responses: Promise<Response>[] = webhooks.map((webhook: Webhook) => {
       this.logger.debug(
         `Sending ${JSON.stringify(parsedMessage)} to ${webhook.url}`,
