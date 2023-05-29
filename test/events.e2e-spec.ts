@@ -7,6 +7,8 @@ import { WebhookService } from '../src/routes/webhook/webhook.service';
 import { Webhook } from '../src/routes/webhook/entities/webhook.entity';
 import { connect as amqplibConnect, Connection } from 'amqplib';
 
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
 async function publishMessage(msg: object): Promise<boolean> {
   const conn: Connection = await amqplibConnect('amqp://localhost:5672');
   const channel = await conn.createChannel();
@@ -61,6 +63,9 @@ describe('Events handling', () => {
     const postWebhookSpy = jest
       .spyOn(webhookService, 'postWebhook')
       .mockImplementation(async () => new Response());
+
+    // Wait for events service to start listenning
+    await sleep(3_000);
 
     const isMessagePublished = await publishMessage(msg);
     expect(isMessagePublished).toBe(true);
