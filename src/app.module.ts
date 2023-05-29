@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { ConfigModule, ConfigService } from '@nestjs/config';
+import { ConfigModule } from '@nestjs/config';
 
 import { AboutModule } from './routes/about/about.module';
 import { WebhookModule } from './routes/webhook/webhook.module';

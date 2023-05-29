@@ -9,6 +9,7 @@ import { IAmqpConnectionManager } from 'amqp-connection-manager/dist/esm/AmqpCon
 import { Channel, ConsumeMessage } from 'amqplib';
 import { EXCHANGE, QUEUE } from './events.constants';
 import { WebhookService } from '../webhook/webhook.service';
+import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class EventsService
@@ -18,7 +19,10 @@ export class EventsService
   private connection: IAmqpConnectionManager;
   private channelWrapper: ChannelWrapper;
 
-  constructor(private readonly webhookService: WebhookService) {}
+  constructor(
+    private readonly configService: ConfigService,
+    private readonly webhookService: WebhookService,
+  ) {}
 
   onApplicationBootstrap() {
     return this.subscribeToEvents();
@@ -31,10 +35,14 @@ export class EventsService
     return this.disconnect();
   }
 
+  getAmqpUrl(): string {
+    return this.configService.getOrThrow('AMQP_URL');
+  }
+
   async connect() {
     this.logger.debug('Connecting to RabbitMQ');
     // Connection will be succesful even if RabbitMQ is down, connection will be retried until it's up
-    this.connection = amqp.connect('amqp://localhost:5672');
+    this.connection = amqp.connect(this.getAmqpUrl());
     this.channelWrapper = this.connection.createChannel({
       json: true,
       setup: async (channel: Channel) => {

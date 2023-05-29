@@ -9,8 +9,8 @@ import { connect as amqplibConnect, Connection } from 'amqplib';
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
-async function publishMessage(msg: object): Promise<boolean> {
-  const conn: Connection = await amqplibConnect('amqp://localhost:5672');
+async function publishMessage(msg: object, amqpUrl: string): Promise<boolean> {
+  const conn: Connection = await amqplibConnect(amqpUrl);
   const channel = await conn.createChannel();
   await channel.assertExchange(EXCHANGE, 'fanout', { durable: true });
   // Make sure queue is binded to the exchange, as this function can be called before subscribing
@@ -67,7 +67,10 @@ describe('Events handling', () => {
     // Wait for events service to start listenning
     await sleep(3_000);
 
-    const isMessagePublished = await publishMessage(msg);
+    const isMessagePublished = await publishMessage(
+      msg,
+      eventsService.getAmqpUrl(),
+    );
     expect(isMessagePublished).toBe(true);
     expect(processEventSpy).toHaveBeenCalledTimes(1);
     expect(processEventSpy).toHaveBeenCalledWith(JSON.stringify(msg));

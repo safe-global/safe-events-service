@@ -1,9 +1,10 @@
 import { Module } from '@nestjs/common';
 import { EventsService } from './events.service';
 import { WebhookModule } from '../webhook/webhook.module';
+import { ConfigModule } from '@nestjs/config';
 
 @Module({
-  imports: [WebhookModule],
+  imports: [WebhookModule, ConfigModule],
   // controllers: [Controller],
   providers: [EventsService],
 })
