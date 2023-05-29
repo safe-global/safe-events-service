@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
 import { AboutModule } from './routes/about/about.module';
@@ -11,16 +12,21 @@ import { EventsModule } from './routes/events/events.module';
     AboutModule,
     EventsModule,
     WebhookModule,
-    TypeOrmModule.forRoot({
-      type: 'postgres',
-      host: 'localhost',
-      port: 5432,
-      username: 'postgres',
-      password: 'postgres',
-      database: 'test',
-      entities: [],
-      autoLoadEntities: true,
-      synchronize: true, // TODO False in production
+    ConfigModule.forRoot(),
+    TypeOrmModule.forRootAsync({
+      imports: [ConfigModule],
+      useFactory: (configService: ConfigService) => ({
+        type: 'postgres',
+        host: configService.get('DB_HOST'),
+        port: +configService.get('DB_PORT'),
+        username: configService.get('DB_USER'),
+        password: configService.get('DB_PASSWORD'),
+        database: configService.get('DB_NAME'),
+        entities: [],
+        autoLoadEntities: true,
+        synchronize: configService.get('NODE_ENV') !== 'production', // TODO False in production
+      }),
+      inject: [ConfigService],
     }),
     AdminJsModule,
   ],
