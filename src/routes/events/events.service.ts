@@ -70,11 +70,11 @@ export class EventsService
     };
   }
 
+  /**
+   *
+   * @returns consumerTag for the event
+   */
   async subscribeToEvents(): Promise<string> {
-    /*
-    Return consumerTag
-    */
-
     const { channel } = await this.getConnection();
     this.logger.debug(
       `Subscribing to RabbitMQ exchange ${EXCHANGE} and queue ${QUEUE}`,

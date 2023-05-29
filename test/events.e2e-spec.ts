@@ -2,7 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
 import { AppModule } from '../src/app.module';
 import { EventsService } from '../src/routes/events/events.service';
-import { EXCHANGE } from '../src/routes/events/events.constants';
+import { EXCHANGE, QUEUE } from '../src/routes/events/events.constants';
 import { WebhookService } from '../src/routes/webhook/webhook.service';
 import { Webhook } from '../src/routes/webhook/entities/webhook.entity';
 import { connect as amqplibConnect, Connection } from 'amqplib';
@@ -11,7 +11,9 @@ async function publishMessage(msg: object): Promise<boolean> {
   const conn: Connection = await amqplibConnect('amqp://localhost:5672');
   const channel = await conn.createChannel();
   await channel.assertExchange(EXCHANGE, 'fanout', { durable: true });
-  const isMessagePublished = await channel.publish(
+  // Make sure queue is binded to the exchange, as this function can be called before subscribing
+  await channel.assertQueue(QUEUE, { durable: true });
+  const isMessagePublished = channel.publish(
     EXCHANGE,
     '',
     Buffer.from(JSON.stringify(msg)),
