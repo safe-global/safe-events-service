@@ -1,11 +1,14 @@
 name: CI
-
 on:
   push:
+    branches:
+      - main
   pull_request:
+  release:
+    types: [ released ]
 
 jobs:
-  prettier:
+  format:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -16,7 +19,7 @@ jobs:
       - run: npm i
       - run: npm run format
 
-  es-lint:
+  lint:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -85,8 +88,11 @@ jobs:
           parallel-finished: true
 
   docker-publish:
-    if: (github.event_name == 'push' && github.ref == 'refs/heads/main')
-    needs: [ prettier, es-lint, tests]
+    if: github.ref == 'refs/heads/main' || (github.event_name == 'release' && github.event.action == 'released')
+    needs:
+      - format
+      - lint
+      - tests
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -98,13 +104,23 @@ jobs:
         with:
           username: ${{ secrets.DOCKER_USER }}
           password: ${{ secrets.DOCKER_PASSWORD }}
-      - uses: docker/build-push-action@v3
-        env:
-          DOCKER_IMAGE_TAG: safeglobal/safe-events-service:staging
+      - name: Deploy main
+        if: github.ref == 'refs/heads/master'
+        uses: docker/build-push-action@v4
         with:
           platforms: linux/amd64,linux/arm64
           push: true
-          tags: ${{ env.DOCKER_IMAGE_TAG }}
-          # Use inline cache storage https://docs.docker.com/build/cache/backends/inline/
-          cache-from: type=registry,ref=${{ env.DOCKER_IMAGE_TAG }}
-          cache-to: type=inline
+          tags: safeglobal/safe-events-service:staging
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      - name: Deploy Tag
+        if: (github.event_name == 'release' && github.event.action == 'released')
+        uses: docker/build-push-action@v4
+        with:
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: |
+            safeglobal/safe-events-service:${{ github.event.release.tag_name }}
+            safeglobal/safe-events-service:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
