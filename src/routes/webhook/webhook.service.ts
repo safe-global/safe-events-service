@@ -16,20 +16,8 @@ export class WebhookService {
     @Inject(CACHE_MANAGER) private cacheManager: Cache,
   ) {}
 
-  findAll(): Promise<Webhook[]> {
-    return this.WebHooksRepository.find();
-  }
-
   findAllActive(): Promise<Webhook[]> {
     return this.WebHooksRepository.findBy({ isActive: true });
-  }
-
-  findOne(id: number): Promise<Webhook | null> {
-    return this.WebHooksRepository.findOneBy({ id });
-  }
-
-  async remove(id: number): Promise<void> {
-    await this.WebHooksRepository.delete(id);
   }
 
   async getCachedActiveWebhooks(): Promise<Webhook[]> {
