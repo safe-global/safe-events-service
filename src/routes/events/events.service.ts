@@ -1,111 +1,28 @@
-import {
-  Injectable,
-  Logger,
-  OnApplicationBootstrap,
-  OnApplicationShutdown,
-} from '@nestjs/common';
-import amqp, { ChannelWrapper } from 'amqp-connection-manager';
-import { IAmqpConnectionManager } from 'amqp-connection-manager/dist/esm/AmqpConnectionManager';
-import { Channel, ConsumeMessage } from 'amqplib';
-import { EXCHANGE, QUEUE } from './events.constants';
+import { Injectable, Logger, OnApplicationBootstrap } from '@nestjs/common';
 import { WebhookService } from '../webhook/webhook.service';
-import { ConfigService } from '@nestjs/config';
+import { QueueProvider } from '../../datasources/queue/queue.provider';
 
 @Injectable()
-export class EventsService
-  implements OnApplicationBootstrap, OnApplicationShutdown
-{
+export class EventsService implements OnApplicationBootstrap {
   private readonly logger = new Logger('EventsService');
-  private connection: IAmqpConnectionManager;
-  private channelWrapper: ChannelWrapper;
 
   constructor(
-    private readonly configService: ConfigService,
+    private readonly queueProvider: QueueProvider,
+
     private readonly webhookService: WebhookService,
   ) {}
 
   onApplicationBootstrap() {
-    return this.subscribeToEvents();
+    return this.listenToEvents();
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  onApplicationShutdown(signal?: string) {
-    // Not enabled by default
-    // https://docs.nestjs.com/fundamentals/lifecycle-events#application-shutdown
-    return this.disconnect();
-  }
-
-  getAmqpUrl(): string {
-    return this.configService.getOrThrow('AMQP_URL');
-  }
-
-  async connect() {
-    this.logger.debug('Connecting to RabbitMQ');
-    // Connection will be succesful even if RabbitMQ is down, connection will be retried until it's up
-    this.connection = amqp.connect(this.getAmqpUrl());
-    this.channelWrapper = this.connection.createChannel({
-      json: true,
-      setup: async (channel: Channel) => {
-        channel.assertExchange(EXCHANGE, 'fanout', {
-          durable: true,
-        });
-
-        channel.assertQueue(QUEUE, {
-          durable: true,
-        });
-
-        return channel.bindQueue(QUEUE, EXCHANGE, '');
-      },
-    });
-  }
-
-  public disconnect(): void {
-    this.channelWrapper && this.channelWrapper.close();
-    this.connection && this.connection.close();
-    // TODO Empty variables
-    // this.channelWrapper = undefined;
-    // this.connection = undefined;
-  }
-
-  async getConnection() {
-    if (!this.connection || !this.connection.isConnected()) {
-      await this.connect();
-    }
-
-    return {
-      connection: this.connection,
-      channel: this.channelWrapper,
-    };
-  }
-
-  /**
-   *
-   * @returns consumerTag for the event
-   */
-  async subscribeToEvents(): Promise<string> {
-    const { channel } = await this.getConnection();
-    this.logger.debug(
-      `Subscribing to RabbitMQ exchange ${EXCHANGE} and queue ${QUEUE}`,
+  listenToEvents(): Promise<string> {
+    return this.queueProvider.subscribeToEvents((msg: string) =>
+      this.processEvent(msg),
     );
-    const consumer = await channel.consume(
-      QUEUE,
-      (message: ConsumeMessage) => {
-        if (message.content) this.processEvent(message.content.toString());
-      },
-      {
-        noAck: true,
-      },
-    );
-    return consumer.consumerTag;
   }
 
-  async unSubscribeToAllQueues() {
-    this.logger.debug('Unsubscribing to every RabbitMQ queue');
-    const { channel } = await this.getConnection();
-    return channel.cancelAll();
-  }
-
-  async processEvent(message: string): Promise<Response[]> {
+  processEvent(message: string): Promise<Response[]> {
     const parsedMessage: object = JSON.parse(message);
     return this.webhookService.postEveryWebhook(parsedMessage);
   }

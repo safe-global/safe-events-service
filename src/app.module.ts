@@ -5,7 +5,7 @@ import { AboutModule } from './routes/about/about.module';
 import { WebhookModule } from './routes/webhook/webhook.module';
 import { AdminJsModule } from './admin/adminjs';
 import { EventsModule } from './routes/events/events.module';
-import { DatabaseModule } from './datasources/database.module';
+import { DatabaseModule } from './datasources/db/database.module';
 
 @Module({
   imports: [
