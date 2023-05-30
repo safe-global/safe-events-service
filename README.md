@@ -10,8 +10,13 @@ $ npm install
 
 ## Running the app
 
+Docker compose is required to run RabbitMQ and Postgres
+
 ```bash
 cp .env.sample .env
+
+docker compose up -d
+
 # development
 $ npm run start
 
@@ -25,6 +30,10 @@ $ npm run start:prod
 ## Test
 
 ```bash
+cp .env.sample .env
+
+docker compose up -d
+
 # unit tests
 $ npm run test
 
