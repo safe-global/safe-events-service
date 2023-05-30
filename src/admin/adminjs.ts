@@ -1,16 +1,6 @@
 import { Webhook } from '../routes/webhook/entities/webhook.entity';
-
-const DEFAULT_ADMIN = {
-  email: 'admin@example.com',
-  password: 'password',
-};
-
-const authenticate = async (email: string, password: string) => {
-  if (email === DEFAULT_ADMIN.email && password === DEFAULT_ADMIN.password) {
-    return Promise.resolve(DEFAULT_ADMIN);
-  }
-  return null;
-};
+import { AuthModule } from './auth/auth.module';
+import { AuthService } from './auth/auth.service';
 
 async function buildAdminJsModule() {
   // Nest.js does not support ESM modules
@@ -30,13 +20,16 @@ async function buildAdminJsModule() {
     `import('@adminjs/nestjs')`,
   ) as Promise<any>);
   return AdminModule.createAdminAsync({
-    useFactory: () => ({
+    imports: [AuthModule],
+    inject: [AuthService],
+    useFactory: (authService: AuthService) => ({
       adminJsOptions: {
         rootPath: '/admin',
         resources: [Webhook],
       },
       auth: {
-        authenticate,
+        authenticate: (email: string, password: string) =>
+          authService.authenticate(email, password),
         cookieName: 'adminjs',
         cookiePassword: 'secret',
       },
