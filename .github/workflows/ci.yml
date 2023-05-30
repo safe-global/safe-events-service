@@ -64,5 +64,6 @@ jobs:
           node-version: '18.x'
           cache: 'npm'
       - run: npm i
+      - run: cp .env.sample .env
       - run: npm run build
       - run: npm run ${{matrix.task}}

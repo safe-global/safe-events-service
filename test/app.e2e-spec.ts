@@ -2,7 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
 import * as request from 'supertest';
 import { AppModule } from './../src/app.module';
-import { EventsService } from '../src/routes/events/events.service';
+import { QueueProvider } from '../src/datasources/queue/queue.provider';
 
 /* eslint-disable */
 const { version } = require('../package.json');
@@ -10,21 +10,21 @@ const { version } = require('../package.json');
 
 describe('AppController (e2e)', () => {
   let app: INestApplication;
-  let eventsService: EventsService;
+  let queueProvider: QueueProvider;
 
   beforeEach(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
     }).compile();
 
-    eventsService = moduleFixture.get<EventsService>(EventsService);
+    queueProvider = moduleFixture.get<QueueProvider>(QueueProvider);
     app = moduleFixture.createNestApplication();
     await app.init();
   });
 
   afterEach(() => {
     // Nest.js Shutdown hooks are not triggered
-    eventsService.disconnect();
+    queueProvider.disconnect();
   });
 
   it('/about (GET)', () => {
