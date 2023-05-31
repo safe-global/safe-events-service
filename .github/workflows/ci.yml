@@ -56,7 +56,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        task: ['test:cov', 'test:e2e']
+        task: ['test:cov', 'test:e2e:cov']
     steps:
       - uses: actions/checkout@v3
       - uses: actions/setup-node@v3
@@ -67,3 +67,9 @@ jobs:
       - run: cp .env.sample .env
       - run: npm run build
       - run: npm run ${{matrix.task}}
+      - name: Coveralls Parallel
+        uses: coverallsapp/github-action@v2.1.2
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          flag-name: run-${{ matrix.task }}
+          parallel: true
