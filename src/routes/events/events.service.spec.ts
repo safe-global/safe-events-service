@@ -32,7 +32,6 @@ describe('EventsService', () => {
     it('should return consumer tag', async () => {
       const expected = 'exampleTag';
       const consumerTag = await eventsService.listenToEvents();
-      console.log(consumerTag);
       expect(consumerTag).toEqual(expected);
     });
   });

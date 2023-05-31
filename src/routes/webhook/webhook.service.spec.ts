@@ -1,14 +1,16 @@
 import { Test } from '@nestjs/testing';
 import { WebhookService } from './webhook.service';
 import { Webhook } from './entities/webhook.entity';
-import { AppModule } from '../../app.module';
+import { WebhookModule } from './webhook.module';
+import { DatabaseModule } from '../../datasources/db/database.module';
+import { ConfigModule } from '@nestjs/config';
 
 describe('Webhook service', () => {
   let webhookService: WebhookService;
 
   beforeEach(async () => {
     const moduleRef = await Test.createTestingModule({
-      imports: [AppModule],
+      imports: [WebhookModule, DatabaseModule, ConfigModule.forRoot()],
     }).compile();
 
     webhookService = moduleRef.get<WebhookService>(WebhookService);
