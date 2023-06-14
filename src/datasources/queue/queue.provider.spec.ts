@@ -15,7 +15,7 @@ describe('QueueProvider', () => {
   });
 
   afterEach(async () => {
-    queueProvider.disconnect();
+    await queueProvider.disconnect();
   });
 
   describe('get configuration', () => {

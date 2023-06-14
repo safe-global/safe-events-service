@@ -6,6 +6,7 @@ import { WebhookModule } from './routes/webhook/webhook.module';
 import { AdminJsModule } from './admin/adminjs';
 import { EventsModule } from './routes/events/events.module';
 import { DatabaseModule } from './datasources/db/database.module';
+import { HealthModule } from './health/health.module';
 
 @Module({
   imports: [
@@ -15,6 +16,7 @@ import { DatabaseModule } from './datasources/db/database.module';
     EventsModule,
     WebhookModule,
     AdminJsModule,
+    HealthModule,
   ],
 })
 export class AppModule {}

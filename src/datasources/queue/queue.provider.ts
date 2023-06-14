@@ -54,6 +54,9 @@ export class QueueProvider implements OnApplicationShutdown {
     this.channelWrapper = this.connection.createChannel({
       json: true,
       setup: async (channel: Channel) => {
+        this.logger.debug(
+          `Asserting exchange ${this.getExchangeName()} and queue ${this.getQueueName()} are created`,
+        );
         channel.assertExchange(this.getExchangeName(), 'fanout', {
           durable: true,
         });
@@ -61,6 +64,10 @@ export class QueueProvider implements OnApplicationShutdown {
         channel.assertQueue(this.getQueueName(), {
           durable: true,
         });
+
+        this.logger.debug(
+          `Exchange ${this.getExchangeName()} and queue ${this.getQueueName()} are created`,
+        );
 
         return channel.bindQueue(
           this.getQueueName(),
@@ -71,9 +78,9 @@ export class QueueProvider implements OnApplicationShutdown {
     });
   }
 
-  public disconnect(): void {
-    this.channelWrapper && this.channelWrapper.close();
-    this.connection && this.connection.close();
+  async disconnect(): Promise<void> {
+    this.channelWrapper && (await this.channelWrapper.close());
+    this.connection && (await this.connection.close());
     // TODO Empty variables
     // this.channelWrapper = undefined;
     // this.connection = undefined;
@@ -97,6 +104,9 @@ export class QueueProvider implements OnApplicationShutdown {
       {
         noAck: true,
       },
+    );
+    this.logger.debug(
+      `Subscribed to RabbitMQ exchange ${this.getExchangeName()} and queue ${this.getQueueName()}`,
     );
     return consumer.consumerTag;
   }

@@ -7,8 +7,6 @@ import { Webhook } from '../src/routes/webhook/entities/webhook.entity';
 import { connect as amqplibConnect, Connection } from 'amqplib';
 import { QueueProvider } from '../src/datasources/queue/queue.provider';
 
-const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
-
 async function publishMessage(
   amqpUrl: string,
   exchange: string,
@@ -45,13 +43,17 @@ describe('Events handling', () => {
     webhookService = moduleFixture.get<WebhookService>(WebhookService);
     queueProvider = moduleFixture.get<QueueProvider>(QueueProvider);
 
+    // Wait for queue provider connection to be established, as it could take a little
+    const { channel } = await queueProvider.getConnection();
+    await channel.waitForConnect();
+
     app = moduleFixture.createNestApplication();
     await app.init();
   });
 
-  afterEach(() => {
+  afterEach(async () => {
     // Nest.js Shutdown hooks are not triggered
-    queueProvider.disconnect();
+    await queueProvider.disconnect();
   });
 
   it('Processes events', async () => {
@@ -70,9 +72,6 @@ describe('Events handling', () => {
     const postWebhookSpy = jest
       .spyOn(webhookService, 'postWebhook')
       .mockImplementation(async () => new Response());
-
-    // Wait for events service to start listenning
-    await sleep(2_000);
 
     const isMessagePublished = await publishMessage(
       queueProvider.getAmqpUrl(),
