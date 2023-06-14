@@ -4,17 +4,26 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Webhook } from './entities/webhook.entity';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
+import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class WebhookService {
   private readonly logger = new Logger('WebhookService');
-  private webhooksCache = 300_000; // 5 minutes
 
   constructor(
     @InjectRepository(Webhook)
     private WebHooksRepository: Repository<Webhook>,
     @Inject(CACHE_MANAGER) private cacheManager: Cache,
+    private readonly configService: ConfigService,
   ) {}
+
+  /**
+   *
+   * @returns webhooks cache ttl from `WEBHOOKS_CACHE_TTL`, if not defined 300_000 ms (5 seconds)
+   */
+  getWebhooksCacheTTL(): number {
+    return this.configService.get('WEBHOOKS_CACHE_TTL') ?? 300_000;
+  }
 
   findAllActive(): Promise<Webhook[]> {
     return this.WebHooksRepository.findBy({ isActive: true });
@@ -29,7 +38,7 @@ export class WebhookService {
     } else {
       this.logger.debug('Webhooks not cached, fetching them');
       const webhooks = await this.findAllActive();
-      this.cacheManager.set(key, webhooks, this.webhooksCache);
+      this.cacheManager.set(key, webhooks, this.getWebhooksCacheTTL());
       return webhooks;
     }
   }
