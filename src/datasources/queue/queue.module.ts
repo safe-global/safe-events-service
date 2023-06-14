@@ -1,10 +1,11 @@
 import { Module } from '@nestjs/common';
-import { QueueProvider } from './queue.provider';
 import { ConfigModule } from '@nestjs/config';
+import { QueueHealthIndicator } from './queue.health';
+import { QueueProvider } from './queue.provider';
 
 @Module({
   imports: [ConfigModule],
-  providers: [QueueProvider],
-  exports: [QueueProvider],
+  providers: [QueueProvider, QueueHealthIndicator],
+  exports: [QueueProvider, QueueHealthIndicator],
 })
 export class QueueModule {}

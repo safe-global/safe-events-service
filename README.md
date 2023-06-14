@@ -50,3 +50,7 @@ $ npm run test:e2e
 # test coverage
 $ npm run test:cov
 ```
+
+## Endpoints
+Available endpoints:
+- /health/ -> Check health for the service
