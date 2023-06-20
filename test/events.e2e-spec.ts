@@ -69,9 +69,14 @@ describe('Events handling', () => {
     const getCachedActiveWebhooksSpy = jest
       .spyOn(webhookService, 'getCachedActiveWebhooks')
       .mockImplementation(async () => [mockedWebhook]);
+    const postWebhookResponse: any = {
+      data: {},
+      status: 200,
+      statusText: 'OK',
+    };
     const postWebhookSpy = jest
       .spyOn(webhookService, 'postWebhook')
-      .mockImplementation(async () => new Response());
+      .mockImplementation(async () => postWebhookResponse);
 
     const isMessagePublished = await publishMessage(
       queueProvider.getAmqpUrl(),
