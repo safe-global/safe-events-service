@@ -51,6 +51,18 @@ $ npm run test:e2e
 $ npm run test:cov
 ```
 
+## Creating database migrations
+
+By default, the local dockerized migrations database will be used (test should not be used as it doesn't use migrations).
+To use a custom database for migrations, set `MIGRATIONS_DATABASE_URL` environment variable.
+
+Remember to add the new database entities to `./src/datasources/db/database.options.ts`
+
+```bash
+bash ./scripts/db_generate_migrations.sh RELEVANT_MIGRATION_NAME
+```
+
 ## Endpoints
 Available endpoints:
-- /health/ -> Check health for the service
+- /health/ -> Check health for the service.
+- /admin/ -> Admin panel to edit database models.

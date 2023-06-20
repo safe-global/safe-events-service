@@ -1,16 +1,61 @@
 version: '3.5'
 
 services:
+  web:
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+    env_file:
+      - .env.docker
+    depends_on:
+      db:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    # working_dir: /app
+    # command: bash scripts/docker_run.sh
+    ports:
+      - "3000:3000"
+
   rabbitmq:
     image: rabbitmq:alpine
     ports:
       - "5672:5672"
+    healthcheck:
+      test: rabbitmq-diagnostics -q ping
+      interval: 15s
+      timeout: 30s
+      retries: 3
+      start_period: 15s
 
   db:
     image: postgres:13-alpine
     ports:
       - "5432:5432"
     environment:
+      POSTGRES_HOST: db
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: test
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+
+  # Only for development purposes
+  db-migrations:
+    image: postgres:13-alpine
+    ports:
+      - "5433:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: migrations
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
