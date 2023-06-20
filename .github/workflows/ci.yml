@@ -5,7 +5,7 @@ on:
       - main
   pull_request:
   release:
-    types: [ released ]
+    types: [released]
 
 jobs:
   format:
@@ -29,6 +29,35 @@ jobs:
           cache: 'npm'
       - run: npm i
       - run: npm run lint
+
+  db-migrations:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:13
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: migrations
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5433:5432
+
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: '18.x'
+          cache: 'npm'
+      - run: npm i
+      - run: cp .env.sample .env
+      - run: npm run build
+      - run: bash ./scripts/db_run_migrations.sh
+      - run: bash ./scripts/db_check_migrations.sh
 
   tests:
     runs-on: ubuntu-latest
