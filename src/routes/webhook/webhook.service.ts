@@ -43,25 +43,37 @@ export class WebhookService {
     }
   }
 
-  async postEveryWebhook(parsedMessage: object): Promise<Response[]> {
+  async postEveryWebhook(
+    parsedMessage: object,
+  ): Promise<(Response | undefined)[]> {
     const webhooks: Webhook[] = await this.getCachedActiveWebhooks();
-    const responses: Promise<Response>[] = webhooks.map((webhook: Webhook) => {
-      this.logger.debug(
-        `Sending ${JSON.stringify(parsedMessage)} to ${webhook.url}`,
-      );
-      return this.postWebhook(parsedMessage, webhook.url);
-    });
+    const responses: Promise<Response | undefined>[] = webhooks.map(
+      (webhook: Webhook) => {
+        this.logger.debug(
+          `Sending ${JSON.stringify(parsedMessage)} to ${webhook.url}`,
+        );
+        return this.postWebhook(parsedMessage, webhook.url);
+      },
+    );
     return Promise.all(responses);
   }
 
-  postWebhook(parsedMessage: object, url: string): Promise<Response> {
-    return fetch(url, {
-      method: 'POST',
-      body: JSON.stringify(parsedMessage),
-      headers: {
-        Accept: 'application/json',
-        'Content-Type': 'application/json',
-      },
-    });
+  postWebhook(
+    parsedMessage: object,
+    url: string,
+  ): Promise<Response | undefined> {
+    try {
+      return fetch(url, {
+        method: 'POST',
+        body: JSON.stringify(parsedMessage),
+        headers: {
+          Accept: 'application/json',
+          'Content-Type': 'application/json',
+        },
+      });
+    } catch (error) {
+      console.warn(`Error POSTing evet to ${url}`, error);
+      return Promise.resolve(undefined);
+    }
   }
 }

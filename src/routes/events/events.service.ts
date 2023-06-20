@@ -22,7 +22,7 @@ export class EventsService implements OnApplicationBootstrap {
     );
   }
 
-  processEvent(message: string): Promise<Response[]> {
+  processEvent(message: string): Promise<(Response | undefined)[]> {
     const parsedMessage: object = JSON.parse(message);
     return this.webhookService.postEveryWebhook(parsedMessage);
   }
