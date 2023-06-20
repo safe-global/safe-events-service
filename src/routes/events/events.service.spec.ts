@@ -11,7 +11,11 @@ describe('EventsService', () => {
       'exampleTag',
   };
   const webhookService = {
-    postEveryWebhook: async (_: object) => new Response(),
+    postEveryWebhook: async (_: object) => ({
+      data: {},
+      status: 200,
+      statusText: 'OK',
+    }),
   };
   /* eslint-enable @typescript-eslint/no-unused-vars */
 

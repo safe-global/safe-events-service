@@ -40,9 +40,15 @@ describe('Webhook service', () => {
       const findAllActiveSpy = jest
         .spyOn(webhookService, 'findAllActive')
         .mockImplementation(async () => webhooks);
+
+      const postWebhookResponse: any = {
+        data: {},
+        status: 200,
+        statusText: 'OK',
+      };
       const postWebhookSpy = jest
         .spyOn(webhookService, 'postWebhook')
-        .mockImplementation(async () => new Response());
+        .mockImplementation(async () => postWebhookResponse);
 
       const msg = { text: 'hello' };
       const results = await webhookService.postEveryWebhook(msg);
@@ -54,17 +60,21 @@ describe('Webhook service', () => {
       const webhooks: Webhook[] = [new Webhook(), new Webhook()];
       webhooks[0].url = 'localhost:4815';
       webhooks[1].url = 'localhost:1623';
-      const mockedResponse: Response = new Response();
       const findAllActiveSpy = jest
         .spyOn(webhookService, 'findAllActive')
         .mockImplementation(async () => webhooks);
+      const postWebhookResponse: any = {
+        data: {},
+        status: 200,
+        statusText: 'OK',
+      };
       const postWebhookSpy = jest
         .spyOn(webhookService, 'postWebhook')
-        .mockImplementation(async () => mockedResponse);
+        .mockImplementation(async () => postWebhookResponse);
 
       const msg = { text: 'hello' };
       const results = await webhookService.postEveryWebhook(msg);
-      expect(results).toEqual([mockedResponse, mockedResponse]);
+      expect(results).toEqual([postWebhookResponse, postWebhookResponse]);
       expect(findAllActiveSpy).toBeCalledTimes(1);
       expect(postWebhookSpy).toBeCalledTimes(2);
       webhooks.map((webhook: Webhook, index: number) => {

@@ -5,6 +5,9 @@ import { Repository } from 'typeorm';
 import { Webhook } from './entities/webhook.entity';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { ConfigService } from '@nestjs/config';
+import { HttpService } from '@nestjs/axios';
+import { of, catchError, firstValueFrom } from 'rxjs';
+import { AxiosError, AxiosResponse } from 'axios';
 
 @Injectable()
 export class WebhookService {
@@ -12,9 +15,10 @@ export class WebhookService {
 
   constructor(
     @InjectRepository(Webhook)
-    private WebHooksRepository: Repository<Webhook>,
-    @Inject(CACHE_MANAGER) private cacheManager: Cache,
+    private readonly WebHooksRepository: Repository<Webhook>,
+    @Inject(CACHE_MANAGER) private readonly cacheManager: Cache,
     private readonly configService: ConfigService,
+    private readonly httpService: HttpService,
   ) {}
 
   /**
@@ -45,9 +49,9 @@ export class WebhookService {
 
   async postEveryWebhook(
     parsedMessage: object,
-  ): Promise<(Response | undefined)[]> {
+  ): Promise<(AxiosResponse | undefined)[]> {
     const webhooks: Webhook[] = await this.getCachedActiveWebhooks();
-    const responses: Promise<Response | undefined>[] = webhooks.map(
+    const responses: Promise<AxiosResponse | undefined>[] = webhooks.map(
       (webhook: Webhook) => {
         this.logger.debug(
           `Sending ${JSON.stringify(parsedMessage)} to ${webhook.url}`,
@@ -61,19 +65,14 @@ export class WebhookService {
   postWebhook(
     parsedMessage: object,
     url: string,
-  ): Promise<Response | undefined> {
-    try {
-      return fetch(url, {
-        method: 'POST',
-        body: JSON.stringify(parsedMessage),
-        headers: {
-          Accept: 'application/json',
-          'Content-Type': 'application/json',
-        },
-      });
-    } catch (error) {
-      console.warn(`Error POSTing evet to ${url}`, error);
-      return Promise.resolve(undefined);
-    }
+  ): Promise<AxiosResponse | undefined> {
+    return firstValueFrom(
+      this.httpService.post(url, parsedMessage).pipe(
+        catchError((error: AxiosError) => {
+          this.logger.error(`Error POSTing evet to ${url}`, error);
+          return of(undefined);
+        }),
+      ),
+    );
   }
 }

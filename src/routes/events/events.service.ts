@@ -1,6 +1,7 @@
 import { Injectable, Logger, OnApplicationBootstrap } from '@nestjs/common';
 import { WebhookService } from '../webhook/webhook.service';
 import { QueueProvider } from '../../datasources/queue/queue.provider';
+import { AxiosResponse } from 'axios';
 
 @Injectable()
 export class EventsService implements OnApplicationBootstrap {
@@ -22,7 +23,7 @@ export class EventsService implements OnApplicationBootstrap {
     );
   }
 
-  processEvent(message: string): Promise<(Response | undefined)[]> {
+  processEvent(message: string): Promise<(AxiosResponse | undefined)[]> {
     const parsedMessage: object = JSON.parse(message);
     return this.webhookService.postEveryWebhook(parsedMessage);
   }
