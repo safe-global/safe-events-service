@@ -1,22 +1,22 @@
 import { Module } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
 
 import { AboutModule } from './routes/about/about.module';
-import { WebhookModule } from './routes/webhook/webhook.module';
 import { AdminJsModule } from './admin/adminjs';
-import { EventsModule } from './routes/events/events.module';
+import { ConfigModule } from '@nestjs/config';
 import { DatabaseModule } from './datasources/db/database.module';
+import { EventsModule } from './routes/events/events.module';
 import { HealthModule } from './health/health.module';
+import { WebhookModule } from './routes/webhook/webhook.module';
 
 @Module({
   imports: [
+    AboutModule,
+    AdminJsModule,
     ConfigModule.forRoot(),
     DatabaseModule,
-    AboutModule,
     EventsModule,
-    WebhookModule,
-    AdminJsModule,
     HealthModule,
+    WebhookModule,
   ],
 })
 export class AppModule {}

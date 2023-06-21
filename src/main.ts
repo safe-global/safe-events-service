@@ -1,12 +1,16 @@
 import { NestFactory } from '@nestjs/core';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { AppModule } from './app.module';
+import { JsonConsoleLogger } from './logging/json-logger';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
     logger:
       process.env.NODE_ENV === 'production'
-        ? ['error', 'warn']
+        ? new JsonConsoleLogger('', {
+            logLevels: ['error', 'warn'],
+            timestamp: false,
+          })
         : ['log', 'debug', 'error', 'verbose', 'warn'],
   });
 
