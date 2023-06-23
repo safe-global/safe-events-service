@@ -69,7 +69,7 @@ export class WebhookService {
     return firstValueFrom(
       this.httpService.post(url, parsedMessage).pipe(
         catchError((error: AxiosError) => {
-          this.logger.error(`Error POSTing evet to ${url}`, error);
+          this.logger.error(`Error sending event to ${url}`, error);
           return of(undefined);
         }),
       ),
