@@ -8,6 +8,7 @@ import { ConfigService } from '@nestjs/config';
 import { HttpService } from '@nestjs/axios';
 import { of, catchError, firstValueFrom } from 'rxjs';
 import { AxiosError, AxiosResponse } from 'axios';
+import { TxServiceEvent } from '../events/event.dto';
 
 @Injectable()
 export class WebhookService {
@@ -48,22 +49,24 @@ export class WebhookService {
   }
 
   async postEveryWebhook(
-    parsedMessage: object,
+    parsedMessage: TxServiceEvent,
   ): Promise<(AxiosResponse | undefined)[]> {
     const webhooks: Webhook[] = await this.getCachedActiveWebhooks();
-    const responses: Promise<AxiosResponse | undefined>[] = webhooks.map(
-      (webhook: Webhook) => {
+    const responses: Promise<AxiosResponse | undefined>[] = webhooks
+      .filter((webhook: Webhook) => {
+        return webhook.isEventRelevant(parsedMessage);
+      })
+      .map((webhook: Webhook) => {
         this.logger.debug(
           `Sending ${JSON.stringify(parsedMessage)} to ${webhook.url}`,
         );
         return this.postWebhook(parsedMessage, webhook.url);
-      },
-    );
+      });
     return Promise.all(responses);
   }
 
   postWebhook(
-    parsedMessage: object,
+    parsedMessage: TxServiceEvent,
     url: string,
   ): Promise<AxiosResponse | undefined> {
     return firstValueFrom(

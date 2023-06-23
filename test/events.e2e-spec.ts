@@ -6,6 +6,7 @@ import { WebhookService } from '../src/routes/webhook/webhook.service';
 import { Webhook } from '../src/routes/webhook/entities/webhook.entity';
 import { connect as amqplibConnect, Connection } from 'amqplib';
 import { QueueProvider } from '../src/datasources/queue/queue.provider';
+import { TxServiceEventType } from '../src/routes/events/event.dto';
 
 async function publishMessage(
   amqpUrl: string,
@@ -58,14 +59,17 @@ describe('Events handling', () => {
 
   it('Processes events', async () => {
     const msg = {
-      test: 1,
-      test2: 3,
+      chainId: '1',
+      type: 'SAFE_CREATED' as TxServiceEventType,
+      hero: 'Tanjiro',
+      address: '0x0275FC2adfF11270F3EcC4D2F7Aa0a9784601Ca6',
     };
     const processEventSpy = jest.spyOn(eventsService, 'processEvent');
     const postEveryWebhookSpy = jest.spyOn(webhookService, 'postEveryWebhook');
     const mockedWebhook = new Webhook();
     mockedWebhook.url = 'http://localhost';
     mockedWebhook.isActive = true;
+    mockedWebhook.sendSafeCreations = true;
     const getCachedActiveWebhooksSpy = jest
       .spyOn(webhookService, 'getCachedActiveWebhooks')
       .mockImplementation(async () => [mockedWebhook]);
