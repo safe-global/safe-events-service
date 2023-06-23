@@ -2,6 +2,7 @@ import { Test } from '@nestjs/testing';
 import { EventsService } from './events.service';
 import { QueueProvider } from '../../datasources/queue/queue.provider';
 import { WebhookService } from '../webhook/webhook.service';
+import { TxServiceEventType } from './event.dto';
 
 describe('EventsService', () => {
   let eventsService: EventsService;
@@ -44,7 +45,10 @@ describe('EventsService', () => {
     it('should post webhooks', async () => {
       const postEveryWebhook = jest.spyOn(webhookService, 'postEveryWebhook');
       const msg = {
-        hero: 'saitama',
+        chainId: '1',
+        type: 'SAFE_CREATED' as TxServiceEventType,
+        hero: 'Saitama',
+        address: '0x0275FC2adfF11270F3EcC4D2F7Aa0a9784601Ca6',
       };
       await eventsService.processEvent(JSON.stringify(msg));
       expect(postEveryWebhook).toBeCalledTimes(1);
