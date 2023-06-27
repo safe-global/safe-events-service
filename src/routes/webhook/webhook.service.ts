@@ -12,7 +12,7 @@ import { TxServiceEvent } from '../events/event.dto';
 
 @Injectable()
 export class WebhookService {
-  private readonly logger = new Logger('WebhookService');
+  private readonly logger = new Logger(WebhookService.name);
 
   constructor(
     @InjectRepository(Webhook)
