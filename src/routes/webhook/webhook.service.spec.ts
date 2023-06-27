@@ -11,7 +11,7 @@ describe('Webhook service', () => {
 
   beforeEach(async () => {
     const moduleRef = await Test.createTestingModule({
-      imports: [WebhookModule, DatabaseModule, ConfigModule.forRoot()],
+      imports: [ConfigModule.forRoot(), WebhookModule, DatabaseModule],
     }).compile();
 
     webhookService = moduleRef.get<WebhookService>(WebhookService);
