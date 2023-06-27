@@ -6,7 +6,7 @@ import { TxServiceEvent } from './event.dto';
 
 @Injectable()
 export class EventsService implements OnApplicationBootstrap {
-  private readonly logger = new Logger('EventsService');
+  private readonly logger = new Logger(EventsService.name);
 
   constructor(
     private readonly queueProvider: QueueProvider,

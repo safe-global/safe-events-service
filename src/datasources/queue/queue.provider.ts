@@ -6,7 +6,7 @@ import amqp, { ChannelWrapper } from 'amqp-connection-manager';
 
 @Injectable()
 export class QueueProvider implements OnApplicationShutdown {
-  private readonly logger = new Logger('QueueProvider');
+  private readonly logger = new Logger(QueueProvider.name);
   private connection: IAmqpConnectionManager;
   private channelWrapper: ChannelWrapper;
 
