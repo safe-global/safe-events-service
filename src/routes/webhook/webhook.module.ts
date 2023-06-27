@@ -3,7 +3,7 @@ import { CacheModule } from '@nestjs/cache-manager';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Webhook } from './entities/webhook.entity';
 import { WebhookService } from './webhook.service';
-import { ConfigModule } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { HttpModule } from '@nestjs/axios';
 
 @Module({
@@ -12,13 +12,15 @@ import { HttpModule } from '@nestjs/axios';
     CacheModule.register(),
     ConfigModule,
     HttpModule.registerAsync({
-      useFactory: () => ({
-        timeout: 5000,
-        maxRedirects: 2,
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: async (configService: ConfigService) => ({
+        timeout: configService.get('HTTP_TIMEOUT') ?? 5000,
+        maxRedirects: configService.get('HTTP_MAX_REDIRECTS') ?? 0,
       }),
     }),
   ],
-  exports: [TypeOrmModule, WebhookService],
   providers: [WebhookService],
+  exports: [TypeOrmModule, WebhookService],
 })
 export class WebhookModule {}

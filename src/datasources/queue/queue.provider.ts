@@ -34,6 +34,15 @@ export class QueueProvider implements OnApplicationShutdown {
     );
   }
 
+  /**
+   *
+   * @returns Number of messages to prefetch, no longer than AMQP_PREFETCH_MESSAGES can be attended
+   *          at the same time
+   */
+  getPrefetchMessages(): number {
+    return this.configService.get('AMQP_PREFETCH_MESSAGES') ?? 5;
+  }
+
   async getConnection() {
     if (!this.connection || !this.connection.isConnected()) {
       await this.connect();
@@ -57,17 +66,19 @@ export class QueueProvider implements OnApplicationShutdown {
         this.logger.debug(
           `Asserting exchange ${this.getExchangeName()} and queue ${this.getQueueName()} are created`,
         );
-        channel.assertExchange(this.getExchangeName(), 'fanout', {
+        await channel.assertExchange(this.getExchangeName(), 'fanout', {
           durable: true,
         });
 
-        channel.assertQueue(this.getQueueName(), {
+        await channel.assertQueue(this.getQueueName(), {
           durable: true,
         });
 
         this.logger.debug(
           `Exchange ${this.getExchangeName()} and queue ${this.getQueueName()} are created`,
         );
+
+        await channel.prefetch(this.getPrefetchMessages());
 
         return channel.bindQueue(
           this.getQueueName(),
