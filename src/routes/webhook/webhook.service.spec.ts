@@ -70,6 +70,7 @@ describe('Webhook service', () => {
       webhooks[0].sendSafeCreations = true;
       webhooks[1].sendSafeCreations = false;
       webhooks[2].sendSafeCreations = true;
+      webhooks.forEach((webhook: Webhook) => (webhook.chains = []));
       const findAllActiveSpy = jest
         .spyOn(webhookService, 'findAllActive')
         .mockImplementation(async () => webhooks);
