@@ -1,24 +1,39 @@
 import { TxServiceEvent, TxServiceEventType } from '../../events/event.dto';
 import { Webhook } from './webhook.entity';
 
-const txServiceEvent: TxServiceEvent = {
-  chainId: '1',
-  type: 'NEW_CONFIRMATION' as TxServiceEventType,
-  hero: 'Saitama',
-  address: '0x0275FC2adfF11270F3EcC4D2F7Aa0a9784601Ca6',
-};
-
 describe('Webhook entity', () => {
+  let txServiceEvent: TxServiceEvent;
   let webhook: Webhook;
 
   beforeEach(async () => {
+    txServiceEvent = {
+      chainId: '1',
+      type: 'NEW_CONFIRMATION' as TxServiceEventType,
+      hero: 'Saitama',
+      address: '0x0275FC2adfF11270F3EcC4D2F7Aa0a9784601Ca6',
+    };
     webhook = new Webhook();
+    webhook.chains = [];
     webhook.sendConfirmations = true;
     webhook.sendMultisigTxs = true;
     webhook.sendEtherTransfers = true;
     webhook.sendTokenTransfers = true;
     webhook.sendModuleTransactions = true;
     webhook.sendSafeCreations = true;
+  });
+
+  it('If chain is set, only those chain messages will be sent', async () => {
+    expect(webhook.isEventRelevant(txServiceEvent)).toBe(true);
+    webhook.chains = ['4', '100'];
+    expect(webhook.isEventRelevant(txServiceEvent)).toBe(false);
+    webhook.chains = ['1', '4', '100'];
+    expect(webhook.isEventRelevant(txServiceEvent)).toBe(true);
+    txServiceEvent.chainId = '5';
+    expect(webhook.isEventRelevant(txServiceEvent)).toBe(false);
+    webhook.chains = ['5'];
+    expect(webhook.isEventRelevant(txServiceEvent)).toBe(true);
+    webhook.chains = [];
+    expect(webhook.isEventRelevant(txServiceEvent)).toBe(true);
   });
 
   it('NEW_CONFIRMATION should not be relevant if sendConfirmations is disabled', async () => {

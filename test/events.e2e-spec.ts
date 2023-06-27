@@ -69,6 +69,7 @@ describe('Events handling', () => {
     const mockedWebhook = new Webhook();
     mockedWebhook.url = 'http://localhost';
     mockedWebhook.isActive = true;
+    mockedWebhook.chains = ['1'];
     mockedWebhook.sendSafeCreations = true;
     const getCachedActiveWebhooksSpy = jest
       .spyOn(webhookService, 'getCachedActiveWebhooks')
