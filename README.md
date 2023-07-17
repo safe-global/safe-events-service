@@ -3,9 +3,102 @@
 ![Docker Image Version (latest by date)](https://img.shields.io/docker/v/safeglobal/safe-events-service?sort=date)
 ![Node required Version](https://img.shields.io/badge/node-%3E%3D18-green)
 
+# User documentation
+
 ## Description
 
-Handle Safe indexing events from Transaction Service and deliver as HTTP webhooks
+Handle Safe indexing events from Transaction Service and deliver as HTTP webhooks.
+This service should be connected to the [Safe Transaction Service](https://github.com/safe-global/safe-transaction-service):
+
+- Transaction service sends events to RabbitMQ.
+- Events service holds a database with services to send webhooks to, and some filters like `chainId` or `eventType` can be configured.
+- Events service connects to RabbitMQ and susbscribes to the events. When an event matches filters for a service, a webhook is posted.
+
+![Events Service Diagram](./docs/img/events.png)
+
+## Events supported
+
+Some parameters are common to every event:
+
+- `address`: Safe address.
+- `type`: Event type.
+- `chainId`: Chain id.
+
+### Multisig Confirmation
+
+```json
+{
+  "address": "<Ethereum checksummed address>",
+  "type": "NEW_CONFIRMATION",
+  "owner": "<Ethereum checksummed address>",
+  "safeTxHash": "<0x-prefixed-hex-string>",
+  "chainId": "<stringified-int>"
+}
+```
+
+### MultisigTransaction (executed)
+
+```json
+{
+  "address": "<Ethereum checksummed address>",
+  "type": "EXECUTED_MULTISIG_TRANSACTION",
+  "safeTxHash": "<0x-prefixed-hex-string>",
+  "failed": <bool>,
+  "txHash": "<0x-prefixed-hex-string>",
+  "chainId": "<stringified-int>"
+}
+```
+
+### MultisigTransaction (proposed, not executed)
+
+```json
+{
+  "address": "<Ethereum checksummed address>",
+  "type": "PENDING_MULTISIG_TRANSACTION",
+  "safeTxHash": "<0x-prefixed-hex-string>",
+  "chainId": "<stringified-int>"
+}
+```
+
+### Incoming Ether
+
+```json
+{
+  "address": "<Ethereum checksummed address>",
+  "type": "INCOMING_ETHER",
+  "txHash": "<0x-prefixed-hex-string>",
+  "value": "<stringified-int>",
+  "chainId": "<stringified-int>"
+}
+```
+
+### Incoming/Outgoing token (ERC20)
+
+```json
+{
+"address": "<Ethereum checksummed address>",
+"type": "INCOMING_TOKEN" | "OUTGOING_TOKEN",
+"tokenAddress": "<Ethereum checksummed address>",
+"txHash": "<0x-prefixed-hex-string>",
+"value": "<stringified-int>",
+"chainId": "<stringified-int>"
+}
+```
+
+### Incoming/Outgoing tokens (ERC721)
+
+```json
+{
+"address": "<Ethereum checksummed address>",
+"type": "INCOMING_TOKEN" | "OUTGOING_TOKEN",
+"tokenAddress": "<Ethereum checksummed address>",
+"txHash": "<0x-prefixed-hex-string>",
+"tokenId": "<stringified-int>",
+"chainId": "<stringified-int>"
+}
+```
+
+# Developer documentation
 
 ## Installation
 
@@ -63,6 +156,8 @@ bash ./scripts/db_generate_migrations.sh RELEVANT_MIGRATION_NAME
 ```
 
 ## Endpoints
+
 Available endpoints:
+
 - /health/ -> Check health for the service.
 - /admin/ -> Admin panel to edit database models.
