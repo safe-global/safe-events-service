@@ -47,6 +47,7 @@ describe('Events handling', () => {
     const postEveryWebhookSpy = jest.spyOn(webhookService, 'postEveryWebhook');
     const mockedWebhook = new Webhook();
     mockedWebhook.url = 'http://localhost';
+    mockedWebhook.authorization = 'Basic QWxhZGRpbjpvcGVuIHNlc2FtZQ==';
     mockedWebhook.isActive = true;
     mockedWebhook.chains = ['1'];
     mockedWebhook.sendSafeCreations = true;
@@ -78,6 +79,10 @@ describe('Events handling', () => {
     expect(getCachedActiveWebhooksSpy).toHaveBeenCalledTimes(1);
 
     expect(postWebhookSpy).toHaveBeenCalledTimes(1);
-    expect(postWebhookSpy).toHaveBeenCalledWith(msg, mockedWebhook.url);
+    expect(postWebhookSpy).toHaveBeenCalledWith(
+      msg,
+      mockedWebhook.url,
+      mockedWebhook.authorization,
+    );
   });
 });
