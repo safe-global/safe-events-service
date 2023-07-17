@@ -33,7 +33,7 @@
     "@nestjs/platform-express": "^9.0.0",
     "@nestjs/swagger": "^6.3.0",
     "@nestjs/terminus": "^9.2.2",
-    "@nestjs/typeorm": "^9.0.1",
+    "@nestjs/typeorm": "^10.0.0",
     "adminjs": "^7.0.1",
     "amqp-connection-manager": "^4.1.13",
     "amqplib": "^0.10.3",
