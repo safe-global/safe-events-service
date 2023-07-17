@@ -15,6 +15,9 @@ export class Webhook extends BaseEntity {
   @Column({ default: true })
   isActive: boolean;
 
+  @Column()
+  authorization: string;
+
   @Column('bigint', { array: true, default: [] })
   chains: string[];
 

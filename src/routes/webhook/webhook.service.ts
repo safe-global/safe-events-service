@@ -60,7 +60,11 @@ export class WebhookService {
         this.logger.debug(
           `Sending ${JSON.stringify(parsedMessage)} to ${webhook.url}`,
         );
-        return this.postWebhook(parsedMessage, webhook.url);
+        return this.postWebhook(
+          parsedMessage,
+          webhook.url,
+          webhook.authorization,
+        );
       });
     return Promise.all(responses);
   }
@@ -68,9 +72,11 @@ export class WebhookService {
   postWebhook(
     parsedMessage: TxServiceEvent,
     url: string,
+    authorization: string,
   ): Promise<AxiosResponse | undefined> {
+    const headers = authorization ? { Authorization: authorization } : {};
     return firstValueFrom(
-      this.httpService.post(url, parsedMessage).pipe(
+      this.httpService.post(url, parsedMessage, { headers }).pipe(
         catchError((error: AxiosError) => {
           this.logger.error(`Error sending event to ${url}`, error);
           return of(undefined);

@@ -65,8 +65,10 @@ describe('Webhook service', () => {
     it('should post if webhooks are defined', async () => {
       const webhooks: Webhook[] = [new Webhook(), new Webhook(), new Webhook()];
       webhooks[0].url = 'localhost:4815';
+      webhooks[0].authorization = 'basic 1234';
       webhooks[1].url = 'localhost:1623';
       webhooks[2].url = 'localhost:42108';
+      webhooks[2].authorization = '';
       webhooks[0].sendSafeCreations = true;
       webhooks[1].sendSafeCreations = false;
       webhooks[2].sendSafeCreations = true;
@@ -94,8 +96,18 @@ describe('Webhook service', () => {
       expect(findAllActiveSpy).toBeCalledTimes(1);
       // Only 2 webhooks will be called, as one of them has `sendSafeCreations=false`
       expect(postWebhookSpy).toBeCalledTimes(2);
-      expect(postWebhookSpy).toHaveBeenNthCalledWith(1, msg, webhooks[0].url);
-      expect(postWebhookSpy).toHaveBeenNthCalledWith(2, msg, webhooks[2].url);
+      expect(postWebhookSpy).toHaveBeenNthCalledWith(
+        1,
+        msg,
+        webhooks[0].url,
+        webhooks[0].authorization,
+      );
+      expect(postWebhookSpy).toHaveBeenNthCalledWith(
+        2,
+        msg,
+        webhooks[2].url,
+        webhooks[2].authorization,
+      );
     });
   });
 });
