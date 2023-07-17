@@ -28,7 +28,7 @@ services:
       retries: 3
       start_period: 15s
 
-  db:
+  db: &db
     image: postgres:14-alpine
     ports:
       - "5432:5432"
@@ -38,24 +38,18 @@ services:
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: test
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready"]
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 15s
       timeout: 5s
       retries: 5
 
   # Only for development purposes
   db-migrations:
-    image: postgres:14-alpine
+    <<: *db
     ports:
       - "5433:5432"
     environment:
+      POSTGRES_HOST: db-migrations
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: migrations
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready"]
-      interval: 15s
-      timeout: 5s
-      retries: 5
-      start_period: 15s
-

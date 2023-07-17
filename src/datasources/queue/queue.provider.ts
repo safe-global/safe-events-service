@@ -40,7 +40,7 @@ export class QueueProvider implements OnApplicationShutdown {
    *          at the same time
    */
   getPrefetchMessages(): number {
-    return this.configService.get('AMQP_PREFETCH_MESSAGES') ?? 5;
+    return this.configService.get('AMQP_PREFETCH_MESSAGES') ?? 10;
   }
 
   async getConnection() {

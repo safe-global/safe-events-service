@@ -36,19 +36,30 @@ $ npm run start:prod
 
 ## Test
 
+Note: It's important that `web` is not running during tests, as it can consume messages
+and tests will fail.
+
 ```bash
 cp .env.sample .env
+```
 
-docker compose up -d
+Simple way:
+```bash
+bash ./scripts/run_tests.sh
+```
 
+Manual way:
+```bash
+docker compose down
+docker compose up -d rabbitmq db db-migrations
 # unit tests
-$ npm run test
+npm run test
 
 # e2e tests
-$ npm run test:e2e
+npm run test:e2e
 
 # test coverage
-$ npm run test:cov
+npm run test:cov
 ```
 
 ## Creating database migrations
