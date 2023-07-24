@@ -47,7 +47,7 @@
     "typeorm": "^0.3.17"
   },
   "devDependencies": {
-    "@nestjs/cli": "^10.1.9",
+    "@nestjs/cli": "^10.1.10",
     "@nestjs/schematics": "^9.0.0",
     "@nestjs/testing": "^9.0.0",
     "@types/amqplib": "^0.10.1",
