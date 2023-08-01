@@ -7,8 +7,8 @@ import amqp, { ChannelWrapper } from 'amqp-connection-manager';
 @Injectable()
 export class QueueProvider implements OnApplicationShutdown {
   private readonly logger = new Logger(QueueProvider.name);
-  private connection: IAmqpConnectionManager;
-  private channelWrapper: ChannelWrapper;
+  private connection: IAmqpConnectionManager | undefined;
+  private channelWrapper: ChannelWrapper | undefined;
 
   constructor(private readonly configService: ConfigService) {}
 
@@ -44,8 +44,12 @@ export class QueueProvider implements OnApplicationShutdown {
   }
 
   async getConnection() {
-    if (!this.connection || !this.connection.isConnected()) {
-      await this.connect();
+    if (
+      !this.connection ||
+      !this.connection.isConnected() ||
+      !this.channelWrapper
+    ) {
+      return this.connect();
     }
 
     return {
@@ -87,14 +91,18 @@ export class QueueProvider implements OnApplicationShutdown {
         );
       },
     });
+    return {
+      connection: this.connection,
+      channel: this.channelWrapper,
+    };
   }
 
   async disconnect(): Promise<void> {
     this.channelWrapper && (await this.channelWrapper.close());
     this.connection && (await this.connection.close());
-    // TODO Empty variables
-    // this.channelWrapper = undefined;
-    // this.connection = undefined;
+
+    this.channelWrapper = undefined;
+    this.connection = undefined;
   }
 
   /**
