@@ -8,10 +8,10 @@ async function bootstrap() {
     logger:
       process.env.NODE_ENV === 'production'
         ? new JsonConsoleLogger('', {
-            logLevels: ['error', 'warn'],
+            logLevels: ['log', 'error', 'warn'],
             timestamp: false,
           })
-        : ['log', 'debug', 'error', 'verbose', 'warn'],
+        : ['verbose', 'debug', 'log', 'error', 'warn'],
   });
 
   // Swagger Configuration
