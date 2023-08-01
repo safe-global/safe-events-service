@@ -38,16 +38,23 @@ export class EventsService implements OnApplicationBootstrap {
   }
 
   processEvent(message: string): Promise<(AxiosResponse | undefined)[]> {
-    const txServiceEvent: TxServiceEvent = JSON.parse(message);
+    this.logger.log(`Processing event ${message}`);
+    let txServiceEvent: TxServiceEvent;
+    try {
+      txServiceEvent = JSON.parse(message);
+    } catch (err) {
+      this.logger.error(`Cannot parse message as JSON: ${message}`);
+      return Promise.resolve([undefined]);
+    }
 
     // Check message is valid
-    if (this.isEventValid(txServiceEvent)) {
-      return this.webhookService.postEveryWebhook(txServiceEvent);
+    if (!this.isEventValid(txServiceEvent)) {
+      this.logger.error(
+        `Unsupported message. A valid message should have at least 'chainId' and 'type': ${message}`,
+      );
+      return Promise.resolve([undefined]);
     }
-    this.logger.error(
-      'Unsupported message. A valid message should have at least `chainId` and `type`',
-      message,
-    );
-    return Promise.resolve([undefined]);
+
+    return this.webhookService.postEveryWebhook(txServiceEvent);
   }
 }
