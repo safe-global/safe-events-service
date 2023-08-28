@@ -41,7 +41,7 @@
     "cache-manager": "^5.2.1",
     "express-formidable": "^1.2.0",
     "express-session": "^1.17.3",
-    "pg": "^8.11.1",
+    "pg": "^8.11.3",
     "reflect-metadata": "^0.1.13",
     "rxjs": "^7.2.0",
     "typeorm": "^0.3.17"
