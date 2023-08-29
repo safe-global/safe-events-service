@@ -98,6 +98,16 @@ Some parameters are common to every event:
 }
 ```
 
+### Message created/confirmed 
+```json
+{
+"address": "<Ethereum checksummed address>",
+"type": "MESSAGE_CREATED" | "MESSAGE_CONFIRMATION",
+"messageHash": "<0x-prefixed-hex-string>",
+"chainId": "<stringified-int>"
+}
+```
+
 # Developer documentation
 
 ## Installation

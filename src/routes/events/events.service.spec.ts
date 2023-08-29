@@ -33,6 +33,10 @@ describe('EventsService', () => {
     eventsService = module.get<EventsService>(EventsService);
   });
 
+  afterEach(async () => {
+    jest.clearAllMocks()
+  })
+
   describe('listenToEvents', () => {
     it('should return consumer tag', async () => {
       const expected = 'exampleTag';
@@ -53,6 +57,32 @@ describe('EventsService', () => {
       await eventsService.processEvent(JSON.stringify(msg));
       expect(postEveryWebhook).toBeCalledTimes(1);
       expect(postEveryWebhook).toBeCalledWith(msg);
+    });
+  });
+
+  describe('processMessageEvents', () => {
+    it('should post webhooks', async () => {
+      const postEveryWebhook = jest.spyOn(webhookService, 'postEveryWebhook');
+      const messageCreated = {
+        chainId: '1',
+        type: 'MESSAGE_CREATED' as TxServiceEventType,
+        messageHash: '0x47173285a8d7341e5e972fc677286384f802f8ef42a5ec5f03bbfa254cb01fad',
+        address: '0x0275FC2adfF11270F3EcC4D2F7Aa0a9784601Ca6',
+      };
+      const messageConfirmation = {
+        chainId: '1',
+        type: 'MESSAGE_CONFIRMATION' as TxServiceEventType,
+        messageHash: '0xc9b14f03293f5febf968b2a3dde3e5d373f978ea9e9403881c5abfa68322bea9',
+        address: '0x0275FC2adfF11270F3EcC4D2F7Aa0a9784601Ca6',
+      };
+      
+      await eventsService.processEvent(JSON.stringify(messageCreated));
+      expect(postEveryWebhook).toBeCalledTimes(1);
+      expect(postEveryWebhook).toBeCalledWith(messageCreated);
+      await eventsService.processEvent(JSON.stringify(messageConfirmation));
+      expect(postEveryWebhook).toBeCalledTimes(2);
+      expect(postEveryWebhook).toBeCalledWith(messageConfirmation);
+
     });
   });
 });
