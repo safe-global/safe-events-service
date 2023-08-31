@@ -8,7 +8,9 @@ export type TxServiceEventType =
   | 'SAFE_CREATED'
   | 'MODULE_TRANSACTION'
   | 'OUTGOING_ETHER'
-  | 'OUTGOING_TOKEN';
+  | 'OUTGOING_TOKEN'
+  | 'MESSAGE_CREATED'
+  | 'MESSAGE_CONFIRMATION';
 
 export interface TxServiceEvent {
   chainId: string;
