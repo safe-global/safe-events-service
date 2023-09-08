@@ -17,7 +17,7 @@ describe('EventsService', () => {
 
   beforeEach(async () => {
     const webhookServiceMock = {
-      postEveryWebhook: async (_: object) => ({
+      postEveryWebhook: async () => ({
         data: {},
         status: 200,
         statusText: 'OK',
@@ -35,8 +35,6 @@ describe('EventsService', () => {
     eventsService = module.get<EventsService>(EventsService);
     webhookService = module.get<WebhookService>(WebhookService);
   });
-
-
 
   describe('listenToEvents', () => {
     it('should return consumer tag', async () => {
