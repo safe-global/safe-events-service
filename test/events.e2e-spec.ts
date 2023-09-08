@@ -20,8 +20,8 @@ describe('Events handling', () => {
     }).compile();
 
     eventsService = moduleFixture.get<EventsService>(EventsService);
-    webhookService = moduleFixture.get<WebhookService>(WebhookService);
     queueProvider = moduleFixture.get<QueueProvider>(QueueProvider);
+    webhookService = moduleFixture.get<WebhookService>(WebhookService);
 
     // Wait for queue provider connection to be established, as it could take a little
     const { channel } = await queueProvider.getConnection();
