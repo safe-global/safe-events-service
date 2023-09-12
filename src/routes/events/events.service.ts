@@ -56,14 +56,6 @@ export class EventsService implements OnApplicationBootstrap {
   }
 
   /**
-   * Complete event observable
-   * This function is useful for testing purposes
-   */
-  completeEventsObservable() {
-    return this.eventsSubject.complete();
-  }
-
-  /**
    *
    * Event must have at least a `chainId` and `type`
    * @param txServiceEvent
