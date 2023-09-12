@@ -22,7 +22,7 @@ async function bootstrap() {
     // .addTag('safe')
     .build();
   const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('api', app, document);
+  SwaggerModule.setup('', app, document);
   // End Swagger -------------
 
   await app.listen(3000);
