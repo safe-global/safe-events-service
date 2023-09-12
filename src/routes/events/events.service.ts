@@ -46,7 +46,7 @@ export class EventsService implements OnApplicationBootstrap {
     txServiceEvent: TxServiceEvent,
   ): MessageEvent<TxServiceEvent> {
     const messageEvent: MessageEvent<TxServiceEvent> = new MessageEvent(
-      txServiceEvent.type,
+      'message',
       {
         data: txServiceEvent,
       },

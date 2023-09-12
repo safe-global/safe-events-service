@@ -47,6 +47,10 @@ describe('EventsService', () => {
   describe('processEvent', () => {
     it('should post webhooks', async () => {
       const postEveryWebhook = jest.spyOn(webhookService, 'postEveryWebhook');
+      const pushEventToEventsObservable = jest.spyOn(
+        eventsService,
+        'pushEventToEventsObservable',
+      );
       const msg = {
         chainId: '1',
         type: 'SAFE_CREATED' as TxServiceEventType,
@@ -56,12 +60,15 @@ describe('EventsService', () => {
       await eventsService.processEvent(JSON.stringify(msg));
       expect(postEveryWebhook).toBeCalledTimes(1);
       expect(postEveryWebhook).toBeCalledWith(msg);
+      expect(pushEventToEventsObservable).toBeCalledTimes(1);
+      expect(pushEventToEventsObservable).toBeCalledWith(msg);
     });
   });
 
   describe('processMessageEvents', () => {
     it('should post webhooks', async () => {
       const postEveryWebhook = jest.spyOn(webhookService, 'postEveryWebhook');
+
       const messageCreated = {
         chainId: '1',
         type: 'MESSAGE_CREATED' as TxServiceEventType,

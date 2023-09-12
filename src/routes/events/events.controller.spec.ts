@@ -12,7 +12,7 @@ describe('EventsController', () => {
   let service: EventsService;
 
   beforeEach(async () => {
-    const module = await Test.createTestingModule({
+    const module: TestingModule = await Test.createTestingModule({
       controllers: [EventsController],
       providers: [EventsService, QueueProvider, WebhookService],
     })
@@ -63,7 +63,7 @@ describe('EventsController', () => {
       // Not relevant event must be ignored by Safe filter
       const event = await firstValue;
       expect(event.data).toEqual(txServiceEvents[1]);
-      expect(event.type).toEqual(txServiceEvents[1].type);
+      expect(event.type).toEqual('message');
     });
   });
 });

@@ -4,6 +4,9 @@ import * as request from 'supertest';
 import { AppModule } from './../src/app.module';
 import { QueueProvider } from '../src/datasources/queue/queue.provider';
 import { EventsService } from '../src/routes/events/events.service';
+import { Server } from 'tls';
+import { TxServiceEventType } from '../src/routes/events/event.dto';
+import EventSource = require('eventsource');
 
 /* eslint-disable */
 const { version } = require('../package.json');
@@ -39,17 +42,42 @@ describe('AppController (e2e)', () => {
   });
 
   describe('/events/sse/:safe (GET)', () => {
-    it('should subscribe to server side events', () => {
+    it('should subscribe and receive Server Side Events', () => {
       const validSafeAddress = '0x8618ce407F169ABB1388348A19632AaFA857CCB9';
-      const url = `/events/sse/${validSafeAddress}`;
-      const expected = {};
+      const msg = {
+        chainId: '1',
+        type: 'SAFE_CREATED' as TxServiceEventType,
+        hero: 'Tatsumaki',
+        address: validSafeAddress,
+      };
 
-      const result = request(app.getHttpServer())
-        .get(url)
-        .expect(200)
-        .expect(expected);
-      eventsService.completeEventsObservable();
-      return result;
+      const path = `/events/sse/${validSafeAddress}`;
+
+      // Supertest cannot be used, as it does not support EventSource
+      const server = app.getHttpServer();
+      server.listen();
+      const port = server.address().port;
+      const protocol = server instanceof Server ? 'https' : 'http';
+      const url = protocol + '://127.1.0.1:' + port + path;
+
+      const eventSource = new EventSource(url);
+      // Use an empty promise so test has to wait for it
+      const messageReceived = new Promise((resolve) => {
+        eventSource.onmessage = (event) => {
+          expect(event.type).toBe('message');
+          const parsedData = JSON.parse(event.data);
+          expect(parsedData).toStrictEqual(msg);
+          server.close();
+          resolve(null);
+        };
+      });
+
+      // Wait a little to send the message
+      setTimeout(() => {
+        eventsService.pushEventToEventsObservable(msg);
+      }, 1000);
+
+      return messageReceived;
     });
     it('should return a 400 if safe address is not EIP55 valid', () => {
       const notValidAddress = '0x8618CE407F169ABB1388348A19632AaFA857CCB9';
