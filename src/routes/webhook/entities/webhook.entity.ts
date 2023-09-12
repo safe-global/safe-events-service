@@ -39,6 +39,9 @@ export class Webhook extends BaseEntity {
   @Column({ default: true })
   sendSafeCreations: boolean;
 
+  @Column({ default: true })
+  sendMessages: boolean;
+
   /**
    * Check if event chainId matches the one of the webhook (everything will match if webhook chains are empty). Check if event
    * type matches the flags enabled for the webhook
@@ -46,8 +49,10 @@ export class Webhook extends BaseEntity {
    * @returns true if event is relevant.
    */
   isEventRelevant(message: TxServiceEvent): boolean {
+    const chainMatches: boolean =
+      this.chains.length === 0 || this.chains.includes(message.chainId);
     return (
-      (this.chains.length === 0 || this.chains.includes(message.chainId)) &&
+      chainMatches &&
       ((this.sendConfirmations &&
         (message.type === 'NEW_CONFIRMATION' ||
           message.type === 'CONFIRMATION_REQUEST')) ||
@@ -62,6 +67,9 @@ export class Webhook extends BaseEntity {
             message.type === 'OUTGOING_TOKEN')) ||
         (this.sendModuleTransactions &&
           message.type === 'MODULE_TRANSACTION') ||
+        (this.sendMessages &&
+          (message.type === 'MESSAGE_CREATED' ||
+            message.type === 'MESSAGE_CONFIRMATION')) ||
         (this.sendSafeCreations && message.type === 'SAFE_CREATED'))
     );
   }

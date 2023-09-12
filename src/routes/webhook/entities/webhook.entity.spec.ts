@@ -20,6 +20,7 @@ describe('Webhook entity', () => {
     webhook.sendTokenTransfers = true;
     webhook.sendModuleTransactions = true;
     webhook.sendSafeCreations = true;
+    webhook.sendMessages = true;
   });
 
   it('If chain is set, only those chain messages will be sent', async () => {
@@ -103,6 +104,20 @@ describe('Webhook entity', () => {
     txServiceEvent.type = 'SAFE_CREATED' as TxServiceEventType;
     expect(webhook.isEventRelevant(txServiceEvent)).toBe(true);
     webhook.sendSafeCreations = false;
+    expect(webhook.isEventRelevant(txServiceEvent)).toBe(false);
+  });
+
+  it('MESSAGE_CREATED should not be relevant if sendMessages is disabled', async () => {
+    txServiceEvent.type = 'MESSAGE_CREATED' as TxServiceEventType;
+    expect(webhook.isEventRelevant(txServiceEvent)).toBe(true);
+    webhook.sendMessages = false;
+    expect(webhook.isEventRelevant(txServiceEvent)).toBe(false);
+  });
+
+  it('MESSAGE_CONFIRMATION should not be relevant if sendMessages is disabled', async () => {
+    txServiceEvent.type = 'MESSAGE_CONFIRMATION' as TxServiceEventType;
+    expect(webhook.isEventRelevant(txServiceEvent)).toBe(true);
+    webhook.sendMessages = false;
     expect(webhook.isEventRelevant(txServiceEvent)).toBe(false);
   });
 });
