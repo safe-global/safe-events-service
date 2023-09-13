@@ -61,12 +61,14 @@ describe('AppController (e2e)', () => {
       const url = protocol + '://127.1.0.1:' + port + path;
 
       const eventSource = new EventSource(url);
-      // Use an empty promise so test has to wait for it
+      // Use an empty promise so test has to wait for it, and do the cleanup there
       const messageReceived = new Promise((resolve) => {
         eventSource.onmessage = (event) => {
           expect(event.type).toBe('message');
           const parsedData = JSON.parse(event.data);
           expect(parsedData).toStrictEqual(msg);
+          // Stop EventSource and server
+          eventSource.close();
           server.close();
           resolve(null);
         };
