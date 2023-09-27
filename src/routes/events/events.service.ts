@@ -1,3 +1,4 @@
+import { Observable, Subject, filter } from 'rxjs';
 import { Injectable, Logger, OnApplicationBootstrap } from '@nestjs/common';
 import { WebhookService } from '../webhook/webhook.service';
 import { QueueProvider } from '../../datasources/queue/queue.provider';
@@ -7,6 +8,7 @@ import { TxServiceEvent } from './event.dto';
 @Injectable()
 export class EventsService implements OnApplicationBootstrap {
   private readonly logger = new Logger(EventsService.name);
+  private eventsSubject = new Subject<MessageEvent<TxServiceEvent>>();
 
   constructor(
     private readonly queueProvider: QueueProvider,
@@ -22,6 +24,35 @@ export class EventsService implements OnApplicationBootstrap {
     return this.queueProvider.subscribeToEvents((msg: string) =>
       this.processEvent(msg),
     );
+  }
+
+  /**
+   *
+   * @param safe
+   * @returns Events rx.js observable used by the Server Side Events endpoint
+   */
+  getEventsObservableForSafe(
+    safe: string,
+  ): Observable<MessageEvent<TxServiceEvent>> {
+    return this.eventsSubject.pipe(filter((ev) => ev.data.address === safe));
+  }
+
+  /**
+   * Push txServiceEvent to the events observable (used by the Server Side Events endpoint)
+   * @param txServiceEvent
+   * @returns Crafted MessageEvent from txServiceEvent
+   */
+  pushEventToEventsObservable(
+    txServiceEvent: TxServiceEvent,
+  ): MessageEvent<TxServiceEvent> {
+    const messageEvent: MessageEvent<TxServiceEvent> = new MessageEvent(
+      'message',
+      {
+        data: txServiceEvent,
+      },
+    );
+    this.eventsSubject.next(messageEvent);
+    return messageEvent;
   }
 
   /**
@@ -55,6 +86,7 @@ export class EventsService implements OnApplicationBootstrap {
       return Promise.resolve([undefined]);
     }
 
+    this.pushEventToEventsObservable(txServiceEvent);
     return this.webhookService.postEveryWebhook(txServiceEvent);
   }
 }
