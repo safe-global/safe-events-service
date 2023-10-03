@@ -2,6 +2,21 @@ import { NestFactory } from '@nestjs/core';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { AppModule } from './app.module';
 import { JsonConsoleLogger } from './logging/json-logger';
+import { INestApplication } from '@nestjs/common';
+
+/**
+ * Configure swagger for app
+ */
+function setupSwagger(app: INestApplication) {
+  const config = new DocumentBuilder()
+    .setTitle('Safe Events Service')
+    .setDescription('Safe Events Service API')
+    .setVersion('1.0')
+    // .addTag('safe')
+    .build();
+  const document = SwaggerModule.createDocument(app, config);
+  SwaggerModule.setup('', app, document);
+}
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
@@ -14,17 +29,7 @@ async function bootstrap() {
         : ['verbose', 'debug', 'log', 'error', 'warn'],
   });
 
-  // Swagger Configuration
-  const config = new DocumentBuilder()
-    .setTitle('Safe Events Service')
-    .setDescription('Safe Events Service API')
-    .setVersion('1.0')
-    // .addTag('safe')
-    .build();
-  const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('', app, document);
-  // End Swagger -------------
-
+  setupSwagger(app);
   await app.listen(3000);
 }
 bootstrap();
