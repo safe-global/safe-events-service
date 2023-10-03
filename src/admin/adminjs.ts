@@ -19,7 +19,7 @@ async function buildAdminJsModule() {
   const { AdminModule } = await (eval(
     `import('@adminjs/nestjs')`,
   ) as Promise<any>);
-  const basePath = (process.env.BASE_PATH || '') + '/admin';
+  const basePath = (process.env.URL_BASE_PATH || '') + '/admin';
   return AdminModule.createAdminAsync({
     imports: [AuthModule],
     inject: [AuthService],

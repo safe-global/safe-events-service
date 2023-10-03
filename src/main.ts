@@ -28,7 +28,7 @@ async function bootstrap() {
           })
         : ['verbose', 'debug', 'log', 'error', 'warn'],
   });
-  const basePath = process.env.BASE_PATH || '';
+  const basePath = process.env.URL_BASE_PATH || '';
   app.setGlobalPrefix(basePath);
   setupSwagger(app, basePath);
   await app.listen(3000);
