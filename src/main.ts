@@ -7,7 +7,7 @@ import { INestApplication } from '@nestjs/common';
 /**
  * Configure swagger for app
  */
-function setupSwagger(app: INestApplication) {
+function setupSwagger(app: INestApplication, basePath: string) {
   const config = new DocumentBuilder()
     .setTitle('Safe Events Service')
     .setDescription('Safe Events Service API')
@@ -15,7 +15,7 @@ function setupSwagger(app: INestApplication) {
     // .addTag('safe')
     .build();
   const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('', app, document);
+  SwaggerModule.setup(basePath, app, document);
 }
 
 async function bootstrap() {
@@ -28,8 +28,9 @@ async function bootstrap() {
           })
         : ['verbose', 'debug', 'log', 'error', 'warn'],
   });
-
-  setupSwagger(app);
+  const basePath = process.env.URL_BASE_PATH || '';
+  app.setGlobalPrefix(basePath);
+  setupSwagger(app, basePath);
   await app.listen(3000);
 }
 bootstrap();
