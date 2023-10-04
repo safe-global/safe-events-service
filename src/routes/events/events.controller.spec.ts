@@ -1,11 +1,12 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { BadRequestException } from '@nestjs/common';
+import { ConfigModule } from '@nestjs/config';
 import { EventsController } from './events.controller';
 import { EventsService } from './events.service';
 import { QueueProvider } from '../../datasources/queue/queue.provider';
 import { WebhookService } from '../webhook/webhook.service';
 import { firstValueFrom } from 'rxjs';
 import { TxServiceEvent, TxServiceEventType } from './event.dto';
-import { BadRequestException } from '@nestjs/common';
 
 describe('EventsController', () => {
   let controller: EventsController;
@@ -13,6 +14,7 @@ describe('EventsController', () => {
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
+      imports: [ConfigModule.forRoot()],
       controllers: [EventsController],
       providers: [EventsService, QueueProvider, WebhookService],
     })
