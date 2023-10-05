@@ -185,5 +185,5 @@ Available endpoints:
 
 - /health/ -> Check health for the service.
 - /admin/ -> Admin panel to edit database models.
-- /events/sse/{CHECKSUMMED_SAFE_ADDRESS} -> Server side events endpoint. If `SSE_AUTH_TOKEN` is defined authentication
+- /events/sse/{CHECKSUMMED_SAFE_ADDRESS} -> Server side events endpoint. If `SSE_AUTH_TOKEN` is defined then authentication
   will be enabled and header `Authorization: Basic $SSE_AUTH_TOKEN` must be added to the request.
