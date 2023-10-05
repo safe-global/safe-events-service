@@ -1,12 +1,22 @@
-import { BadRequestException, Controller, Param, Sse } from '@nestjs/common';
+import {
+  BadRequestException,
+  Controller,
+  Param,
+  Sse,
+  UseGuards,
+} from '@nestjs/common';
+import { ApiTags } from '@nestjs/swagger';
 import { Observable } from 'rxjs';
 import { EventsService } from './events.service';
 import { getAddress, isAddress } from 'ethers';
+import { BasicAuthGuard } from '../../auth/basic-auth.guard';
 
+@ApiTags('events')
 @Controller('events')
 export class EventsController {
   constructor(private readonly eventsService: EventsService) {}
 
+  @UseGuards(BasicAuthGuard)
   @Sse('/sse/:safe')
   sse(@Param('safe') safe: string): Observable<MessageEvent> {
     if (isAddress(safe) && getAddress(safe) === safe)

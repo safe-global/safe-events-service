@@ -42,8 +42,21 @@ describe('AppController (e2e)', () => {
   });
 
   describe('/events/sse/:safe (GET)', () => {
+    const validSafeAddress = '0x8618ce407F169ABB1388348A19632AaFA857CCB9';
+    const notValidAddress = '0x8618CE407F169ABB1388348A19632AaFA857CCB9';
+    const sseAuthToken = 'aW5mcmFAc2FmZS5nbG9iYWw6YWJjMTIz';
+    const sseAuthorizationHeader = `Basic ${sseAuthToken}`;
+
+    it('should be protected by an Authorization token', () => {
+      const url = `/events/sse/${validSafeAddress}`;
+      const expected = {
+        statusCode: 403,
+        message: 'Forbidden resource',
+        error: 'Forbidden',
+      };
+      return request(app.getHttpServer()).get(url).expect(403).expect(expected);
+    });
     it('should subscribe and receive Server Side Events', () => {
-      const validSafeAddress = '0x8618ce407F169ABB1388348A19632AaFA857CCB9';
       const msg = {
         chainId: '1',
         type: 'SAFE_CREATED' as TxServiceEventType,
@@ -60,7 +73,9 @@ describe('AppController (e2e)', () => {
       const protocol = server instanceof Server ? 'https' : 'http';
       const url = protocol + '://127.1.0.1:' + port + path;
 
-      const eventSource = new EventSource(url);
+      const eventSource = new EventSource(url, {
+        headers: { Authorization: sseAuthorizationHeader },
+      });
       // Use an empty promise so test has to wait for it, and do the cleanup there
       const messageReceived = new Promise((resolve) => {
         eventSource.onmessage = (event) => {
@@ -82,14 +97,17 @@ describe('AppController (e2e)', () => {
       return messageReceived;
     });
     it('should return a 400 if safe address is not EIP55 valid', () => {
-      const notValidAddress = '0x8618CE407F169ABB1388348A19632AaFA857CCB9';
       const url = `/events/sse/${notValidAddress}`;
       const expected = {
         statusCode: 400,
         message: 'Not valid EIP55 address',
         error: `${notValidAddress} is not a valid EIP55 Safe address`,
       };
-      return request(app.getHttpServer()).get(url).expect(400).expect(expected);
+      return request(app.getHttpServer())
+        .get(url)
+        .set('Authorization', sseAuthorizationHeader)
+        .expect(400)
+        .expect(expected);
     });
   });
 });

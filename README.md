@@ -98,7 +98,8 @@ Some parameters are common to every event:
 }
 ```
 
-### Message created/confirmed 
+### Message created/confirmed
+
 ```json
 {
 "address": "<Ethereum checksummed address>",
@@ -147,11 +148,13 @@ cp .env.sample .env
 ```
 
 Simple way:
+
 ```bash
 bash ./scripts/run_tests.sh
 ```
 
 Manual way:
+
 ```bash
 docker compose down
 docker compose up -d rabbitmq db db-migrations
@@ -182,3 +185,5 @@ Available endpoints:
 
 - /health/ -> Check health for the service.
 - /admin/ -> Admin panel to edit database models.
+- /events/sse/{CHECKSUMMED_SAFE_ADDRESS} -> Server side events endpoint. If `SSE_AUTH_TOKEN` is defined then authentication
+  will be enabled and header `Authorization: Basic $SSE_AUTH_TOKEN` must be added to the request.
