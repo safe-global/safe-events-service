@@ -8,7 +8,7 @@ import {
 import { ApiTags } from '@nestjs/swagger';
 import { Observable } from 'rxjs';
 import { EventsService } from './events.service';
-import { getAddress, isAddress } from 'ethers';
+import { getAddress, isAddress } from 'viem';
 import { BasicAuthGuard } from '../../auth/basic-auth.guard';
 
 @ApiTags('events')
