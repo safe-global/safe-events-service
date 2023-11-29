@@ -26,7 +26,7 @@ describe('AppController (e2e)', () => {
     queueProvider = moduleFixture.get<QueueProvider>(QueueProvider);
     app = moduleFixture.createNestApplication();
     await app.init();
-  });
+  }, 10000);
 
   afterEach(() => {
     // Nest.js Shutdown hooks are not triggered

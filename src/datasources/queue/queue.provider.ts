@@ -112,21 +112,28 @@ export class QueueProvider implements OnApplicationShutdown {
     func: (arg: string) => Promise<any>,
   ): Promise<string> {
     const { channel } = await this.getConnection();
-    this.logger.debug(
-      `Subscribing to RabbitMQ exchange ${this.getExchangeName()} and queue ${this.getQueueName()}`,
-    );
-    const consumer = await channel.consume(
-      this.getQueueName(),
-      (message: ConsumeMessage) => {
-        if (message.content) func(message.content.toString());
-      },
-      {
-        noAck: true,
-      },
-    );
-    this.logger.debug(
-      `Subscribed to RabbitMQ exchange ${this.getExchangeName()} and queue ${this.getQueueName()}`,
-    );
-    return consumer.consumerTag;
+    if (channel === undefined) {
+      this.logger.error(
+        `Cannot subscribe to RabbitMQ exchange ${this.getExchangeName()} and queue ${this.getQueueName()}, channel is undefined`,
+      );
+      return '';
+    } else {
+      this.logger.debug(
+        `Subscribing to RabbitMQ exchange ${this.getExchangeName()} and queue ${this.getQueueName()}`,
+      );
+      const consumer = await channel.consume(
+        this.getQueueName(),
+        (message: ConsumeMessage) => {
+          if (message.content) func(message.content.toString());
+        },
+        {
+          noAck: true,
+        },
+      );
+      this.logger.debug(
+        `Subscribed to RabbitMQ exchange ${this.getExchangeName()} and queue ${this.getQueueName()}`,
+      );
+      return consumer.consumerTag;
+    }
   }
 }

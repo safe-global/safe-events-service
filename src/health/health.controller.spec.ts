@@ -20,7 +20,7 @@ describe('HealthController', () => {
 
     // Wait for queue provider connection to be established, as it could take a little
     const { channel } = await queueProvider.getConnection();
-    await channel.waitForConnect();
+    if (channel !== undefined) await channel.waitForConnect();
   });
 
   afterEach(async () => {
