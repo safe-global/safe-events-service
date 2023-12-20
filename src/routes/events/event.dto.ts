@@ -10,7 +10,8 @@ export type TxServiceEventType =
   | 'OUTGOING_ETHER'
   | 'OUTGOING_TOKEN'
   | 'MESSAGE_CREATED'
-  | 'MESSAGE_CONFIRMATION';
+  | 'MESSAGE_CONFIRMATION'
+  | 'DELETED_MULTISIG_TRANSACTION';
 
 export interface TxServiceEvent {
   chainId: string;

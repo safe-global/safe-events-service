@@ -58,7 +58,8 @@ export class Webhook extends BaseEntity {
           message.type === 'CONFIRMATION_REQUEST')) ||
         (this.sendMultisigTxs &&
           (message.type === 'PENDING_MULTISIG_TRANSACTION' ||
-            message.type === 'EXECUTED_MULTISIG_TRANSACTION')) ||
+            message.type === 'EXECUTED_MULTISIG_TRANSACTION' ||
+            message.type === 'DELETED_MULTISIG_TRANSACTION')) ||
         (this.sendEtherTransfers &&
           (message.type === 'INCOMING_ETHER' ||
             message.type === 'OUTGOING_ETHER')) ||
