@@ -60,6 +60,17 @@ Some parameters are common to every event:
 }
 ```
 
+## Multisig transaction deleted
+
+```json
+{
+  "address": "<Ethereum checksummed address>",
+  "type": "DELETED_MULTISIG_TRANSACTION",
+  "safeTxHash": "<0x-prefixed-hex-string>",
+  "chainId": "<stringified-int>"
+}
+```
+
 ### Incoming Ether
 
 ```json

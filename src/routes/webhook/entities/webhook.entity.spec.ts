@@ -65,6 +65,13 @@ describe('Webhook entity', () => {
     expect(webhook.isEventRelevant(txServiceEvent)).toBe(false);
   });
 
+  it('DELETED_MULTISIG_TRANSACTION should not be relevant if sendMultisigTxs is disabled', async () => {
+    txServiceEvent.type = 'DELETED_MULTISIG_TRANSACTION' as TxServiceEventType;
+    expect(webhook.isEventRelevant(txServiceEvent)).toBe(true);
+    webhook.sendMultisigTxs = false;
+    expect(webhook.isEventRelevant(txServiceEvent)).toBe(false);
+  });
+
   it('INCOMING_ETHER should not be relevant if sendEtherTransfers is disabled', async () => {
     txServiceEvent.type = 'INCOMING_ETHER' as TxServiceEventType;
     expect(webhook.isEventRelevant(txServiceEvent)).toBe(true);
