@@ -49,7 +49,7 @@
   },
   "devDependencies": {
     "@nestjs/cli": "^10.2.1",
-    "@nestjs/schematics": "^9.2.0",
+    "@nestjs/schematics": "^10.1.0",
     "@nestjs/testing": "^9.4.3",
     "@types/amqplib": "^0.10.4",
     "@types/eventsource": "^1.1.15",
