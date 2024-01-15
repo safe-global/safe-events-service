@@ -10,11 +10,11 @@ export const dataSourceOptions: DataSourceOptions = {
   url: process.env.MIGRATIONS_DATABASE_URL,
   entities: [Webhook],
   migrations: [__dirname + '/../migrations/**/*{.ts,.js}'],
-  ...(process.env.DB_SSL_ENABLE == 'true'
+  ...(process.env.DATABASE_SSL_ENABLED == 'true'
     ? {
-        ssl: process.env.DB_CA_PATH
+        ssl: process.env.DATABASE_CA_PATH
           ? {
-              ca: readFileSync(process.env.DB_CA_PATH),
+              ca: readFileSync(process.env.DATABASE_CA_PATH),
               rejectUnauthorized: true,
             }
           : {
