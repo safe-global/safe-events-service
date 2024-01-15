@@ -7,7 +7,7 @@ WORKDIR /app
 COPY --chown=node:node package*.json tsconfig*.json ./
 
 # Fix arm64 timeouts
-RUN npm config set fetch-timeout 300000
+RUN npm install -g npm@latest && npm config set fetch-timeout 3000000
 
 RUN npm install
 COPY --chown=node:node . .
