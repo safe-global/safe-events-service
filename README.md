@@ -141,7 +141,7 @@ Indexing can take 1-2 minutes in the worst cases and less than 15 seconds in goo
 
 ## Will the webhooks do retries?
 
-Currently no, and please count on that maybe due to some network issues you can lose a webhook. We will work on resilience patters like retrying or removing an integration if service cannot deliver webhooks for some time.
+Currently no, and please count on that maybe due to some network issues you can lose a webhook. We will work on resilience patterns like retrying or removing an integration if service cannot deliver webhooks for some time.
 
 ## Do you plan to have a way to trigger a backfill in case our systems go down?
 
