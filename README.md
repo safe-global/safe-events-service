@@ -149,7 +149,7 @@ In case our systems go down, messages should be stored in our queue and when the
 
 ## Is it available on all chains already?
 
-Yes, and we can configure the chains you want to get events from.
+Yes, and we can configure the [chains you want to get events from](https://docs.safe.global/safe-core-api/supported-networks).
 
 ## What safes do we get webhooks requests for?
 
