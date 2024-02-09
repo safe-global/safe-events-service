@@ -78,7 +78,23 @@ export class WebhookService {
     return firstValueFrom(
       this.httpService.post(url, parsedMessage, { headers }).pipe(
         catchError((error: AxiosError) => {
-          this.logger.error(`Error sending event to ${url}`, error);
+          const strMessage = JSON.stringify(parsedMessage);
+          if (error.response !== undefined) {
+            // Response received status code but status code not 2xx
+            this.logger.error(
+              `Error sending event ${strMessage} to ${url}: ${error.response.status} ${error.response.statusText} - ${error.response.data}`,
+            );
+          } else if (error.request !== undefined) {
+            // Request was made but response was not received
+            this.logger.error(
+              `Error sending event ${strMessage} to ${url}: Response not received`,
+            );
+          } else {
+            // Cannot make request
+            this.logger.error(
+              `Error sending event ${strMessage} to ${url}: ${error.message}`,
+            );
+          }
           return of(undefined);
         }),
       ),
