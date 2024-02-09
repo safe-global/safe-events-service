@@ -80,12 +80,12 @@ Some parameters are common to every event:
 }
 ```
 
-### Incoming Ether
+### Incoming/Outgoing Ether
 
 ```json
 {
   "address": "<Ethereum checksummed address>",
-  "type": "INCOMING_ETHER",
+  "type": "INCOMING_ETHER" | "OUTGOING_ETHER",
   "txHash": "<0x-prefixed-hex-string>",
   "value": "<stringified-int>",
   "chainId": "<stringified-int>"
