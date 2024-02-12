@@ -271,7 +271,7 @@ describe('Webhook service', () => {
       );
     });
 
-    it('should log an error message if cannot make request', async () => {
+    it('should log an error message if request cannot be made', async () => {
       const url = 'http://localhost:4815';
       const msg = {
         chainId: '1',
