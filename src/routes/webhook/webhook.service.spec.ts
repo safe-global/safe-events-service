@@ -220,7 +220,9 @@ describe('Webhook service', () => {
         expect.stringContaining(
           `Error sending event ${JSON.stringify(msg)} to ${url}: ${
             axiosResponseMocked.status
-          } ${axiosResponseMocked.statusText} - ${axiosResponseMocked.data}`,
+          } ${axiosResponseMocked.statusText} - ${JSON.stringify(
+            axiosResponseMocked.data,
+          )}`,
         ),
       );
     });
