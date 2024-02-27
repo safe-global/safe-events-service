@@ -81,8 +81,14 @@ export class WebhookService {
           const strMessage = JSON.stringify(parsedMessage);
           if (error.response !== undefined) {
             // Response received status code but status code not 2xx
+            let dataStr: string;
+            try {
+              dataStr = JSON.stringify(error.response.data);
+            } catch (_) {
+              dataStr = 'Cannot parse response data';
+            }
             this.logger.error(
-              `Error sending event ${strMessage} to ${url}: ${error.response.status} ${error.response.statusText} - ${error.response.data}`,
+              `Error sending event ${strMessage} to ${url}: ${error.response.status} ${error.response.statusText} - ${dataStr}`,
             );
           } else if (error.request !== undefined) {
             // Request was made but response was not received
