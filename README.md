@@ -147,7 +147,7 @@ Not currently.
 
 ## Do I need to set up this service to receive the events?
 
-No, this event is only meant to be run by companies running the [Safe Transaction Service](https://github.com/safe-global/safe-transaction-service). You need to develop your own endpoint as explained in How to integrate with the service[How to integrate with the service](#how-to-integrate-with-the-service)
+No, this event is only meant to be run by companies running the [Safe Transaction Service](https://github.com/safe-global/safe-transaction-service). You need to develop your own endpoint as explained in [How to integrate with the service](#how-to-integrate-with-the-service)
 
 ## Can you please share the delivery delay for the webhook?
 
