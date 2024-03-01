@@ -239,6 +239,7 @@ describe('Webhook service', () => {
       const axiosConfigMocked = {
         headers: new AxiosHeaders(),
       };
+      const errorMessageMocked = 'Service Unavailable';
 
       const httpServicePostSpy = jest
         .spyOn(httpService, 'post')
@@ -246,7 +247,7 @@ describe('Webhook service', () => {
           throwError(
             () =>
               new AxiosError(
-                'Service Unavailable',
+                errorMessageMocked,
                 '503',
                 axiosConfigMocked,
                 {},
@@ -268,7 +269,7 @@ describe('Webhook service', () => {
         expect.stringContaining(
           `Error sending event ${JSON.stringify(
             msg,
-          )} to ${url}: Response not received`,
+          )} to ${url}: Response not received. Error: ${errorMessageMocked}`,
         ),
       );
     });
