@@ -93,7 +93,7 @@ export class WebhookService {
           } else if (error.request !== undefined) {
             // Request was made but response was not received
             this.logger.error(
-              `Error sending event ${strMessage} to ${url}: Response not received`,
+              `Error sending event ${strMessage} to ${url}: Response not received. Error: ${error.message}`,
             );
           } else {
             // Cannot make request
