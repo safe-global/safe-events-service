@@ -1,13 +1,20 @@
 import { Injectable, Logger, OnApplicationShutdown } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { IAmqpConnectionManager } from 'amqp-connection-manager/dist/esm/AmqpConnectionManager';
 import { Channel, ConsumeMessage } from 'amqplib';
-import amqp, { ChannelWrapper } from 'amqp-connection-manager';
+import amqp, {
+  ChannelWrapper,
+  AmqpConnectionManager,
+} from 'amqp-connection-manager';
+
+export type QueueConnection = {
+  connection: AmqpConnectionManager;
+  channel: ChannelWrapper;
+};
 
 @Injectable()
 export class QueueProvider implements OnApplicationShutdown {
   private readonly logger = new Logger(QueueProvider.name);
-  private connection: IAmqpConnectionManager | undefined;
+  private connection: AmqpConnectionManager | undefined;
   private channelWrapper: ChannelWrapper | undefined;
 
   constructor(private readonly configService: ConfigService) {}
@@ -43,7 +50,7 @@ export class QueueProvider implements OnApplicationShutdown {
     return this.configService.get('AMQP_PREFETCH_MESSAGES') ?? 10;
   }
 
-  async getConnection() {
+  async getConnection(): Promise<QueueConnection> {
     if (
       !this.connection ||
       !this.connection.isConnected() ||
@@ -58,7 +65,7 @@ export class QueueProvider implements OnApplicationShutdown {
     };
   }
 
-  async connect() {
+  async connect(): Promise<QueueConnection> {
     this.logger.debug(
       'Connecting to RabbitMQ and creating exchange/queue if not created',
     );
