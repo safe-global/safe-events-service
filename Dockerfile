@@ -16,7 +16,7 @@ RUN npm run build
 # PRODUCTION CONTAINER
 #
 ENV NODE_ENV production
-FROM node:18 as production
+FROM node:20 as production
 USER node
 EXPOSE 3000
 WORKDIR /app
