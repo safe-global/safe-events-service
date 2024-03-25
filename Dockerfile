@@ -1,7 +1,7 @@
 #
 # BUILD CONTAINER
 #
-FROM node:18 as base
+FROM node:20 as base
 USER node
 WORKDIR /app
 COPY --chown=node:node package*.json tsconfig*.json ./
