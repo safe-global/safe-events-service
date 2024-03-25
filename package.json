@@ -45,7 +45,7 @@
     "reflect-metadata": "^0.2.1",
     "rxjs": "^7.8.1",
     "typeorm": "^0.3.20",
-    "viem": "^2.9.0"
+    "viem": "^2.9.1"
   },
   "devDependencies": {
     "@nestjs/cli": "^10.3.2",
