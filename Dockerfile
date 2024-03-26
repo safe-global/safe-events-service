@@ -6,6 +6,9 @@ USER node
 WORKDIR /app
 COPY --chown=node:node package*.json tsconfig*.json ./
 
+#FIXME Remove this after https://github.com/npm/cli/issues/4828 is closed
+RUN rm package-lock.json
+
 # Fix arm64 timeouts
 RUN npm install --fetch-timeout 3600000 --maxsockets 1
 COPY --chown=node:node . .
