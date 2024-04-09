@@ -8,7 +8,7 @@ import { QueueProvider } from './queue.provider';
 
 @Injectable()
 export class QueueHealthIndicator extends HealthIndicator {
-  constructor(private queueProvider: QueueProvider) {
+  constructor(private readonly queueProvider: QueueProvider) {
     super();
   }
 

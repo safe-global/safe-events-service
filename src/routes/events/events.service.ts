@@ -12,7 +12,6 @@ export class EventsService implements OnApplicationBootstrap {
 
   constructor(
     private readonly queueProvider: QueueProvider,
-
     private readonly webhookService: WebhookService,
   ) {}
 

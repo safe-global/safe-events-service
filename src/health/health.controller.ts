@@ -1,4 +1,5 @@
 import { Controller, Get } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import {
   HealthCheckService,
   HealthCheck,
@@ -11,16 +12,20 @@ import { ApiTags } from '@nestjs/swagger';
 @Controller('health')
 export class HealthController {
   constructor(
-    private health: HealthCheckService,
-    private db: TypeOrmHealthIndicator,
-    private queue: QueueHealthIndicator,
+    private readonly configService: ConfigService,
+    private readonly health: HealthCheckService,
+    private readonly db: TypeOrmHealthIndicator,
+    private readonly queue: QueueHealthIndicator,
   ) {}
 
   @Get()
   @HealthCheck()
   check() {
     return this.health.check([
-      () => this.db.pingCheck('database'),
+      () =>
+        this.db.pingCheck('database', {
+          timeout: this.configService.get('DB_HEALTH_CHECK_TIMEOUT', 5000),
+        }),
       () => this.queue.isHealthy('queue'),
     ]);
   }
