@@ -5,6 +5,7 @@ import { HealthCheckResult, HealthCheckStatus } from '@nestjs/terminus';
 import { ConfigModule } from '@nestjs/config';
 import { DatabaseModule } from '../datasources/db/database.module';
 import { QueueProvider } from '../datasources/queue/queue.provider';
+import { Health, HealthStatus } from './health.entities';
 
 describe('HealthController', () => {
   let controller: HealthController;
@@ -27,7 +28,13 @@ describe('HealthController', () => {
     await queueProvider.disconnect();
   });
 
-  it('health check should be ok', async () => {
+  it('liveness check should be ok', async () => {
+    const healthResult: Health = await controller.liveness();
+    const expected: Health = new Health(HealthStatus.OK);
+    expect(healthResult).toStrictEqual(expected);
+  });
+
+  it('readiness check should be ok', async () => {
     const healthCheckResult: HealthCheckResult = await controller.check();
     const expected: HealthCheckStatus = 'ok';
     expect(healthCheckResult.status).toBe(expected);

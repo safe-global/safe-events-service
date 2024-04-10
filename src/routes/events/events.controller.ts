@@ -11,8 +11,8 @@ import { EventsService } from './events.service';
 import { getAddress, isAddress } from 'viem';
 import { BasicAuthGuard } from '../../auth/basic-auth.guard';
 
-@ApiTags('events')
 @Controller('events')
+@ApiTags('events')
 export class EventsController {
   constructor(private readonly eventsService: EventsService) {}
 

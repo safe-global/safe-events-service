@@ -6,10 +6,11 @@ import {
   TypeOrmHealthIndicator,
 } from '@nestjs/terminus';
 import { QueueHealthIndicator } from '../datasources/queue/queue.health';
-import { ApiTags } from '@nestjs/swagger';
+import { ApiTags, ApiOkResponse } from '@nestjs/swagger';
+import { Health, HealthStatus } from './health.entities';
 
-@ApiTags('health')
 @Controller('health')
+@ApiTags('health')
 export class HealthController {
   constructor(
     private readonly configService: ConfigService,
@@ -18,7 +19,13 @@ export class HealthController {
     private readonly queue: QueueHealthIndicator,
   ) {}
 
-  @Get()
+  @Get('live')
+  @ApiOkResponse({ type: Health })
+  liveness(): Health {
+    return new Health(HealthStatus.OK);
+  }
+
+  @Get('ready')
   @HealthCheck()
   check() {
     return this.health.check([
