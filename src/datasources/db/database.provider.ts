@@ -4,7 +4,7 @@ import { dataSourceOptions } from './database.options';
 
 export const databaseProvider = TypeOrmModule.forRootAsync({
   imports: [ConfigModule],
-  useFactory: (configService: ConfigService) => ({
+  useFactory: async (configService: ConfigService) => ({
     ...dataSourceOptions,
     url: configService.get('DATABASE_URL'),
     autoLoadEntities: true,
