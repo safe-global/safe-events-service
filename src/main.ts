@@ -2,7 +2,7 @@ import { NestFactory } from '@nestjs/core';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { AppModule } from './app.module';
 import { JsonConsoleLogger } from './logging/json-logger';
-import { INestApplication } from '@nestjs/common';
+import { INestApplication, LogLevel } from '@nestjs/common';
 
 /**
  * Configure swagger for app
@@ -18,15 +18,36 @@ function setupSwagger(app: INestApplication, basePath: string) {
   SwaggerModule.setup(basePath, app, document);
 }
 
+function getLogLevels(): LogLevel[] {
+  const default_log_level = 'log';
+  const all_log_levels: LogLevel[] = [
+    'verbose',
+    'debug',
+    'log',
+    'warn',
+    'error',
+    'fatal',
+  ];
+  let log_level = (
+    process.env.LOG_LEVEL || default_log_level
+  ).toLowerCase() as LogLevel;
+  if (!all_log_levels.includes(log_level)) {
+    console.log(`LOG_LEVEL ${log_level} is not valid`);
+    log_level = default_log_level;
+  }
+
+  return all_log_levels.slice(all_log_levels.indexOf(log_level));
+}
+
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
     logger:
       process.env.NODE_ENV === 'production'
         ? new JsonConsoleLogger('', {
-            logLevels: ['log', 'error', 'warn'],
+            logLevels: getLogLevels(),
             timestamp: false,
           })
-        : ['verbose', 'debug', 'log', 'error', 'warn'],
+        : ['verbose', 'debug', 'log', 'fatal', 'error', 'warn'],
   });
   const basePath = process.env.URL_BASE_PATH || '';
   app.setGlobalPrefix(basePath);
