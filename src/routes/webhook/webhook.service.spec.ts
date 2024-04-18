@@ -9,7 +9,7 @@ import { TxServiceEventType } from '../events/event.dto';
 import { HttpService } from '@nestjs/axios';
 import { Observable } from 'rxjs';
 import { AxiosError, AxiosHeaders, AxiosResponse } from 'axios';
-import { throwError } from 'rxjs';
+import { throwError, of } from 'rxjs';
 
 describe('Webhook service', () => {
   let httpService: HttpService;
@@ -303,6 +303,41 @@ describe('Webhook service', () => {
           `Error sending event ${JSON.stringify(
             msg,
           )} to ${url}: ${errorMessage}`,
+        ),
+      );
+    });
+
+    it('should log an debug message if request is successful.', async () => {
+      const url = 'http://localhost:4815';
+      const msg = {
+        chainId: '1',
+        type: 'SAFE_CREATED' as TxServiceEventType,
+        text: 'hello',
+        address: '0x0275FC2adfF11270F3EcC4D2F7Aa0a9784601Ca6',
+      };
+
+      const httpServicePostSpy = jest
+        .spyOn(httpService, 'post')
+        .mockReturnValue(
+          of({
+            status: 204,
+            statusText: 'No Content',
+            data: null,
+          } as AxiosResponse<any>),
+        );
+      const loggerErrorSpy = jest
+        .spyOn(Logger.prototype, 'debug')
+        .mockImplementation();
+
+      await webhookService.postWebhook(msg, url, '');
+
+      expect(httpServicePostSpy).toHaveBeenCalledTimes(1);
+      expect(httpServicePostSpy).toHaveBeenCalledWith(url, msg, {
+        headers: {},
+      });
+      expect(loggerErrorSpy).toHaveBeenCalledWith(
+        expect.stringMatching(
+          /Event \{.*\} sent to http:\/\/localhost:4815\. \[Timestamp: \d+, Response time: \d+ms, Response: 204 null\]/,
         ),
       );
     });

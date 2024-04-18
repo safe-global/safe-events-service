@@ -69,26 +69,32 @@ export class WebhookService {
     return Promise.all(responses);
   }
 
+  parseResponseData(responseData: any): string {
+    let dataStr: string;
+    try {
+      dataStr = JSON.stringify(responseData);
+    } catch (_) {
+      dataStr = 'Cannot parse response data';
+    }
+    return dataStr;
+  }
+
   postWebhook(
     parsedMessage: TxServiceEvent,
     url: string,
     authorization: string,
   ): Promise<AxiosResponse | undefined> {
     const headers = authorization ? { Authorization: authorization } : {};
+    const startTime = Date.now();
+    const strMessage = JSON.stringify(parsedMessage);
     return firstValueFrom(
       this.httpService.post(url, parsedMessage, { headers }).pipe(
         catchError((error: AxiosError) => {
-          const strMessage = JSON.stringify(parsedMessage);
           if (error.response !== undefined) {
             // Response received status code but status code not 2xx
-            let dataStr: string;
-            try {
-              dataStr = JSON.stringify(error.response.data);
-            } catch (_) {
-              dataStr = 'Cannot parse response data';
-            }
+            const responseData = this.parseResponseData(error.response.data);
             this.logger.error(
-              `Error sending event ${strMessage} to ${url}: ${error.response.status} ${error.response.statusText} - ${dataStr}`,
+              `Error sending event ${strMessage} to ${url}: ${error.response.status} ${error.response.statusText} - ${responseData}`,
             );
           } else if (error.request !== undefined) {
             // Request was made but response was not received
@@ -104,6 +110,16 @@ export class WebhookService {
           return of(undefined);
         }),
       ),
-    );
+    ).then((response: AxiosResponse | undefined) => {
+      if (response) {
+        const endTime = Date.now();
+        const elapsedTime = endTime - startTime;
+        const responseData = this.parseResponseData(response.data);
+        this.logger.debug(
+          `Event ${strMessage} sent to ${url}. [Timestamp: ${startTime}, Response time: ${elapsedTime}ms, Response: ${response.status} ${responseData}]`,
+        );
+      }
+      return response;
+    });
   }
 }
