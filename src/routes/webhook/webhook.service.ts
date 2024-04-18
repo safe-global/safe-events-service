@@ -24,10 +24,10 @@ export class WebhookService {
 
   /**
    *
-   * @returns webhooks cache ttl from `WEBHOOKS_CACHE_TTL`, if not defined 300_000 ms (5 seconds)
+   * @returns Database configuration cache, if not defined 300_000 ms (5 minutes)
    */
   getWebhooksCacheTTL(): number {
-    return this.configService.get('WEBHOOKS_CACHE_TTL') ?? 300_000;
+    return Number(this.configService.get('WEBHOOKS_CACHE_TTL', 300_000));
   }
 
   findAllActive(): Promise<Webhook[]> {
