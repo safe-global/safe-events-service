@@ -337,7 +337,7 @@ describe('Webhook service', () => {
       });
       expect(loggerErrorSpy).toHaveBeenCalledWith(
         expect.stringMatching(
-          /Success sending event \{.*\} to http:\/\/localhost:4815\: 204 - null \[Timestamp: \d+, Response time: \d+ms\]/,
+          /Success sending event \{.*\} to http:\/\/localhost:4815\: 204 - null \[timestamp: \d+, responseTime: \d+ms\]/,
         ),
       );
     });
