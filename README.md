@@ -185,7 +185,7 @@ We don't send notifications when a reorg happens. We send the events as soon as 
 
 ## Installation
 
-Node 18 LTS is required.
+Node 20 LTS is required.
 
 ```bash
 $ npm install
