@@ -31,7 +31,9 @@ export class HealthController {
     return this.health.check([
       () =>
         this.db.pingCheck('database', {
-          timeout: this.configService.get('DB_HEALTH_CHECK_TIMEOUT', 5000),
+          timeout: Number(
+            this.configService.get('DB_HEALTH_CHECK_TIMEOUT', 5_000),
+          ),
         }),
       () => this.queue.isHealthy('queue'),
     ]);

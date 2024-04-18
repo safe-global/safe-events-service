@@ -15,8 +15,8 @@ import { HttpModule } from '@nestjs/axios';
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: async (configService: ConfigService) => ({
-        timeout: configService.get('HTTP_TIMEOUT') ?? 5000,
-        maxRedirects: configService.get('HTTP_MAX_REDIRECTS') ?? 0,
+        timeout: Number(configService.get('HTTP_TIMEOUT', 5_000)),
+        maxRedirects: Number(configService.get('HTTP_MAX_REDIRECTS', 0)),
       }),
     }),
   ],

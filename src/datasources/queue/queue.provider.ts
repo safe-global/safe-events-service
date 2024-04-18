@@ -21,23 +21,34 @@ export class QueueProvider implements OnApplicationShutdown {
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   onApplicationShutdown(signal?: string) {
-    // Not enabled by default
-    // https://docs.nestjs.com/fundamentals/lifecycle-events#application-shutdown
+    // Not enabled by default https://docs.nestjs.com/fundamentals/lifecycle-events#application-shutdown
     return this.disconnect();
   }
 
+  /**
+   *
+   * @returns AMQP Url
+   */
   getAmqpUrl(): string {
     return this.configService.getOrThrow('AMQP_URL');
   }
 
+  /**
+   *
+   * @returns AMQP Queue Name to consum from, if it doesn't exist it will be created
+   */
   getQueueName(): string {
-    return this.configService.get('AMQP_QUEUE') ?? 'safe-events-service';
+    return this.configService.get('AMQP_QUEUE', 'safe-events-service');
   }
 
+  /**
+   *
+   * @returns AMQP Exchange Name to bind the queue to
+   */
   getExchangeName(): string {
-    return (
-      this.configService.get('AMQP_EXCHANGE') ??
-      'safe-transaction-service-events'
+    return this.configService.get(
+      'AMQP_EXCHANGE',
+      'safe-transaction-service-events',
     );
   }
 
@@ -47,7 +58,7 @@ export class QueueProvider implements OnApplicationShutdown {
    *          at the same time
    */
   getPrefetchMessages(): number {
-    return this.configService.get('AMQP_PREFETCH_MESSAGES') ?? 10;
+    return Number(this.configService.get('AMQP_PREFETCH_MESSAGES', 10));
   }
 
   async getConnection(): Promise<QueueConnection> {
