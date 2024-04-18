@@ -116,7 +116,7 @@ export class WebhookService {
         const elapsedTime = endTime - startTime;
         const responseData = this.parseResponseData(response.data);
         this.logger.debug(
-          `Success sending event ${strMessage} to ${url}: ${response.status} - ${responseData} [timestamp: ${startTime}, responseTime: ${elapsedTime}ms]`,
+          `Success sending event ${strMessage} to ${url}: ${response.status} - ${responseData} [startTime: ${startTime}, endTime: ${endTime}, responseTime: ${elapsedTime}ms]`,
         );
       }
       return response;
