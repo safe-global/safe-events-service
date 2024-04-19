@@ -30,7 +30,9 @@ export class QueueProvider implements OnApplicationShutdown {
    * @returns AMQP Url
    */
   getAmqpUrl(): string {
-    return this.configService.getOrThrow('AMQP_URL');
+    const value = this.configService.getOrThrow('AMQP_URL');
+    this.logger.log(`AMQP_URL=${value}`);
+    return value;
   }
 
   /**
@@ -38,7 +40,9 @@ export class QueueProvider implements OnApplicationShutdown {
    * @returns AMQP Queue Name to consum from, if it doesn't exist it will be created
    */
   getQueueName(): string {
-    return this.configService.get('AMQP_QUEUE', 'safe-events-service');
+    const value = this.configService.get('AMQP_QUEUE', 'safe-events-service');
+    this.logger.log(`AMQP_QUEUE=${value}`);
+    return value;
   }
 
   /**
@@ -46,10 +50,12 @@ export class QueueProvider implements OnApplicationShutdown {
    * @returns AMQP Exchange Name to bind the queue to
    */
   getExchangeName(): string {
-    return this.configService.get(
+    const value = this.configService.get(
       'AMQP_EXCHANGE',
       'safe-transaction-service-events',
     );
+    this.logger.log(`AMQP_EXCHANGE=${value}`);
+    return value;
   }
 
   /**
@@ -58,7 +64,9 @@ export class QueueProvider implements OnApplicationShutdown {
    *          at the same time
    */
   getPrefetchMessages(): number {
-    return Number(this.configService.get('AMQP_PREFETCH_MESSAGES', 10));
+    const value = Number(this.configService.get('AMQP_PREFETCH_MESSAGES', 10));
+    this.logger.log(`AMQP_PREFETCH_MESSAGES=${value}`);
+    return value;
   }
 
   async getConnection(): Promise<QueueConnection> {
@@ -142,10 +150,13 @@ export class QueueProvider implements OnApplicationShutdown {
       const consumer = await channel.consume(
         this.getQueueName(),
         (message: ConsumeMessage) => {
-          if (message.content) func(message.content.toString());
+          if (message.content) {
+            func(message.content.toString());
+            channel.ack(message);
+          }
         },
         {
-          noAck: true,
+          noAck: false,
         },
       );
       this.logger.debug(
