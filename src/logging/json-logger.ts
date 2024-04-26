@@ -1,16 +1,11 @@
 import { ConsoleLogger, LogLevel } from '@nestjs/common';
-import { TxServiceEvent } from '../routes/events/event.dto';
 
+/**
+ * All the fields provided will be part of the JSON log (instead of a stringified JSON)
+ */
 interface JsonEventMessage {
   message: string;
-  event: TxServiceEvent;
-}
-
-function isJsonEventMessage(message: unknown): message is JsonEventMessage {
-  const messageCasted = message as JsonEventMessage;
-  return (
-    messageCasted.message !== undefined && messageCasted.message !== undefined
-  );
+  [otherProperties: string]: unknown;
 }
 
 export class JsonConsoleLogger extends ConsoleLogger {
@@ -30,7 +25,7 @@ export class JsonConsoleLogger extends ConsoleLogger {
 
   protected formatMessage(
     logLevel: LogLevel,
-    message: unknown,
+    message: string | JsonEventMessage,
     pidMessage: string,
     formattedLogLevel: string,
     contextMessage: string,
@@ -38,16 +33,15 @@ export class JsonConsoleLogger extends ConsoleLogger {
   ): string {
     const timestamp = Date.now();
     const dateAsString = new Date(timestamp).toISOString();
-    const logJson: any = {
+    let logJson: any = {
       timestamp: dateAsString,
       context: contextMessage,
       level: logLevel,
     };
-    if (isJsonEventMessage(message)) {
-      logJson.message = message.message;
-      logJson.event = message.event;
-    } else {
+    if (typeof message === 'string') {
       logJson.message = this.stringifyMessage(message, logLevel);
+    } else {
+      logJson = { ...logJson, ...message };
     }
 
     return `${JSON.stringify(logJson)}\n`;

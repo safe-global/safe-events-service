@@ -70,6 +70,9 @@ export class WebhookService {
   }
 
   parseResponseData(responseData: any): string {
+    if (typeof responseData === 'string') {
+      return responseData;
+    }
     let dataStr: string;
     try {
       dataStr = JSON.stringify(responseData);
@@ -93,20 +96,38 @@ export class WebhookService {
             // Response received status code but status code not 2xx
             const responseData = this.parseResponseData(error.response.data);
             this.logger.error({
-              message: `Error sending event to ${url}: ${error.response.status} ${error.response.statusText} - ${responseData}`,
+              message: `Error sending event`,
               event: parsedMessage,
+              httpRequest: {
+                url: url,
+                startTime: startTime,
+              },
+              httpResponse: {
+                data: responseData,
+                statusCode: error.response.status,
+              },
             });
           } else if (error.request !== undefined) {
             // Request was made but response was not received
             this.logger.error({
-              message: `Error sending event to ${url}: Response not received. Error: ${error.message}`,
+              message: `Error sending event: Response not received. Error: ${error.message}`,
               event: parsedMessage,
+              httpRequest: {
+                url: url,
+                startTime: startTime,
+              },
+              httpResponse: null,
             });
           } else {
             // Cannot make request
             this.logger.error({
-              message: `Error sending event to ${url}: ${error.message}`,
+              message: `Error sending event: ${error.message}`,
               event: parsedMessage,
+              httpRequest: {
+                url: url,
+                startTime: startTime,
+              },
+              httpResponse: null,
             });
           }
           return of(undefined);
@@ -118,8 +139,18 @@ export class WebhookService {
         const elapsedTime = endTime - startTime;
         const responseData = this.parseResponseData(response.data);
         this.logger.debug({
-          message: `Success sending event to ${url}: ${response.status} - ${responseData} [startTime: ${startTime}, endTime: ${endTime}, responseTime: ${elapsedTime}ms]`,
+          message: `Success sending event`,
           event: parsedMessage,
+          httpRequest: {
+            url: url,
+            startTime: startTime,
+            endTime: endTime,
+          },
+          httpResponse: {
+            data: responseData,
+            statusCode: response.status,
+            elapsedTimeMs: elapsedTime,
+          },
         });
       }
       return response;

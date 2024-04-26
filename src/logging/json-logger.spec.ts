@@ -15,13 +15,13 @@ describe('JsonLogger', () => {
       timestamp: false,
     });
 
-    expect(dateNowSpy).toBeCalledTimes(0);
-    expect(consoleLogSpy).toBeCalledTimes(0);
+    expect(dateNowSpy).toHaveBeenCalledTimes(0);
+    expect(consoleLogSpy).toHaveBeenCalledTimes(0);
     consoleLogger.debug('test');
     // Internal logger Date.now() and our Date.now() call
-    expect(dateNowSpy).toBeCalledTimes(2);
-    expect(consoleLogSpy).toBeCalledTimes(1);
-    expect(consoleLogSpy).toBeCalledWith(
+    expect(dateNowSpy).toHaveBeenCalledTimes(2);
+    expect(consoleLogSpy).toHaveBeenCalledTimes(1);
+    expect(consoleLogSpy).toHaveBeenCalledWith(
       '{"timestamp":"2000-05-19T00:00:00.000Z","context":"JsonLoggerTest","level":"debug","message":"test"}\n',
     );
   });
@@ -30,16 +30,18 @@ describe('JsonLogger', () => {
       timestamp: false,
     });
 
-    //dateNowSpy.mockClear()
-    //consoleLogSpy.mockClear()
-    expect(dateNowSpy).toBeCalledTimes(0);
-    expect(consoleLogSpy).toBeCalledTimes(0);
-    consoleLogger.debug({ message: 'testJSON', event: { chainId: 1 } });
+    expect(dateNowSpy).toHaveBeenCalledTimes(0);
+    expect(consoleLogSpy).toHaveBeenCalledTimes(0);
+    consoleLogger.debug({
+      message: 'testJSON',
+      event: { chainId: 1 },
+      anotherField: 'test',
+    });
     // Internal logger Date.now() and our Date.now() call
-    expect(dateNowSpy).toBeCalledTimes(2);
-    expect(consoleLogSpy).toBeCalledTimes(1);
-    expect(consoleLogSpy).toBeCalledWith(
-      '{"timestamp":"2000-05-19T00:00:00.000Z","context":"JsonLoggerTest","level":"debug","message":"testJSON","event":{"chainId":1}}\n',
+    expect(dateNowSpy).toHaveBeenCalledTimes(2);
+    expect(consoleLogSpy).toHaveBeenCalledTimes(1);
+    expect(consoleLogSpy).toHaveBeenCalledWith(
+      '{"timestamp":"2000-05-19T00:00:00.000Z","context":"JsonLoggerTest","level":"debug","message":"testJSON","event":{"chainId":1},"anotherField":"test"}\n',
     );
   });
 });

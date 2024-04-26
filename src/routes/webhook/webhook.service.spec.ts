@@ -148,7 +148,7 @@ describe('Webhook service', () => {
 
     it('shoud post with authentication', async () => {
       const url = 'http://localhost:4815';
-      const msg = {
+      const event = {
         chainId: '1',
         type: 'SAFE_CREATED' as TxServiceEventType,
         text: 'hello',
@@ -166,10 +166,14 @@ describe('Webhook service', () => {
             });
           return observableResponse;
         });
-      const results = await webhookService.postWebhook(msg, url, authorization);
+      const results = await webhookService.postWebhook(
+        event,
+        url,
+        authorization,
+      );
       expect(results).toBe(axiosResponseMocked);
       expect(httpServicePostSpy).toHaveBeenCalledTimes(1);
-      expect(httpServicePostSpy).toHaveBeenCalledWith(url, msg, {
+      expect(httpServicePostSpy).toHaveBeenCalledWith(url, event, {
         headers: { Authorization: authorization },
       });
     });
@@ -218,13 +222,15 @@ describe('Webhook service', () => {
       });
       expect(loggerErrorSpy).toHaveBeenCalledWith({
         event: event,
-        message: expect.stringContaining(
-          `Error sending event to ${url}: ${
-            axiosResponseMocked.status
-          } ${axiosResponseMocked.statusText} - ${JSON.stringify(
-            axiosResponseMocked.data,
-          )}`,
-        ),
+        message: 'Error sending event',
+        httpRequest: {
+          startTime: expect.any(Number),
+          url: url,
+        },
+        httpResponse: {
+          data: axiosResponseMocked.data,
+          statusCode: axiosResponseMocked.status,
+        },
       });
     });
 
@@ -267,10 +273,13 @@ describe('Webhook service', () => {
         headers: {},
       });
       expect(loggerErrorSpy).toHaveBeenCalledWith({
+        message: `Error sending event: Response not received. Error: ${errorMessageMocked}`,
         event: event,
-        message: expect.stringContaining(
-          `Error sending event to ${url}: Response not received. Error: ${errorMessageMocked}`,
-        ),
+        httpRequest: {
+          url: url,
+          startTime: expect.any(Number),
+        },
+        httpResponse: null,
       });
     });
 
@@ -299,10 +308,13 @@ describe('Webhook service', () => {
         headers: {},
       });
       expect(loggerErrorSpy).toHaveBeenCalledWith({
+        message: `Error sending event: ${errorMessage}`,
         event: event,
-        message: expect.stringContaining(
-          `Error sending event to ${url}: ${errorMessage}`,
-        ),
+        httpRequest: {
+          url: url,
+          startTime: expect.any(Number),
+        },
+        httpResponse: null,
       });
     });
 
@@ -336,9 +348,17 @@ describe('Webhook service', () => {
       });
       expect(loggerErrorSpy).toHaveBeenCalledWith({
         event: event,
-        message: expect.stringMatching(
-          /Success sending event to http:\/\/localhost:4815\: 204 - null \[startTime: \d+, endTime: \d+, responseTime: \d+ms\]/,
-        ),
+        message: 'Success sending event',
+        httpRequest: {
+          endTime: expect.any(Number),
+          startTime: expect.any(Number),
+          url: url,
+        },
+        httpResponse: {
+          data: 'null',
+          elapsedTimeMs: 0,
+          statusCode: 204,
+        },
       });
     });
   });
