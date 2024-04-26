@@ -96,7 +96,7 @@ export class WebhookService {
             // Response received status code but status code not 2xx
             const responseData = this.parseResponseData(error.response.data);
             this.logger.error({
-              message: `Error sending event`,
+              message: 'Error sending event',
               event: parsedMessage,
               httpRequest: {
                 url: url,
@@ -139,7 +139,7 @@ export class WebhookService {
         const elapsedTime = endTime - startTime;
         const responseData = this.parseResponseData(response.data);
         this.logger.debug({
-          message: `Success sending event`,
+          message: 'Success sending event',
           event: parsedMessage,
           httpRequest: {
             url: url,

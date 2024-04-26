@@ -33,12 +33,12 @@ describe('Webhook service', () => {
 
       let results = await webhookService.getCachedActiveWebhooks();
       expect(results).toEqual(expected);
-      expect(findAllActiveSpy).toBeCalledTimes(1);
+      expect(findAllActiveSpy).toHaveBeenCalledTimes(1);
 
       // As it's cached, it shouldn't be called again
       results = await webhookService.getCachedActiveWebhooks();
       expect(results).toEqual(expected);
-      expect(findAllActiveSpy).toBeCalledTimes(1);
+      expect(findAllActiveSpy).toHaveBeenCalledTimes(1);
     });
   });
 
