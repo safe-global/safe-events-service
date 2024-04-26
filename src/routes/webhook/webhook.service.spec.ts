@@ -176,7 +176,7 @@ describe('Webhook service', () => {
 
     it('should log an error message if response is received with non-2xx status code', async () => {
       const url = 'http://localhost:4815';
-      const msg = {
+      const event = {
         chainId: '1',
         type: 'SAFE_CREATED' as TxServiceEventType,
         text: 'hello',
@@ -210,26 +210,27 @@ describe('Webhook service', () => {
         .spyOn(Logger.prototype, 'error')
         .mockImplementation();
 
-      await webhookService.postWebhook(msg, url, '');
+      await webhookService.postWebhook(event, url, '');
 
       expect(httpServicePostSpy).toHaveBeenCalledTimes(1);
-      expect(httpServicePostSpy).toHaveBeenCalledWith(url, msg, {
+      expect(httpServicePostSpy).toHaveBeenCalledWith(url, event, {
         headers: {},
       });
-      expect(loggerErrorSpy).toHaveBeenCalledWith(
-        expect.stringContaining(
-          `Error sending event ${JSON.stringify(msg)} to ${url}: ${
+      expect(loggerErrorSpy).toHaveBeenCalledWith({
+        event: event,
+        message: expect.stringContaining(
+          `Error sending event to ${url}: ${
             axiosResponseMocked.status
           } ${axiosResponseMocked.statusText} - ${JSON.stringify(
             axiosResponseMocked.data,
           )}`,
         ),
-      );
+      });
     });
 
     it('should log an error message if response is not received', async () => {
       const url = 'http://localhost:4815';
-      const msg = {
+      const event = {
         chainId: '1',
         type: 'SAFE_CREATED' as TxServiceEventType,
         text: 'hello',
@@ -259,24 +260,23 @@ describe('Webhook service', () => {
         .spyOn(Logger.prototype, 'error')
         .mockImplementation();
 
-      await webhookService.postWebhook(msg, url, '');
+      await webhookService.postWebhook(event, url, '');
 
       expect(httpServicePostSpy).toHaveBeenCalledTimes(1);
-      expect(httpServicePostSpy).toHaveBeenCalledWith(url, msg, {
+      expect(httpServicePostSpy).toHaveBeenCalledWith(url, event, {
         headers: {},
       });
-      expect(loggerErrorSpy).toHaveBeenCalledWith(
-        expect.stringContaining(
-          `Error sending event ${JSON.stringify(
-            msg,
-          )} to ${url}: Response not received. Error: ${errorMessageMocked}`,
+      expect(loggerErrorSpy).toHaveBeenCalledWith({
+        event: event,
+        message: expect.stringContaining(
+          `Error sending event to ${url}: Response not received. Error: ${errorMessageMocked}`,
         ),
-      );
+      });
     });
 
     it('should log an error message if request cannot be made', async () => {
       const url = 'http://localhost:4815';
-      const msg = {
+      const event = {
         chainId: '1',
         type: 'SAFE_CREATED' as TxServiceEventType,
         text: 'hello',
@@ -292,24 +292,23 @@ describe('Webhook service', () => {
         .spyOn(Logger.prototype, 'error')
         .mockImplementation();
 
-      await webhookService.postWebhook(msg, url, '');
+      await webhookService.postWebhook(event, url, '');
 
       expect(httpServicePostSpy).toHaveBeenCalledTimes(1);
-      expect(httpServicePostSpy).toHaveBeenCalledWith(url, msg, {
+      expect(httpServicePostSpy).toHaveBeenCalledWith(url, event, {
         headers: {},
       });
-      expect(loggerErrorSpy).toHaveBeenCalledWith(
-        expect.stringContaining(
-          `Error sending event ${JSON.stringify(
-            msg,
-          )} to ${url}: ${errorMessage}`,
+      expect(loggerErrorSpy).toHaveBeenCalledWith({
+        event: event,
+        message: expect.stringContaining(
+          `Error sending event to ${url}: ${errorMessage}`,
         ),
-      );
+      });
     });
 
-    it('should log an debug message if request is successful.', async () => {
+    it('should log a debug message if request is successful.', async () => {
       const url = 'http://localhost:4815';
-      const msg = {
+      const event = {
         chainId: '1',
         type: 'SAFE_CREATED' as TxServiceEventType,
         text: 'hello',
@@ -329,17 +328,18 @@ describe('Webhook service', () => {
         .spyOn(Logger.prototype, 'debug')
         .mockImplementation();
 
-      await webhookService.postWebhook(msg, url, '');
+      await webhookService.postWebhook(event, url, '');
 
       expect(httpServicePostSpy).toHaveBeenCalledTimes(1);
-      expect(httpServicePostSpy).toHaveBeenCalledWith(url, msg, {
+      expect(httpServicePostSpy).toHaveBeenCalledWith(url, event, {
         headers: {},
       });
-      expect(loggerErrorSpy).toHaveBeenCalledWith(
-        expect.stringMatching(
-          /Success sending event \{.*\} to http:\/\/localhost:4815\: 204 - null \[startTime: \d+, endTime: \d+, responseTime: \d+ms\]/,
+      expect(loggerErrorSpy).toHaveBeenCalledWith({
+        event: event,
+        message: expect.stringMatching(
+          /Success sending event to http:\/\/localhost:4815\: 204 - null \[startTime: \d+, endTime: \d+, responseTime: \d+ms\]/,
         ),
-      );
+      });
     });
   });
 });
