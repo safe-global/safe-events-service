@@ -36,7 +36,7 @@
     "@nestjs/typeorm": "^10.0.2",
     "adminjs": "^7.4.1",
     "amqp-connection-manager": "^4.1.14",
-    "amqplib": "^0.10.3",
+    "amqplib": "^0.10.4",
     "axios": "^1.6.8",
     "cache-manager": "^5.4.0",
     "express-formidable": "^1.2.0",
