@@ -18,6 +18,7 @@ describe('JsonLogger', () => {
     expect(dateNowSpy).toHaveBeenCalledTimes(0);
     expect(consoleLogSpy).toHaveBeenCalledTimes(0);
     consoleLogger.debug('test');
+
     // Internal logger Date.now() and our Date.now() call
     expect(dateNowSpy).toHaveBeenCalledTimes(2);
     expect(consoleLogSpy).toHaveBeenCalledTimes(1);
@@ -34,14 +35,19 @@ describe('JsonLogger', () => {
     expect(consoleLogSpy).toHaveBeenCalledTimes(0);
     consoleLogger.debug({
       message: 'testJSON',
-      event: { chainId: 1 },
-      anotherField: 'test',
+      messageContext: {
+        event: { chainId: 1 },
+        anotherField: 'test',
+      },
+      ignoredAttribute:
+        'Everything not on message or messageContext is ignored',
     });
+
     // Internal logger Date.now() and our Date.now() call
     expect(dateNowSpy).toHaveBeenCalledTimes(2);
     expect(consoleLogSpy).toHaveBeenCalledTimes(1);
     expect(consoleLogSpy).toHaveBeenCalledWith(
-      '{"timestamp":"2000-05-19T00:00:00.000Z","context":"JsonLoggerTest","level":"debug","message":"testJSON","event":{"chainId":1},"anotherField":"test"}\n',
+      '{"timestamp":"2000-05-19T00:00:00.000Z","context":"JsonLoggerTest","level":"debug","messageContext":{"event":{"chainId":1},"anotherField":"test"}}\n',
     );
   });
 });

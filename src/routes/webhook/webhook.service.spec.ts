@@ -221,15 +221,17 @@ describe('Webhook service', () => {
         headers: {},
       });
       expect(loggerErrorSpy).toHaveBeenCalledWith({
-        event: event,
         message: 'Error sending event',
-        httpRequest: {
-          startTime: expect.any(Number),
-          url: url,
-        },
-        httpResponse: {
-          data: axiosResponseMocked.data,
-          statusCode: axiosResponseMocked.status,
+        messageContext: {
+          event: event,
+          httpRequest: {
+            startTime: expect.any(Number),
+            url: url,
+          },
+          httpResponse: {
+            data: axiosResponseMocked.data,
+            statusCode: axiosResponseMocked.status,
+          },
         },
       });
     });
@@ -274,12 +276,14 @@ describe('Webhook service', () => {
       });
       expect(loggerErrorSpy).toHaveBeenCalledWith({
         message: `Error sending event: Response not received. Error: ${errorMessageMocked}`,
-        event: event,
-        httpRequest: {
-          url: url,
-          startTime: expect.any(Number),
+        messageContext: {
+          event: event,
+          httpRequest: {
+            url: url,
+            startTime: expect.any(Number),
+          },
+          httpResponse: null,
         },
-        httpResponse: null,
       });
     });
 
@@ -309,12 +313,14 @@ describe('Webhook service', () => {
       });
       expect(loggerErrorSpy).toHaveBeenCalledWith({
         message: `Error sending event: ${errorMessage}`,
-        event: event,
-        httpRequest: {
-          url: url,
-          startTime: expect.any(Number),
+        messageContext: {
+          event: event,
+          httpRequest: {
+            url: url,
+            startTime: expect.any(Number),
+          },
+          httpResponse: null,
         },
-        httpResponse: null,
       });
     });
 
@@ -347,17 +353,19 @@ describe('Webhook service', () => {
         headers: {},
       });
       expect(loggerErrorSpy).toHaveBeenCalledWith({
-        event: event,
         message: 'Success sending event',
-        httpRequest: {
-          endTime: expect.any(Number),
-          startTime: expect.any(Number),
-          url: url,
-        },
-        httpResponse: {
-          data: 'null',
-          elapsedTimeMs: 0,
-          statusCode: 204,
+        messageContext: {
+          event: event,
+          httpRequest: {
+            endTime: expect.any(Number),
+            startTime: expect.any(Number),
+            url: url,
+          },
+          httpResponse: {
+            data: 'null',
+            elapsedTimeMs: 0,
+            statusCode: 204,
+          },
         },
       });
     });

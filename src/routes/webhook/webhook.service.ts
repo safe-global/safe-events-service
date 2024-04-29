@@ -97,37 +97,43 @@ export class WebhookService {
             const responseData = this.parseResponseData(error.response.data);
             this.logger.error({
               message: 'Error sending event',
-              event: parsedMessage,
-              httpRequest: {
-                url: url,
-                startTime: startTime,
-              },
-              httpResponse: {
-                data: responseData,
-                statusCode: error.response.status,
+              messageContext: {
+                event: parsedMessage,
+                httpRequest: {
+                  url: url,
+                  startTime: startTime,
+                },
+                httpResponse: {
+                  data: responseData,
+                  statusCode: error.response.status,
+                },
               },
             });
           } else if (error.request !== undefined) {
             // Request was made but response was not received
             this.logger.error({
               message: `Error sending event: Response not received. Error: ${error.message}`,
-              event: parsedMessage,
-              httpRequest: {
-                url: url,
-                startTime: startTime,
+              messageContext: {
+                event: parsedMessage,
+                httpRequest: {
+                  url: url,
+                  startTime: startTime,
+                },
+                httpResponse: null,
               },
-              httpResponse: null,
             });
           } else {
             // Cannot make request
             this.logger.error({
               message: `Error sending event: ${error.message}`,
-              event: parsedMessage,
-              httpRequest: {
-                url: url,
-                startTime: startTime,
+              messageContext: {
+                event: parsedMessage,
+                httpRequest: {
+                  url: url,
+                  startTime: startTime,
+                },
+                httpResponse: null,
               },
-              httpResponse: null,
             });
           }
           return of(undefined);
@@ -140,16 +146,18 @@ export class WebhookService {
         const responseData = this.parseResponseData(response.data);
         this.logger.debug({
           message: 'Success sending event',
-          event: parsedMessage,
-          httpRequest: {
-            url: url,
-            startTime: startTime,
-            endTime: endTime,
-          },
-          httpResponse: {
-            data: responseData,
-            statusCode: response.status,
-            elapsedTimeMs: elapsedTime,
+          messageContext: {
+            event: parsedMessage,
+            httpRequest: {
+              url: url,
+              startTime: startTime,
+              endTime: endTime,
+            },
+            httpResponse: {
+              data: responseData,
+              statusCode: response.status,
+              elapsedTimeMs: elapsedTime,
+            },
           },
         });
       }

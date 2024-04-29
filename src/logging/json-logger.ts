@@ -1,11 +1,18 @@
 import { ConsoleLogger, LogLevel } from '@nestjs/common';
 
 /**
- * All the fields provided will be part of the JSON log (instead of a stringified JSON)
+ * Fields provided will be part of the messageContext field for the JSON log
+ */
+interface MessageContext {
+  [otherProperties: string]: string;
+}
+
+/**
+ * JSON log structure
  */
 interface JsonEventMessage {
   message: string;
-  [otherProperties: string]: unknown;
+  messageContext: MessageContext;
 }
 
 export class JsonConsoleLogger extends ConsoleLogger {
@@ -33,7 +40,7 @@ export class JsonConsoleLogger extends ConsoleLogger {
   ): string {
     const timestamp = Date.now();
     const dateAsString = new Date(timestamp).toISOString();
-    let logJson: any = {
+    const logJson: any = {
       timestamp: dateAsString,
       context: contextMessage,
       level: logLevel,
@@ -41,7 +48,7 @@ export class JsonConsoleLogger extends ConsoleLogger {
     if (typeof message === 'string') {
       logJson.message = this.stringifyMessage(message, logLevel);
     } else {
-      logJson = { ...logJson, ...message };
+      logJson.messageContext = message.messageContext;
     }
 
     return `${JSON.stringify(logJson)}\n`;
