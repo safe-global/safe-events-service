@@ -73,7 +73,9 @@ export class EventsService implements OnApplicationBootstrap {
       txServiceEvent = JSON.parse(message);
       this.logger.log({
         message: `Processing event`,
-        event: txServiceEvent,
+        messageContext: {
+          event: txServiceEvent,
+        },
       });
     } catch (err) {
       this.logger.error(`Cannot parse message as JSON: ${message}`);
