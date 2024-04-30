@@ -3,6 +3,7 @@ import { EventsService } from './events.service';
 import { QueueProvider } from '../../datasources/queue/queue.provider';
 import { WebhookService } from '../webhook/webhook.service';
 import { TxServiceEventType } from './event.dto';
+import { Logger } from '@nestjs/common';
 
 describe('EventsService', () => {
   let eventsService: EventsService;
@@ -51,17 +52,24 @@ describe('EventsService', () => {
         eventsService,
         'pushEventToEventsObservable',
       );
+      const loggerSpy = jest.spyOn(Logger.prototype, 'log');
       const msg = {
         chainId: '1',
         type: 'SAFE_CREATED' as TxServiceEventType,
         hero: 'Saitama',
         address: '0x0275FC2adfF11270F3EcC4D2F7Aa0a9784601Ca6',
       };
+
       await eventsService.processEvent(JSON.stringify(msg));
       expect(postEveryWebhook).toHaveBeenCalledTimes(1);
       expect(postEveryWebhook).toHaveBeenCalledWith(msg);
       expect(pushEventToEventsObservable).toHaveBeenCalledTimes(1);
       expect(pushEventToEventsObservable).toHaveBeenCalledWith(msg);
+      expect(loggerSpy).toHaveBeenCalledTimes(1);
+      expect(loggerSpy).toHaveBeenCalledWith({
+        message: 'Processing event',
+        messageContext: { event: msg },
+      });
     });
   });
 

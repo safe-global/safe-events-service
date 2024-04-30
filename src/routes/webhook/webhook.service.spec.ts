@@ -363,7 +363,7 @@ describe('Webhook service', () => {
           },
           httpResponse: {
             data: 'null',
-            elapsedTimeMs: 0,
+            elapsedTimeMs: expect.any(Number),
             statusCode: 204,
           },
         },
