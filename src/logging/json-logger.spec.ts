@@ -47,7 +47,7 @@ describe('JsonLogger', () => {
     expect(dateNowSpy).toHaveBeenCalledTimes(2);
     expect(consoleLogSpy).toHaveBeenCalledTimes(1);
     expect(consoleLogSpy).toHaveBeenCalledWith(
-      '{"timestamp":"2000-05-19T00:00:00.000Z","context":"JsonLoggerTest","level":"debug","messageContext":{"event":{"chainId":1},"anotherField":"test"}}\n',
+      '{"timestamp":"2000-05-19T00:00:00.000Z","context":"JsonLoggerTest","level":"debug","message":"testJSON","messageContext":{"event":{"chainId":1},"anotherField":"test"}}\n',
     );
   });
 });

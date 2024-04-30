@@ -48,6 +48,7 @@ export class JsonConsoleLogger extends ConsoleLogger {
     if (typeof message === 'string') {
       logJson.message = this.stringifyMessage(message, logLevel);
     } else {
+      logJson.message = message.message;
       logJson.messageContext = message.messageContext;
     }
 
