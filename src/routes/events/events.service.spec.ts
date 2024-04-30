@@ -58,10 +58,10 @@ describe('EventsService', () => {
         address: '0x0275FC2adfF11270F3EcC4D2F7Aa0a9784601Ca6',
       };
       await eventsService.processEvent(JSON.stringify(msg));
-      expect(postEveryWebhook).toBeCalledTimes(1);
-      expect(postEveryWebhook).toBeCalledWith(msg);
-      expect(pushEventToEventsObservable).toBeCalledTimes(1);
-      expect(pushEventToEventsObservable).toBeCalledWith(msg);
+      expect(postEveryWebhook).toHaveBeenCalledTimes(1);
+      expect(postEveryWebhook).toHaveBeenCalledWith(msg);
+      expect(pushEventToEventsObservable).toHaveBeenCalledTimes(1);
+      expect(pushEventToEventsObservable).toHaveBeenCalledWith(msg);
     });
   });
 
@@ -85,11 +85,11 @@ describe('EventsService', () => {
       };
 
       await eventsService.processEvent(JSON.stringify(messageCreated));
-      expect(postEveryWebhook).toBeCalledTimes(1);
-      expect(postEveryWebhook).toBeCalledWith(messageCreated);
+      expect(postEveryWebhook).toHaveBeenCalledTimes(1);
+      expect(postEveryWebhook).toHaveBeenCalledWith(messageCreated);
       await eventsService.processEvent(JSON.stringify(messageConfirmation));
-      expect(postEveryWebhook).toBeCalledTimes(2);
-      expect(postEveryWebhook).toBeCalledWith(messageConfirmation);
+      expect(postEveryWebhook).toHaveBeenCalledTimes(2);
+      expect(postEveryWebhook).toHaveBeenCalledWith(messageConfirmation);
     });
   });
 });

@@ -68,10 +68,13 @@ export class EventsService implements OnApplicationBootstrap {
   }
 
   processEvent(message: string): Promise<(AxiosResponse | undefined)[]> {
-    this.logger.log(`Processing event ${message}`);
     let txServiceEvent: TxServiceEvent;
     try {
       txServiceEvent = JSON.parse(message);
+      this.logger.log({
+        message: `Processing event`,
+        event: txServiceEvent,
+      });
     } catch (err) {
       this.logger.error(`Cannot parse message as JSON: ${message}`);
       return Promise.resolve([undefined]);

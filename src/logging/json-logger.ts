@@ -1,5 +1,20 @@
 import { ConsoleLogger, LogLevel } from '@nestjs/common';
 
+/**
+ * Fields provided will be part of the messageContext field for the JSON log
+ */
+interface MessageContext {
+  [otherProperties: string]: string;
+}
+
+/**
+ * JSON log structure
+ */
+interface JsonEventMessage {
+  message: string;
+  messageContext: MessageContext;
+}
+
 export class JsonConsoleLogger extends ConsoleLogger {
   protected formatPid(pid: number) {
     return `${pid}`;
@@ -17,21 +32,25 @@ export class JsonConsoleLogger extends ConsoleLogger {
 
   protected formatMessage(
     logLevel: LogLevel,
-    message: unknown,
+    message: string | JsonEventMessage,
     pidMessage: string,
     formattedLogLevel: string,
     contextMessage: string,
     // timestampDiff: string,
   ): string {
-    const output = this.stringifyMessage(message, logLevel);
     const timestamp = Date.now();
     const dateAsString = new Date(timestamp).toISOString();
-    const logJson = {
+    const logJson: any = {
       timestamp: dateAsString,
       context: contextMessage,
       level: logLevel,
-      message: output,
     };
+    if (typeof message === 'string') {
+      logJson.message = this.stringifyMessage(message, logLevel);
+    } else {
+      logJson.messageContext = message.messageContext;
+    }
+
     return `${JSON.stringify(logJson)}\n`;
   }
 }
