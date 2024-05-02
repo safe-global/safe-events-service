@@ -19,7 +19,7 @@ function setupSwagger(app: INestApplication, basePath: string) {
 }
 
 function getLogLevels(): LogLevel[] {
-  const default_log_level = 'log';
+  const default_log_level: LogLevel = 'log';
   const all_log_levels: LogLevel[] = [
     'verbose',
     'debug',
@@ -32,7 +32,9 @@ function getLogLevels(): LogLevel[] {
     process.env.LOG_LEVEL || default_log_level
   ).toLowerCase() as LogLevel;
   if (!all_log_levels.includes(log_level)) {
-    console.log(`LOG_LEVEL ${log_level} is not valid`);
+    console.log(
+      `LOG_LEVEL ${log_level} is not valid. Using default log level '${default_log_level}'`,
+    );
     log_level = default_log_level;
   }
 
