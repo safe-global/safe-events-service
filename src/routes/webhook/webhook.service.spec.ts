@@ -282,8 +282,9 @@ describe('Webhook service', () => {
             url: url,
             startTime: expect.any(Number),
           },
-          httpResponse: {
-            data: expect.any(String),
+          httpResponse: null,
+          httpRequestError: {
+            message: expect.stringContaining("Response not received. Error:"),
           },
         },
       });
@@ -321,8 +322,9 @@ describe('Webhook service', () => {
             url: url,
             startTime: expect.any(Number),
           },
-          httpResponse: {
-            data: expect.any(String),
+          httpResponse: null,
+          httpRequestError: {
+            message: expect.any(String),
           },
         },
       });

@@ -110,7 +110,6 @@ export class WebhookService {
               },
             });
           } else if (error.request !== undefined) {
-            const errorMessage = `Response not received. Error: ${error.message}`;
             // Request was made but response was not received
             this.logger.error({
               message: 'Error sending event',
@@ -120,14 +119,14 @@ export class WebhookService {
                   url: url,
                   startTime: startTime,
                 },
-                httpResponse: {
-                  data: errorMessage,
+                httpResponse: null,
+                httpRequestError: {
+                  message: `Response not received. Error: ${error.message}`
                 },
               },
             });
           } else {
             // Cannot make request
-            const errorMessage = error.message;
             this.logger.error({
               message: 'Error sending event',
               messageContext: {
@@ -136,8 +135,9 @@ export class WebhookService {
                   url: url,
                   startTime: startTime,
                 },
-                httpResponse: {
-                  data: errorMessage,
+                httpResponse: null,
+                httpRequestError: {
+                  message: error.message,
                 },
               },
             });
