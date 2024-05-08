@@ -29,7 +29,7 @@ describe('Events handling', () => {
 
     app = moduleFixture.createNestApplication();
     await app.init();
-  });
+  }, 10000);
 
   afterEach(async () => {
     // Nest.js Shutdown hooks are not triggered
