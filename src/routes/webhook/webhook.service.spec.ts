@@ -275,7 +275,7 @@ describe('Webhook service', () => {
         headers: {},
       });
       expect(loggerErrorSpy).toHaveBeenCalledWith({
-        message: `Error sending event: Response not received. Error: ${errorMessageMocked}`,
+        message: 'Error sending event',
         messageContext: {
           event: event,
           httpRequest: {
@@ -283,6 +283,9 @@ describe('Webhook service', () => {
             startTime: expect.any(Number),
           },
           httpResponse: null,
+          httpRequestError: {
+            message: expect.stringContaining('Response not received. Error:'),
+          },
         },
       });
     });
@@ -312,7 +315,7 @@ describe('Webhook service', () => {
         headers: {},
       });
       expect(loggerErrorSpy).toHaveBeenCalledWith({
-        message: `Error sending event: ${errorMessage}`,
+        message: 'Error sending event',
         messageContext: {
           event: event,
           httpRequest: {
@@ -320,6 +323,9 @@ describe('Webhook service', () => {
             startTime: expect.any(Number),
           },
           httpResponse: null,
+          httpRequestError: {
+            message: expect.any(String),
+          },
         },
       });
     });
