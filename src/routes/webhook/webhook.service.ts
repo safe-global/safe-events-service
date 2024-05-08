@@ -121,7 +121,7 @@ export class WebhookService {
                 },
                 httpResponse: null,
                 httpRequestError: {
-                  message: `Response not received. Error: ${error.message}`
+                  message: `Response not received. Error: ${error.message}`,
                 },
               },
             });

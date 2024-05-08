@@ -284,7 +284,7 @@ describe('Webhook service', () => {
           },
           httpResponse: null,
           httpRequestError: {
-            message: expect.stringContaining("Response not received. Error:"),
+            message: expect.stringContaining('Response not received. Error:'),
           },
         },
       });
