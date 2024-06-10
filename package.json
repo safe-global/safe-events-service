@@ -37,7 +37,7 @@
     "adminjs": "^7.4.1",
     "amqp-connection-manager": "^4.1.14",
     "amqplib": "^0.10.4",
-    "axios": "^1.6.8",
+    "axios": "^1.7.2",
     "cache-manager": "^5.5.3",
     "express-formidable": "^1.2.0",
     "express-session": "^1.18.0",
