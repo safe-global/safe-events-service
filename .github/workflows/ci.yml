@@ -135,7 +135,7 @@ jobs:
           password: ${{ secrets.DOCKER_PASSWORD }}
       - name: Deploy main
         if: github.ref == 'refs/heads/main'
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           platforms: linux/amd64,linux/arm64
           push: true
@@ -144,7 +144,7 @@ jobs:
           cache-to: type=gha,mode=max
       - name: Deploy Tag
         if: (github.event_name == 'release' && github.event.action == 'released')
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           platforms: linux/amd64,linux/arm64
           push: true
