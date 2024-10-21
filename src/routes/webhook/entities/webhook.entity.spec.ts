@@ -21,6 +21,7 @@ describe('Webhook entity', () => {
     webhook.sendModuleTransactions = true;
     webhook.sendSafeCreations = true;
     webhook.sendMessages = true;
+    webhook.sendReorgs = true;
   });
 
   it('If chain is set, only those chain messages will be sent', async () => {
@@ -125,6 +126,13 @@ describe('Webhook entity', () => {
     txServiceEvent.type = 'MESSAGE_CONFIRMATION' as TxServiceEventType;
     expect(webhook.isEventRelevant(txServiceEvent)).toBe(true);
     webhook.sendMessages = false;
+    expect(webhook.isEventRelevant(txServiceEvent)).toBe(false);
+  });
+
+  it('REORG_DETECTED should not be relevant if sendReorgs is disabled', async () => {
+    txServiceEvent.type = 'REORG_DETECTED' as TxServiceEventType;
+    expect(webhook.isEventRelevant(txServiceEvent)).toBe(true);
+    webhook.sendReorgs = false;
     expect(webhook.isEventRelevant(txServiceEvent)).toBe(false);
   });
 });
