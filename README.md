@@ -139,6 +139,16 @@ Some parameters are common to every event:
 }
 ```
 
+### Reorg detected
+
+```json
+{
+"type": "REORG_DETECTED",
+"blockNumber": "<int>",
+"chainId": "<stringified-int>"
+}
+```
+
 # FAQ
 
 ## Do you have a dashboard/status page?
