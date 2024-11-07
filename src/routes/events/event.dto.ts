@@ -12,7 +12,10 @@ export type TxServiceEventType =
   | 'MESSAGE_CREATED'
   | 'MESSAGE_CONFIRMATION'
   | 'DELETED_MULTISIG_TRANSACTION'
-  | 'REORG_DETECTED';
+  | 'REORG_DETECTED'
+  | 'NEW_DELEGATE'
+  | 'UPDATED_DELEGATE'
+  | 'DELETED_DELEGATE';
 
 export interface TxServiceEvent {
   chainId: string;

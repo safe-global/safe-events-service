@@ -22,6 +22,7 @@ describe('Webhook entity', () => {
     webhook.sendSafeCreations = true;
     webhook.sendMessages = true;
     webhook.sendReorgs = true;
+    webhook.sendDelegates = true;
   });
 
   it('If chain is set, only those chain messages will be sent', async () => {
@@ -133,6 +134,27 @@ describe('Webhook entity', () => {
     txServiceEvent.type = 'REORG_DETECTED' as TxServiceEventType;
     expect(webhook.isEventRelevant(txServiceEvent)).toBe(true);
     webhook.sendReorgs = false;
+    expect(webhook.isEventRelevant(txServiceEvent)).toBe(false);
+  });
+
+  it('NEW_DELEGATE should not be relevant if sendDelegates is disabled', async () => {
+    txServiceEvent.type = 'NEW_DELEGATE' as TxServiceEventType;
+    expect(webhook.isEventRelevant(txServiceEvent)).toBe(true);
+    webhook.sendDelegates = false;
+    expect(webhook.isEventRelevant(txServiceEvent)).toBe(false);
+  });
+
+  it('UPDATED_DELEGATE should not be relevant if sendDelegates is disabled', async () => {
+    txServiceEvent.type = 'UPDATED_DELEGATE' as TxServiceEventType;
+    expect(webhook.isEventRelevant(txServiceEvent)).toBe(true);
+    webhook.sendDelegates = false;
+    expect(webhook.isEventRelevant(txServiceEvent)).toBe(false);
+  });
+
+  it('DELETED_DELEGATE should not be relevant if sendDelegates is disabled', async () => {
+    txServiceEvent.type = 'DELETED_DELEGATE' as TxServiceEventType;
+    expect(webhook.isEventRelevant(txServiceEvent)).toBe(true);
+    webhook.sendDelegates = false;
     expect(webhook.isEventRelevant(txServiceEvent)).toBe(false);
   });
 });

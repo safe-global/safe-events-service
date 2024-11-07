@@ -149,6 +149,20 @@ Some parameters are common to every event:
 }
 ```
 
+### Delegates add/update/delete
+
+```json
+{
+"type": "NEW_DELEGATE" | "UPDATED_DELEGATE" | "DELETED_DELEGATE",
+"safeAddress": "<Ethereum checksummed address>" | null,
+"delegate": "<Ethereum checksummed address>",
+"delegator": "<Ethereum checksummed address>",
+"label": "<string>",
+"expiryDateSeconds": "<int>" | null,
+"chainId": "<stringified-int>"
+}
+```
+
 # FAQ
 
 ## Do you have a dashboard/status page?
