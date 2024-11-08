@@ -153,8 +153,8 @@ Some parameters are common to every event:
 
 ```json
 {
+"address": "<Ethereum checksummed address>" | null,
 "type": "NEW_DELEGATE" | "UPDATED_DELEGATE" | "DELETED_DELEGATE",
-"safeAddress": "<Ethereum checksummed address>" | null,
 "delegate": "<Ethereum checksummed address>",
 "delegator": "<Ethereum checksummed address>",
 "label": "<string>",
