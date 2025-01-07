@@ -60,6 +60,7 @@ Some parameters are common to every event:
 ```json
 {
   "address": "<Ethereum checksummed address>",
+  "to": "<Ethereum checksummed address>",
   "type": "EXECUTED_MULTISIG_TRANSACTION",
   "safeTxHash": "<0x-prefixed-hex-string>",
   "failed": "true" | "false",
@@ -73,6 +74,7 @@ Some parameters are common to every event:
 ```json
 {
   "address": "<Ethereum checksummed address>",
+  "to": "<Ethereum checksummed address>",
   "type": "PENDING_MULTISIG_TRANSACTION",
   "safeTxHash": "<0x-prefixed-hex-string>",
   "chainId": "<stringified-int>"
