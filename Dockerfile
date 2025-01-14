@@ -1,7 +1,7 @@
 #
 # BUILD CONTAINER
 #
-FROM node:20 as base
+FROM node:20 AS base
 USER node
 WORKDIR /app
 COPY --chown=node:node package*.json tsconfig*.json ./
@@ -19,7 +19,7 @@ RUN npm run build
 # PRODUCTION CONTAINER
 #
 ENV NODE_ENV production
-FROM node:20 as production
+FROM node:20 AS production
 USER node
 EXPOSE 3000
 WORKDIR /app
