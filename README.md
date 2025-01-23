@@ -60,9 +60,10 @@ Some parameters are common to every event:
 ```json
 {
   "address": "<Ethereum checksummed address>",
-  "to": "<Ethereum checksummed address>",
   "type": "EXECUTED_MULTISIG_TRANSACTION",
   "safeTxHash": "<0x-prefixed-hex-string>",
+  "to": "<Ethereum checksummed address>",
+  "data": "<0x-prefixed-hex-string>",
   "failed": "true" | "false",
   "txHash": "<0x-prefixed-hex-string>",
   "chainId": "<stringified-int>"
@@ -74,9 +75,10 @@ Some parameters are common to every event:
 ```json
 {
   "address": "<Ethereum checksummed address>",
-  "to": "<Ethereum checksummed address>",
   "type": "PENDING_MULTISIG_TRANSACTION",
   "safeTxHash": "<0x-prefixed-hex-string>",
+  "to": "<Ethereum checksummed address>",
+  "data": "<0x-prefixed-hex-string>",
   "chainId": "<stringified-int>"
 }
 ```
@@ -108,12 +110,12 @@ Some parameters are common to every event:
 
 ```json
 {
-"address": "<Ethereum checksummed address>",
-"type": "INCOMING_TOKEN" | "OUTGOING_TOKEN",
-"tokenAddress": "<Ethereum checksummed address>",
-"txHash": "<0x-prefixed-hex-string>",
-"value": "<stringified-int>",
-"chainId": "<stringified-int>"
+  "address": "<Ethereum checksummed address>",
+  "type": "INCOMING_TOKEN" | "OUTGOING_TOKEN",
+  "tokenAddress": "<Ethereum checksummed address>",
+  "txHash": "<0x-prefixed-hex-string>",
+  "value": "<stringified-int>",
+  "chainId": "<stringified-int>"
 }
 ```
 
@@ -121,12 +123,12 @@ Some parameters are common to every event:
 
 ```json
 {
-"address": "<Ethereum checksummed address>",
-"type": "INCOMING_TOKEN" | "OUTGOING_TOKEN",
-"tokenAddress": "<Ethereum checksummed address>",
-"txHash": "<0x-prefixed-hex-string>",
-"tokenId": "<stringified-int>",
-"chainId": "<stringified-int>"
+  "address": "<Ethereum checksummed address>",
+  "type": "INCOMING_TOKEN" | "OUTGOING_TOKEN",
+  "tokenAddress": "<Ethereum checksummed address>",
+  "txHash": "<0x-prefixed-hex-string>",
+  "tokenId": "<stringified-int>",
+  "chainId": "<stringified-int>"
 }
 ```
 
@@ -134,10 +136,10 @@ Some parameters are common to every event:
 
 ```json
 {
-"address": "<Ethereum checksummed address>",
-"type": "MESSAGE_CREATED" | "MESSAGE_CONFIRMATION",
-"messageHash": "<0x-prefixed-hex-string>",
-"chainId": "<stringified-int>"
+  "address": "<Ethereum checksummed address>",
+  "type": "MESSAGE_CREATED" | "MESSAGE_CONFIRMATION",
+  "messageHash": "<0x-prefixed-hex-string>",
+  "chainId": "<stringified-int>"
 }
 ```
 
@@ -145,9 +147,9 @@ Some parameters are common to every event:
 
 ```json
 {
-"type": "REORG_DETECTED",
-"blockNumber": "<int>",
-"chainId": "<stringified-int>"
+  "type": "REORG_DETECTED",
+  "blockNumber": "<int>",
+  "chainId": "<stringified-int>"
 }
 ```
 
@@ -155,13 +157,13 @@ Some parameters are common to every event:
 
 ```json
 {
-"address": "<Ethereum checksummed address>" | null,
-"type": "NEW_DELEGATE" | "UPDATED_DELEGATE" | "DELETED_DELEGATE",
-"delegate": "<Ethereum checksummed address>",
-"delegator": "<Ethereum checksummed address>",
-"label": "<string>",
-"expiryDateSeconds": "<int>" | null,
-"chainId": "<stringified-int>"
+  "address": "<Ethereum checksummed address>" | null,
+  "type": "NEW_DELEGATE" | "UPDATED_DELEGATE" | "DELETED_DELEGATE",
+  "delegate": "<Ethereum checksummed address>",
+  "delegator": "<Ethereum checksummed address>",
+  "label": "<string>",
+  "expiryDateSeconds": "<int>" | null,
+  "chainId": "<stringified-int>"
 }
 ```
 
