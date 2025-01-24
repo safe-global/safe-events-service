@@ -63,7 +63,7 @@ Some parameters are common to every event:
   "type": "EXECUTED_MULTISIG_TRANSACTION",
   "safeTxHash": "<0x-prefixed-hex-string>",
   "to": "<Ethereum checksummed address>",
-  "data": "<0x-prefixed-hex-string>",
+  "data": "<0x-prefixed-hex-string>" | null,
   "failed": "true" | "false",
   "txHash": "<0x-prefixed-hex-string>",
   "chainId": "<stringified-int>"
@@ -78,7 +78,7 @@ Some parameters are common to every event:
   "type": "PENDING_MULTISIG_TRANSACTION",
   "safeTxHash": "<0x-prefixed-hex-string>",
   "to": "<Ethereum checksummed address>",
-  "data": "<0x-prefixed-hex-string>",
+  "data": "<0x-prefixed-hex-string>" | null,
   "chainId": "<stringified-int>"
 }
 ```
