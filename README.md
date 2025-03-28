@@ -12,7 +12,7 @@ This service should be connected to the [Safe Transaction Service](https://githu
 
 - Transaction service sends events to RabbitMQ.
 - Events service holds a database with services to send webhooks to, and some filters like `chainId` or `eventType` can be configured.
-- Events service connects to RabbitMQ and susbscribes to the events. When an event matches filters for a service, a webhook is posted.
+- Events service connects to RabbitMQ and subscribes to the events. When an event matches filters for a service, a webhook is posted.
 
 ![Events Service Diagram](./docs/img/events.png)
 
