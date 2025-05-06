@@ -6,6 +6,9 @@ docker compose down
 # Start required docker instances
 docker compose up -d db db-migrations rabbitmq
 
+# Ensure Rabbitmq is ready
+./scripts/wait_for_service.sh rabbitmq
+
 # Unit tests
 npm run test
 
