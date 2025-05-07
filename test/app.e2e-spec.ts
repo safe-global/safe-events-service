@@ -6,9 +6,9 @@ import { QueueProvider } from '../src/datasources/queue/queue.provider';
 import { EventsService } from '../src/routes/events/events.service';
 import { Server } from 'tls';
 import { TxServiceEventType } from '../src/routes/events/event.dto';
+import { EventSource } from 'eventsource';
 
 /* eslint-disable */
-import EventSource = require('eventsource');
 const { version } = require('../package.json');
 /* eslint-enable */
 
@@ -74,7 +74,14 @@ describe('AppController (e2e)', () => {
       const url = protocol + '://127.1.0.1:' + port + path;
 
       const eventSource = new EventSource(url, {
-        headers: { Authorization: sseAuthorizationHeader },
+        fetch: (input, init) =>
+          fetch(input, {
+            ...init,
+            headers: {
+              ...init!.headers,
+              Authorization: sseAuthorizationHeader,
+            },
+          }),
       });
       // Use an empty promise so test has to wait for it, and do the cleanup there
       const messageReceived = new Promise((resolve) => {
