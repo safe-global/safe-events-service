@@ -124,8 +124,8 @@ export class QueueProvider implements OnApplicationShutdown {
   }
 
   async disconnect(): Promise<void> {
-    this.channelWrapper && (await this.channelWrapper.close());
-    this.connection && (await this.connection.close());
+    if (this.channelWrapper) await this.channelWrapper.close();
+    if (this.connection) await this.connection.close();
 
     this.channelWrapper = undefined;
     this.connection = undefined;

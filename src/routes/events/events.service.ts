@@ -77,7 +77,7 @@ export class EventsService implements OnApplicationBootstrap {
           event: txServiceEvent,
         },
       });
-    } catch (err) {
+    } catch {
       this.logger.error(`Cannot parse message as JSON: ${message}`);
       return Promise.resolve([undefined]);
     }
