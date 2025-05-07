@@ -1,4 +1,4 @@
-import { connect as amqplibConnect, Connection } from 'amqplib';
+import { connect as amqplibConnect, ChannelModel } from 'amqplib';
 
 /**
  * Publish given message to AMQP url provided
@@ -14,7 +14,7 @@ export async function publishMessage(
   queue: string,
   msg: object,
 ): Promise<boolean> {
-  const conn: Connection = await amqplibConnect(amqpUrl);
+  const conn: ChannelModel = await amqplibConnect(amqpUrl);
   const channel = await conn.createChannel();
   await channel.assertExchange(exchange, 'fanout', { durable: true });
   // Make sure queue is binded to the exchange, as this function can be called before subscribing
