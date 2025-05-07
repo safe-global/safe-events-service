@@ -76,7 +76,7 @@ export class WebhookService {
     let dataStr: string;
     try {
       dataStr = JSON.stringify(responseData);
-    } catch (_) {
+    } catch {
       dataStr = 'Cannot parse response data';
     }
     return dataStr;

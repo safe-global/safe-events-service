@@ -6,9 +6,9 @@ import { QueueProvider } from '../src/datasources/queue/queue.provider';
 import { EventsService } from '../src/routes/events/events.service';
 import { Server } from 'tls';
 import { TxServiceEventType } from '../src/routes/events/event.dto';
-import EventSource = require('eventsource');
 
 /* eslint-disable */
+import EventSource = require('eventsource');
 const { version } = require('../package.json');
 /* eslint-enable */
 
