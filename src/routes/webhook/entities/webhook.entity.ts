@@ -1,10 +1,20 @@
-import { Entity, Column, PrimaryGeneratedColumn, BaseEntity } from 'typeorm';
+import {
+  Entity,
+  Column,
+  PrimaryGeneratedColumn,
+  BaseEntity,
+  Generated,
+} from 'typeorm';
 import { TxServiceEvent } from '../../events/event.dto';
 
 @Entity()
 export class Webhook extends BaseEntity {
   @PrimaryGeneratedColumn()
   id: number;
+
+  @Column()
+  @Generated('uuid')
+  public_id: string;
 
   @Column()
   url: string;

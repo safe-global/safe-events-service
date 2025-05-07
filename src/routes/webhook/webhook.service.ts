@@ -170,4 +170,8 @@ export class WebhookService {
       return response;
     });
   }
+
+  async getWebHook(public_id: string) {
+    return await Webhook.findOneBy({ public_id: public_id });
+  }
 }

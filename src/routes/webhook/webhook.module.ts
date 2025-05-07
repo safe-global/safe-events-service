@@ -5,6 +5,7 @@ import { Webhook } from './entities/webhook.entity';
 import { WebhookService } from './webhook.service';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { HttpModule } from '@nestjs/axios';
+import { WebhookController } from './webhook.controller';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { HttpModule } from '@nestjs/axios';
       }),
     }),
   ],
+  controllers: [WebhookController],
   providers: [WebhookService],
   exports: [TypeOrmModule, WebhookService],
 })
