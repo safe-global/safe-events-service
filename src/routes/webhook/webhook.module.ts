@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { CacheModule } from '@nestjs/cache-manager';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { Webhook } from './entities/webhook.entity';
+import { Webhook } from './repositories/webhook.entity';
 import { WebhookService } from './webhook.service';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { HttpModule } from '@nestjs/axios';

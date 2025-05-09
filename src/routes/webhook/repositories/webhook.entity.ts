@@ -6,13 +6,14 @@ import {
   Generated,
 } from 'typeorm';
 import { TxServiceEvent } from '../../events/event.dto';
+import { SendEventTypes, WebhookPublicDto } from '../dtos/webhook.dto';
 
 @Entity()
 export class Webhook extends BaseEntity {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column()
+  @Column({ unique: true })
   @Generated('uuid')
   public_id: string;
 
@@ -94,5 +95,78 @@ export class Webhook extends BaseEntity {
             message.type === 'UPDATED_DELEGATE' ||
             message.type === 'DELETED_DELEGATE')))
     );
+  }
+
+  /**
+   * @returns WebhookPublicDto from the current Webhook instance
+   */
+  toPublicDto(): WebhookPublicDto {
+    const events: SendEventTypes[] = [];
+
+    if (this.sendConfirmations) events.push(SendEventTypes.SEND_CONFIRMATIONS);
+    if (this.sendMultisigTxs) events.push(SendEventTypes.SEND_MULTISIG_TXS);
+    if (this.sendEtherTransfers)
+      events.push(SendEventTypes.SEND_ETHER_TRANSFERS);
+    if (this.sendTokenTransfers)
+      events.push(SendEventTypes.SEND_TOKEN_TRANSFERS);
+    if (this.sendModuleTransactions)
+      events.push(SendEventTypes.SEND_MODULE_TXS);
+    if (this.sendSafeCreations) events.push(SendEventTypes.SEND_SAFE_CREATIONS);
+    if (this.sendMessages) events.push(SendEventTypes.SEND_MESSAGES);
+    if (this.sendReorgs) events.push(SendEventTypes.SEND_REORGS);
+    if (this.sendDelegates) events.push(SendEventTypes.SEND_DELEGATES);
+
+    return {
+      public_id: this.public_id,
+      description: this.description,
+      url: this.url,
+      authorization: this.authorization,
+      chains: this.chains.map(Number),
+      events,
+    };
+  }
+
+  /**
+   * Converts to Webhook a provided WebhookPublicDto
+   * @param public_webhook
+   * @returns Webhook
+   */
+  static fromPublicDto(public_webhook: WebhookPublicDto): Webhook {
+    const webhook = new Webhook();
+    webhook.public_id = public_webhook.public_id;
+    webhook.url = public_webhook.url;
+    webhook.description = public_webhook.description;
+    webhook.authorization = public_webhook.authorization;
+    webhook.chains = public_webhook.chains.map(String);
+
+    webhook.sendConfirmations = public_webhook.events.includes(
+      SendEventTypes.SEND_CONFIRMATIONS,
+    );
+    webhook.sendMultisigTxs = public_webhook.events.includes(
+      SendEventTypes.SEND_MULTISIG_TXS,
+    );
+    webhook.sendEtherTransfers = public_webhook.events.includes(
+      SendEventTypes.SEND_ETHER_TRANSFERS,
+    );
+    webhook.sendTokenTransfers = public_webhook.events.includes(
+      SendEventTypes.SEND_TOKEN_TRANSFERS,
+    );
+    webhook.sendModuleTransactions = public_webhook.events.includes(
+      SendEventTypes.SEND_MODULE_TXS,
+    );
+    webhook.sendSafeCreations = public_webhook.events.includes(
+      SendEventTypes.SEND_SAFE_CREATIONS,
+    );
+    webhook.sendMessages = public_webhook.events.includes(
+      SendEventTypes.SEND_MESSAGES,
+    );
+    webhook.sendReorgs = public_webhook.events.includes(
+      SendEventTypes.SEND_REORGS,
+    );
+    webhook.sendDelegates = public_webhook.events.includes(
+      SendEventTypes.SEND_DELEGATES,
+    );
+
+    return webhook;
   }
 }
