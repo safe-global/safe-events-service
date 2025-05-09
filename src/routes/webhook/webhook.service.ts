@@ -2,7 +2,8 @@ import { Inject, Injectable, Logger } from '@nestjs/common';
 import { Cache } from 'cache-manager';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Webhook } from './entities/webhook.entity';
+import { Webhook } from './repositories/webhook.entity';
+import { WebhookPublicDto } from './dtos/webhook.dto';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { ConfigService } from '@nestjs/config';
 import { HttpService } from '@nestjs/axios';
@@ -170,8 +171,24 @@ export class WebhookService {
       return response;
     });
   }
+  /**
+   * Get public webhook by its ID.
+   * @param public_id
+   * @returns PublicWebhook
+   */
+  async getWebHook(public_id: string): Promise<WebhookPublicDto | null> {
+    const webhook = await Webhook.findOneBy({ public_id });
+    return webhook ? webhook.toPublicDto() : null;
+  }
 
-  async getWebHook(public_id: string) {
-    return await Webhook.findOneBy({ public_id: public_id });
+  /**
+   * Create a webhook from the provided data.
+   * @param data
+   * @returns stored webhook.
+   */
+  async createWebhook(data: WebhookPublicDto): Promise<WebhookPublicDto> {
+    const webhook = Webhook.fromPublicDto(data);
+    const saved = await webhook.save();
+    return saved.toPublicDto();
   }
 }

@@ -1,4 +1,4 @@
-import { Webhook } from '../../routes/webhook/entities/webhook.entity';
+import { Webhook } from '../../routes/webhook/repositories/webhook.entity';
 import { DataSourceOptions } from 'typeorm';
 import { readFileSync } from 'fs';
 /**
