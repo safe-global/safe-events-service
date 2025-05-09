@@ -10,6 +10,10 @@ import { HttpService } from '@nestjs/axios';
 import { of, catchError, firstValueFrom } from 'rxjs';
 import { AxiosError, AxiosResponse } from 'axios';
 import { TxServiceEvent } from '../events/event.dto';
+import {
+  WebhookAlreadyExists,
+  WebhookDoesNotExist,
+} from './exceptions/webhook.exceptions';
 
 @Injectable()
 export class WebhookService {
@@ -176,9 +180,11 @@ export class WebhookService {
    * @param public_id
    * @returns PublicWebhook
    */
-  async getWebHook(public_id: string): Promise<WebhookPublicDto | null> {
+  async getWebHook(public_id: string): Promise<WebhookPublicDto> {
     const webhook = await Webhook.findOneBy({ public_id });
-    return webhook ? webhook.toPublicDto() : null;
+    if (webhook == null) throw new WebhookDoesNotExist();
+
+    return webhook.toPublicDto();
   }
 
   /**
@@ -187,6 +193,8 @@ export class WebhookService {
    * @returns stored webhook.
    */
   async createWebhook(data: WebhookPublicDto): Promise<WebhookPublicDto> {
+    if (await this.getWebHook(data.public_id)) throw new WebhookAlreadyExists();
+
     const webhook = Webhook.fromPublicDto(data);
     const saved = await webhook.save();
     return saved.toPublicDto();

@@ -1,4 +1,11 @@
-import { Body, Controller, Get, Param, Post } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  ParseUUIDPipe,
+  Post,
+} from '@nestjs/common';
 import {
   ApiOkResponse,
   ApiNotFoundResponse,
@@ -18,7 +25,7 @@ export class WebhookController {
   @ApiOkResponse({ type: WebhookPublicDto })
   @ApiNotFoundResponse({ description: 'Webhook not found' })
   async getWebhookByUuid(
-    @Param('uuid') uuid: string,
+    @Param('uuid', ParseUUIDPipe) uuid: string,
   ): Promise<WebhookPublicDto> {
     const webhook = await this.webhookService.getWebHook(uuid);
     if (!webhook) {
