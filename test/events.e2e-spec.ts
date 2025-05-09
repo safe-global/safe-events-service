@@ -3,7 +3,7 @@ import { INestApplication } from '@nestjs/common';
 import { AppModule } from '../src/app.module';
 import { EventsService } from '../src/routes/events/events.service';
 import { WebhookService } from '../src/routes/webhook/webhook.service';
-import { Webhook } from '../src/routes/webhook/entities/webhook.entity';
+import { Webhook } from '../src/routes/webhook/repositories/webhook.entity';
 import { QueueProvider } from '../src/datasources/queue/queue.provider';
 import { TxServiceEventType } from '../src/routes/events/event.dto';
 import { publishMessage } from './util';

@@ -1,7 +1,7 @@
 import { Logger } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { WebhookService } from './webhook.service';
-import { Webhook } from './entities/webhook.entity';
+import { Webhook } from './repositories/webhook.entity';
 import { WebhookModule } from './webhook.module';
 import { DatabaseModule } from '../../datasources/db/database.module';
 import { ConfigModule } from '@nestjs/config';
