@@ -15,6 +15,7 @@ import {
 } from '@nestjs/swagger';
 import { WebhookPublicDto } from './dtos/webhook.dto';
 import { WebhookService } from './webhook.service';
+import { WebhookDoesNotExist } from './exceptions/webhook.exceptions';
 
 @ApiTags('webhooks')
 @Controller('webhooks')
@@ -29,7 +30,7 @@ export class WebhookController {
   ): Promise<WebhookPublicDto> {
     const webhook = await this.webhookService.getWebHook(uuid);
     if (!webhook) {
-      throw new Error('Webhook not found');
+      throw new WebhookDoesNotExist();
     }
     return webhook;
   }

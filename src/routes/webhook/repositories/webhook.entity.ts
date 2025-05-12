@@ -17,10 +17,10 @@ export class Webhook extends BaseEntity {
   @Generated('uuid')
   public_id: string;
 
-  @Column()
+  @Column({ type: 'varchar', length: 300 })
   url: string;
 
-  @Column()
+  @Column({ type: 'varchar', length: 300 })
   description: string;
 
   @Column({ default: true })
