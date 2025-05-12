@@ -6,6 +6,7 @@ import {
   IsArray,
   IsInt,
   ArrayNotEmpty,
+  MaxLength,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 
@@ -32,12 +33,14 @@ export class WebhookPublicDto {
 
   @ApiProperty({ description: 'Target URL where webhook events will be sent' })
   @IsUrl()
+  @MaxLength(300, { message: 'Url must not exceed 300 characters' })
   url: string;
 
   @ApiProperty({
     description: 'Authorization header value to send with requests',
   })
   @IsString()
+  @MaxLength(300, { message: 'Description must not exceed 300 characters' })
   authorization: string;
 
   @ApiProperty({
