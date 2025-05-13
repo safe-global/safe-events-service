@@ -121,6 +121,12 @@ describe('WebhooksController', () => {
       expect(res.body.chains).toEqual(mockRequestDto.chains);
       expect(res.body.events.sort()).toEqual(mockRequestDto.events.sort());
     });
+    it('PUT /webhooks/:public_id — should return 404', async () => {
+      await request(app.getHttpServer())
+        .put(`/webhooks/${mockPublicDto.public_id}`)
+        .send(mockRequestDto)
+        .expect(404);
+    });
     it('PUT /webhooks/:public_id — should update the webhook', async () => {
       let res = await request(app.getHttpServer())
         .post('/webhooks')
@@ -137,6 +143,11 @@ describe('WebhooksController', () => {
       expect(res.body.description).toBe('Updated E2E Webhook');
       expect(res.body.public_id).toBe(public_id);
     });
+    it('GET /webhooks/:public_id — should return 404', async () => {
+      await request(app.getHttpServer())
+        .get(`/webhooks/${mockPublicDto.public_id}`)
+        .expect(404);
+    });
     it('GET /webhooks/:public_id — should retrieve the webhook', async () => {
       let res = await request(app.getHttpServer())
         .post('/webhooks')
@@ -149,6 +160,11 @@ describe('WebhooksController', () => {
 
       expect(res.body.public_id).toBe(public_id);
       expect(res.body.description).toBe('Test Webhook');
+    });
+    it('DELETE /webhooks/:public_id — should return 404', async () => {
+      await request(app.getHttpServer())
+        .delete(`/webhooks/${mockPublicDto.public_id}`)
+        .expect(404);
     });
     it('DELETE /webhooks/:public_id — should delete the webhook', async () => {
       let res = await request(app.getHttpServer())
