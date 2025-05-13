@@ -10,17 +10,17 @@ import { HttpService } from '@nestjs/axios';
 import { Observable } from 'rxjs';
 import { AxiosError, AxiosHeaders, AxiosResponse } from 'axios';
 import { throwError, of } from 'rxjs';
-import { WebhookPublicDto } from './dtos/webhook.dto';
+import { WebhookRequestDto } from './dtos/webhook.dto';
 import { DataSource } from 'typeorm';
 
 describe('Webhook service', () => {
   let httpService: HttpService;
   let webhookService: WebhookService;
   let dataSource: DataSource;
-  const public_webhook: WebhookPublicDto = {
-    public_id: '550e8400-e29b-41d4-a716-446655440000',
+  const request_webhook: WebhookRequestDto = {
     description: 'Awesome webhook',
     url: 'https://example.com/webhook',
+    is_active: true,
     authorization: 'Bearer abc123secret',
     chains: [1, 137],
     events: [
@@ -397,18 +397,18 @@ describe('Webhook service', () => {
 
   describe('Create Get Update Delete webhook', () => {
     it('Should create a webhook correclty', async () => {
-      const webhook = await webhookService.createWebhook(public_webhook);
+      const webhook = await webhookService.createWebhook(request_webhook);
       expect(webhook).not.toBeNull();
-      expect(webhook?.public_id).toBe(public_webhook.public_id);
-      expect(webhook?.url).toBe(public_webhook.url);
-      expect(webhook?.chains).toEqual(public_webhook.chains);
-      expect(webhook?.events.sort()).toEqual(public_webhook.events.sort());
+      expect(webhook?.public_id).not.toBeNull();
+      expect(webhook?.url).toBe(request_webhook.url);
+      expect(webhook?.chains).toEqual(request_webhook.chains);
+      expect(webhook?.events.sort()).toEqual(request_webhook.events.sort());
       const created_webhook = await Webhook.findOneBy({
-        public_id: public_webhook.public_id,
+        public_id: webhook.public_id,
       });
       expect(created_webhook).not.toBeNull();
-      expect(created_webhook?.public_id).toBe(public_webhook.public_id);
-      expect(created_webhook?.url).toBe(public_webhook.url);
+      expect(created_webhook?.public_id).toBe(webhook.public_id);
+      expect(created_webhook?.url).toBe(request_webhook.url);
       expect(created_webhook?.sendTokenTransfers).toBe(true);
       expect(created_webhook?.sendEtherTransfers).toBe(true);
       expect(created_webhook?.sendConfirmations).toBe(true);
@@ -419,12 +419,6 @@ describe('Webhook service', () => {
       expect(created_webhook?.sendMessages).toBe(false);
       expect(created_webhook?.sendReorgs).toBe(false);
     });
-    it('Should raise Webhook already exists', async () => {
-      await webhookService.createWebhook(public_webhook);
-      await expect(
-        webhookService.createWebhook(public_webhook),
-      ).rejects.toThrow('Webhook already exists');
-    });
     it('Should raise WebhookDoesNotExist if webhook does not exist', async () => {
       const webhook = await webhookService.getWebHook(
         '88888888-e757-4b74-a40f-8dca14553576',
@@ -433,16 +427,16 @@ describe('Webhook service', () => {
     });
     it('Should return the public webhook', async () => {
       const created_webhook =
-        await webhookService.createWebhook(public_webhook);
+        await webhookService.createWebhook(request_webhook);
       const webhook = await webhookService.getWebHook(
         created_webhook.public_id,
       );
       expect(webhook).not.toBeNull();
       expect(webhook).not.toBeNull();
-      expect(webhook?.public_id).toBe(public_webhook.public_id);
-      expect(webhook?.url).toBe(public_webhook.url);
-      expect(webhook?.chains).toEqual(public_webhook.chains);
-      expect(webhook?.events.sort()).toEqual(public_webhook.events.sort());
+      expect(webhook?.public_id).toBe(created_webhook.public_id);
+      expect(webhook?.url).toBe(request_webhook.url);
+      expect(webhook?.chains).toEqual(request_webhook.chains);
+      expect(webhook?.events.sort()).toEqual(request_webhook.events.sort());
     });
   });
 });

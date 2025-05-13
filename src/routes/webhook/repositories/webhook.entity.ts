@@ -120,6 +120,7 @@ export class Webhook extends BaseEntity {
       public_id: this.public_id,
       description: this.description,
       url: this.url,
+      is_active: this.isActive,
       authorization: this.authorization,
       chains: this.chains.map(Number),
       events,
@@ -138,6 +139,7 @@ export class Webhook extends BaseEntity {
     webhook.description = public_webhook.description;
     webhook.authorization = public_webhook.authorization;
     webhook.chains = public_webhook.chains.map(String);
+    webhook.isActive = public_webhook.is_active;
 
     webhook.sendConfirmations = public_webhook.events.includes(
       SendEventTypes.SEND_CONFIRMATIONS,

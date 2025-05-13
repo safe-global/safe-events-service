@@ -3,14 +3,15 @@ import { Cache } from 'cache-manager';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Webhook } from './repositories/webhook.entity';
-import { WebhookPublicDto } from './dtos/webhook.dto';
+import { WebhookPublicDto, WebhookRequestDto } from './dtos/webhook.dto';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { ConfigService } from '@nestjs/config';
 import { HttpService } from '@nestjs/axios';
 import { of, catchError, firstValueFrom } from 'rxjs';
 import { AxiosError, AxiosResponse } from 'axios';
 import { TxServiceEvent } from '../events/event.dto';
-import { WebhookAlreadyExists } from './exceptions/webhook.exceptions';
+import { v4 as uuidv4 } from 'uuid';
+import { plainToInstance } from 'class-transformer';
 
 @Injectable()
 export class WebhookService {
@@ -184,13 +185,20 @@ export class WebhookService {
 
   /**
    * Create a webhook from the provided data.
-   * @param data
+   * Generates a random uuid for public_id.
+   * @param request_data
    * @returns stored webhook.
    */
-  async createWebhook(data: WebhookPublicDto): Promise<WebhookPublicDto> {
-    if (await this.getWebHook(data.public_id)) throw new WebhookAlreadyExists();
-
-    const webhook = Webhook.fromPublicDto(data);
+  async createWebhook(
+    request_data: WebhookRequestDto,
+  ): Promise<WebhookPublicDto> {
+    const public_id = uuidv4();
+    const webhook_dto = {
+      ...request_data,
+      public_id,
+    };
+    const public_webhook_dto = plainToInstance(WebhookPublicDto, webhook_dto);
+    const webhook = Webhook.fromPublicDto(public_webhook_dto);
     const saved = await webhook.save();
     return saved.toPublicDto();
   }

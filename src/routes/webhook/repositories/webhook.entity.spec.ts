@@ -191,6 +191,7 @@ describe('Webhook entity', () => {
       url: 'https://example.com/webhook',
       authorization: 'Bearer abc123secret',
       chains: [1, 137],
+      is_active: true,
       events: [
         'SEND_CONFIRMATIONS',
         'SEND_TOKEN_TRANSFERS',
@@ -201,6 +202,7 @@ describe('Webhook entity', () => {
     expect(generated_webhook.public_id).toBe(public_webhook.public_id);
     expect(generated_webhook.description).toBe(public_webhook.description);
     expect(generated_webhook.url).toBe(public_webhook.url);
+    expect(generated_webhook.isActive).toBe(true);
     expect(generated_webhook.authorization).toBe(public_webhook.authorization);
     expect(generated_webhook.chains).toHaveLength(2);
     expect(generated_webhook.sendConfirmations).toBe(true);
