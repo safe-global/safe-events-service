@@ -5,11 +5,18 @@ import { WebhookPublicDto, WebhookRequestDto } from './dtos/webhook.dto';
 import { INestApplication } from '@nestjs/common';
 import { AppModule } from '../../app.module';
 import * as request from 'supertest';
+import { DataSource, Repository } from 'typeorm';
+import { Webhook } from './repositories/webhook.entity';
+import { WebhookModule } from './webhook.module';
+import { DatabaseModule } from '../../datasources/db/database.module';
+import { ConfigModule } from '@nestjs/config';
 
 describe('WebhooksController', () => {
   let controller: WebhooksController;
   let service: WebhookService;
   let app: INestApplication;
+  let dataSource: DataSource;
+  let webhookRepository: Repository<Webhook>;
 
   const mockWebhookService = {
     createWebhook: jest.fn(),
@@ -26,7 +33,8 @@ describe('WebhooksController', () => {
   });
 
   beforeEach(async () => {
-    const module: TestingModule = await Test.createTestingModule({
+    const moduleRef: TestingModule = await Test.createTestingModule({
+      imports: [ConfigModule.forRoot(), WebhookModule, DatabaseModule],
       controllers: [WebhooksController],
       providers: [
         {
@@ -36,8 +44,11 @@ describe('WebhooksController', () => {
       ],
     }).compile();
 
-    controller = module.get<WebhooksController>(WebhooksController);
-    service = module.get<WebhookService>(WebhookService);
+    controller = moduleRef.get<WebhooksController>(WebhooksController);
+    service = moduleRef.get<WebhookService>(WebhookService);
+    dataSource = moduleRef.get<DataSource>(DataSource);
+    webhookRepository = dataSource.getRepository(Webhook);
+    await webhookRepository.clear();
   });
 
   afterEach(() => {
@@ -55,7 +66,7 @@ describe('WebhooksController', () => {
 
   const mockPublicDto: WebhookPublicDto = {
     ...mockRequestDto,
-    public_id: 'uuid-1234',
+    public_id: '88888888-e757-4b74-a40f-8dca14553576',
   };
 
   describe('Test webhook controller', () => {
@@ -97,9 +108,8 @@ describe('WebhooksController', () => {
       );
     });
   });
-  describe('Test webhooks endpoints', () => {
+  describe('Test E2E webhooks endpoints', () => {
     it('POST /webhooks — should create a webhook', async () => {
-      service.createWebhook = jest.fn().mockResolvedValue(mockPublicDto);
       const res = await request(app.getHttpServer())
         .post('/webhooks')
         .send(mockRequestDto)
@@ -112,34 +122,52 @@ describe('WebhooksController', () => {
       expect(res.body.events.sort()).toEqual(mockRequestDto.events.sort());
     });
     it('PUT /webhooks/:public_id — should update the webhook', async () => {
-      const mockPublicDtoUpdated = {
-        ...mockPublicDto,
-        description: 'Updated E2E Webhook',
-      };
-      service.updateWebhook = jest.fn().mockResolvedValue(mockPublicDtoUpdated);
+      let res = await request(app.getHttpServer())
+        .post('/webhooks')
+        .send(mockRequestDto)
+        .expect(201);
+      const public_id = res.body.public_id;
       const updated = { ...mockRequestDto, description: 'Updated E2E Webhook' };
 
-      const res = await request(app.getHttpServer())
-        .put(`/webhooks/${mockPublicDto.public_id}`)
+      res = await request(app.getHttpServer())
+        .put(`/webhooks/${public_id}`)
         .send(updated)
-        .expect(400);
-
-      expect(res.body.description).toBe('Updated E2E Webhook');
-      expect(res.body.public_id).toBe(mockPublicDto.public_id);
-    });
-    it('GET /webhooks/:public_id — should retrieve the webhook', async () => {
-      service.getWebhook = jest.fn().mockResolvedValue(mockPublicDto);
-      const res = await request(app.getHttpServer())
-        .get(`/webhooks/${mockPublicDto.public_id}`)
         .expect(200);
 
-      expect(res.body.public_id).toBe(mockPublicDto.public_id);
+      expect(res.body.description).toBe('Updated E2E Webhook');
+      expect(res.body.public_id).toBe(public_id);
+    });
+    it('GET /webhooks/:public_id — should retrieve the webhook', async () => {
+      let res = await request(app.getHttpServer())
+        .post('/webhooks')
+        .send(mockRequestDto)
+        .expect(201);
+      const public_id = res.body.public_id;
+      res = await request(app.getHttpServer())
+        .get(`/webhooks/${public_id}`)
+        .expect(200);
+
+      expect(res.body.public_id).toBe(public_id);
       expect(res.body.description).toBe('Test Webhook');
     });
     it('DELETE /webhooks/:public_id — should delete the webhook', async () => {
-      await request(app.getHttpServer())
-        .delete(`/webhooks/${mockPublicDto.public_id}`)
+      let res = await request(app.getHttpServer())
+        .post('/webhooks')
+        .send(mockRequestDto)
+        .expect(201);
+      const public_id = res.body.public_id;
+
+      res = await request(app.getHttpServer())
+        .get(`/webhooks/${public_id}`)
         .expect(200);
+
+      await request(app.getHttpServer())
+        .delete(`/webhooks/${public_id}`)
+        .expect(204);
+
+      res = await request(app.getHttpServer())
+        .get(`/webhooks/${public_id}`)
+        .expect(404);
     });
   });
 });
