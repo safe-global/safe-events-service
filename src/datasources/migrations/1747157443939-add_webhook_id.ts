@@ -1,7 +1,7 @@
 import { MigrationInterface, QueryRunner } from "typeorm";
 
-export class AddWebhookId1747148540092 implements MigrationInterface {
-    name = 'AddWebhookId1747148540092'
+export class AddWebhookId1747157443939 implements MigrationInterface {
+    name = 'AddWebhookId1747157443939'
 
     public async up(queryRunner: QueryRunner): Promise<void> {
         await queryRunner.query(`ALTER TABLE "webhook" DROP COLUMN "isActive"`);
