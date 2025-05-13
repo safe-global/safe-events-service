@@ -11,12 +11,14 @@ import { Observable } from 'rxjs';
 import { AxiosError, AxiosHeaders, AxiosResponse } from 'axios';
 import { throwError, of } from 'rxjs';
 import { WebhookRequestDto } from './dtos/webhook.dto';
-import { DataSource } from 'typeorm';
+import { DataSource, Repository } from 'typeorm';
+import { WebhookDoesNotExist } from './exceptions/webhook.exceptions';
 
 describe('Webhook service', () => {
   let httpService: HttpService;
   let webhookService: WebhookService;
   let dataSource: DataSource;
+  let webhookRepository: Repository<Webhook>;
   const request_webhook: WebhookRequestDto = {
     description: 'Awesome webhook',
     url: 'https://example.com/webhook',
@@ -38,7 +40,7 @@ describe('Webhook service', () => {
     httpService = moduleRef.get<HttpService>(HttpService);
     webhookService = moduleRef.get<WebhookService>(WebhookService);
     dataSource = moduleRef.get<DataSource>(DataSource);
-    const webhookRepository = dataSource.getRepository(Webhook);
+    webhookRepository = dataSource.getRepository(Webhook);
     await webhookRepository.clear();
   });
 
@@ -419,8 +421,8 @@ describe('Webhook service', () => {
       expect(created_webhook?.sendMessages).toBe(false);
       expect(created_webhook?.sendReorgs).toBe(false);
     });
-    it('Should raise WebhookDoesNotExist if webhook does not exist', async () => {
-      const webhook = await webhookService.getWebHook(
+    it('Should return null if webhook does not exist', async () => {
+      const webhook = await webhookService.getWebhook(
         '88888888-e757-4b74-a40f-8dca14553576',
       );
       expect(webhook).toBeNull();
@@ -428,7 +430,7 @@ describe('Webhook service', () => {
     it('Should return the public webhook', async () => {
       const created_webhook =
         await webhookService.createWebhook(request_webhook);
-      const webhook = await webhookService.getWebHook(
+      const webhook = await webhookService.getWebhook(
         created_webhook.public_id,
       );
       expect(webhook).not.toBeNull();
@@ -437,6 +439,52 @@ describe('Webhook service', () => {
       expect(webhook?.url).toBe(request_webhook.url);
       expect(webhook?.chains).toEqual(request_webhook.chains);
       expect(webhook?.events.sort()).toEqual(request_webhook.events.sort());
+    });
+    it('Should raise exception during upodate if webhook does not exist', async () => {
+      await expect(
+        webhookService.updateWebhook(
+          '88888888-e757-4b74-a40f-8dca14553576',
+          request_webhook,
+        ),
+      ).rejects.toThrow(new WebhookDoesNotExist());
+    });
+    it('Should update the existing webhook', async () => {
+      const created_webhook =
+        await webhookService.createWebhook(request_webhook);
+
+      request_webhook.description = 'Modified description';
+      request_webhook.chains = [5];
+      const updated_webhook = await webhookService.updateWebhook(
+        created_webhook.public_id,
+        request_webhook,
+      );
+      expect(updated_webhook.public_id).toBe(created_webhook.public_id);
+      expect(updated_webhook.chains).toEqual([5]);
+      expect(updated_webhook.description).toBe('Modified description');
+      // Check if was stored in database
+      const stored_webhook = await webhookRepository.findOne({
+        where: { public_id: created_webhook.public_id },
+      });
+      expect(stored_webhook).not.toBeNull();
+      expect(stored_webhook?.public_id).toBe(created_webhook.public_id);
+      expect(stored_webhook?.chains).toEqual(['5']);
+      expect(stored_webhook?.description).toBe('Modified description');
+    });
+    it('Should raise webhook does not exist during delete', async () => {
+      await expect(
+        webhookService.deleteWebhook('88888888-e757-4b74-a40f-8dca14553576'),
+      ).rejects.toThrow(new WebhookDoesNotExist());
+    });
+    it('Should delete a webhook', async () => {
+      const created_webhook =
+        await webhookService.createWebhook(request_webhook);
+
+      await webhookService.deleteWebhook(created_webhook.public_id);
+
+      const stored_webhook = await webhookRepository.findOne({
+        where: { public_id: created_webhook.public_id },
+      });
+      expect(stored_webhook).toBeNull();
     });
   });
 });

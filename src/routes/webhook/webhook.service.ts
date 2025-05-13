@@ -12,6 +12,7 @@ import { AxiosError, AxiosResponse } from 'axios';
 import { TxServiceEvent } from '../events/event.dto';
 import { v4 as uuidv4 } from 'uuid';
 import { plainToInstance } from 'class-transformer';
+import { WebhookDoesNotExist } from './exceptions/webhook.exceptions';
 
 @Injectable()
 export class WebhookService {
@@ -178,7 +179,7 @@ export class WebhookService {
    * @param public_id
    * @returns PublicWebhook
    */
-  async getWebHook(public_id: string): Promise<WebhookPublicDto | null> {
+  async getWebhook(public_id: string): Promise<WebhookPublicDto | null> {
     const webhook = await Webhook.findOneBy({ public_id });
     return webhook ? webhook.toPublicDto() : null;
   }
@@ -201,5 +202,26 @@ export class WebhookService {
     const webhook = Webhook.fromPublicDto(public_webhook_dto);
     const saved = await webhook.save();
     return saved.toPublicDto();
+  }
+
+  async updateWebhook(
+    public_id: string,
+    request_data: WebhookRequestDto,
+  ): Promise<WebhookPublicDto> {
+    const webhook = await Webhook.findOneBy({ public_id });
+    if (webhook == null) {
+      throw new WebhookDoesNotExist();
+    }
+    Object.assign(webhook, request_data);
+    const saved = await this.WebHooksRepository.save(webhook);
+    return saved.toPublicDto();
+  }
+
+  async deleteWebhook(public_id: string) {
+    const result = await this.WebHooksRepository.delete({ public_id });
+
+    if (result.affected === 0) {
+      throw new WebhookDoesNotExist();
+    }
   }
 }
