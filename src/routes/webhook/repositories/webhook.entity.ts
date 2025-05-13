@@ -117,10 +117,10 @@ export class Webhook extends BaseEntity {
     if (this.sendDelegates) events.push(SendEventTypes.SEND_DELEGATES);
 
     return {
-      public_id: this.public_id,
+      id: this.public_id,
       description: this.description,
       url: this.url,
-      is_active: this.isActive,
+      isActive: this.isActive,
       authorization: this.authorization,
       chains: this.chains.map(Number),
       events,
@@ -134,12 +134,12 @@ export class Webhook extends BaseEntity {
    */
   static fromPublicDto(public_webhook: WebhookPublicDto): Webhook {
     const webhook = new Webhook();
-    webhook.public_id = public_webhook.public_id;
+    webhook.public_id = public_webhook.id;
     webhook.url = public_webhook.url;
     webhook.description = public_webhook.description;
     webhook.authorization = public_webhook.authorization;
     webhook.chains = public_webhook.chains.map(String);
-    webhook.isActive = public_webhook.is_active;
+    webhook.isActive = public_webhook.isActive;
 
     webhook.sendConfirmations = public_webhook.events.includes(
       SendEventTypes.SEND_CONFIRMATIONS,

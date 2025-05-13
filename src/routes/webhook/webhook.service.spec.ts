@@ -22,7 +22,7 @@ describe('Webhook service', () => {
   const request_webhook: WebhookRequestDto = {
     description: 'Awesome webhook',
     url: 'https://example.com/webhook',
-    is_active: true,
+    isActive: true,
     authorization: 'Bearer abc123secret',
     chains: [1, 137],
     events: [
@@ -401,15 +401,15 @@ describe('Webhook service', () => {
     it('Should create a webhook correclty', async () => {
       const webhook = await webhookService.createWebhook(request_webhook);
       expect(webhook).not.toBeNull();
-      expect(webhook?.public_id).not.toBeNull();
+      expect(webhook?.id).not.toBeNull();
       expect(webhook?.url).toBe(request_webhook.url);
       expect(webhook?.chains).toEqual(request_webhook.chains);
       expect(webhook?.events.sort()).toEqual(request_webhook.events.sort());
       const created_webhook = await Webhook.findOneBy({
-        public_id: webhook.public_id,
+        public_id: webhook.id,
       });
       expect(created_webhook).not.toBeNull();
-      expect(created_webhook?.public_id).toBe(webhook.public_id);
+      expect(created_webhook?.public_id).toBe(webhook.id);
       expect(created_webhook?.url).toBe(request_webhook.url);
       expect(created_webhook?.sendTokenTransfers).toBe(true);
       expect(created_webhook?.sendEtherTransfers).toBe(true);
@@ -431,11 +431,11 @@ describe('Webhook service', () => {
       const created_webhook =
         await webhookService.createWebhook(request_webhook);
       const webhook = await webhookService.getWebhook(
-        created_webhook.public_id,
+        created_webhook.id,
       );
       expect(webhook).not.toBeNull();
       expect(webhook).not.toBeNull();
-      expect(webhook?.public_id).toBe(created_webhook.public_id);
+      expect(webhook?.id).toBe(created_webhook.id);
       expect(webhook?.url).toBe(request_webhook.url);
       expect(webhook?.chains).toEqual(request_webhook.chains);
       expect(webhook?.events.sort()).toEqual(request_webhook.events.sort());
@@ -455,18 +455,18 @@ describe('Webhook service', () => {
       request_webhook.description = 'Modified description';
       request_webhook.chains = [5];
       const updated_webhook = await webhookService.updateWebhook(
-        created_webhook.public_id,
+        created_webhook.id,
         request_webhook,
       );
-      expect(updated_webhook.public_id).toBe(created_webhook.public_id);
+      expect(updated_webhook.id).toBe(created_webhook.id);
       expect(updated_webhook.chains).toEqual([5]);
       expect(updated_webhook.description).toBe('Modified description');
       // Check if was stored in database
       const stored_webhook = await webhookRepository.findOne({
-        where: { public_id: created_webhook.public_id },
+        where: { public_id: created_webhook.id },
       });
       expect(stored_webhook).not.toBeNull();
-      expect(stored_webhook?.public_id).toBe(created_webhook.public_id);
+      expect(stored_webhook?.public_id).toBe(created_webhook.id);
       expect(stored_webhook?.chains).toEqual(['5']);
       expect(stored_webhook?.description).toBe('Modified description');
     });
@@ -479,10 +479,10 @@ describe('Webhook service', () => {
       const created_webhook =
         await webhookService.createWebhook(request_webhook);
 
-      await webhookService.deleteWebhook(created_webhook.public_id);
+      await webhookService.deleteWebhook(created_webhook.id);
 
       const stored_webhook = await webhookRepository.findOne({
-        where: { public_id: created_webhook.public_id },
+        where: { public_id: created_webhook.id },
       });
       expect(stored_webhook).toBeNull();
     });

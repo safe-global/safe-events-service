@@ -58,7 +58,7 @@ describe('WebhooksController', () => {
   const mockRequestDto: WebhookRequestDto = {
     description: 'Test Webhook',
     url: 'https://example.com/hook',
-    is_active: true,
+    isActive: true,
     authorization: 'Bearer token',
     chains: [1, 2],
     events: ['SEND_CONFIRMATIONS'],
@@ -66,7 +66,7 @@ describe('WebhooksController', () => {
 
   const mockPublicDto: WebhookPublicDto = {
     ...mockRequestDto,
-    public_id: '88888888-e757-4b74-a40f-8dca14553576',
+    id: '88888888-e757-4b74-a40f-8dca14553576',
   };
 
   describe('Test webhook controller', () => {
@@ -80,31 +80,31 @@ describe('WebhooksController', () => {
     it('Should get a webhook and return WebhookPublicDto', async () => {
       service.getWebhook = jest.fn().mockResolvedValue(mockPublicDto);
 
-      const result = await controller.getWebhookByUuid(mockPublicDto.public_id);
+      const result = await controller.getWebhookByUuid(mockPublicDto.id);
       expect(result).toEqual(mockPublicDto);
-      expect(service.getWebhook).toHaveBeenCalledWith(mockPublicDto.public_id);
+      expect(service.getWebhook).toHaveBeenCalledWith(mockPublicDto.id);
     });
 
     it('Should update a webhook and return WebhookPublicDto', async () => {
       service.updateWebhook = jest.fn().mockResolvedValue(mockPublicDto);
 
       const result = await controller.updateWebhook(
-        mockPublicDto.public_id,
+        mockPublicDto.id,
         mockRequestDto,
       );
       expect(result).toEqual(mockPublicDto);
       expect(service.updateWebhook).toHaveBeenCalledWith(
-        mockPublicDto.public_id,
+        mockPublicDto.id,
         mockRequestDto,
       );
     });
     it('Should call delete webhook', async () => {
       service.deleteWebhook = jest.fn().mockResolvedValue(mockPublicDto);
 
-      const result = await controller.deleteWebhook(mockPublicDto.public_id);
+      const result = await controller.deleteWebhook(mockPublicDto.id);
       expect(result).toBeUndefined();
       expect(service.deleteWebhook).toHaveBeenCalledWith(
-        mockPublicDto.public_id,
+        mockPublicDto.id,
       );
     });
   });
@@ -115,24 +115,24 @@ describe('WebhooksController', () => {
         .send(mockRequestDto)
         .expect(201);
 
-      expect(res.body).toHaveProperty('public_id');
+      expect(res.body).toHaveProperty('id');
       expect(res.body.description).toBe(mockRequestDto.description);
       expect(res.body.url).toBe(mockRequestDto.url);
       expect(res.body.chains).toEqual(mockRequestDto.chains);
       expect(res.body.events.sort()).toEqual(mockRequestDto.events.sort());
     });
-    it('PUT /webhooks/:public_id — should return 404', async () => {
+    it('PUT /webhooks/:id — should return 404', async () => {
       await request(app.getHttpServer())
-        .put(`/webhooks/${mockPublicDto.public_id}`)
+        .put(`/webhooks/${mockPublicDto.id}`)
         .send(mockRequestDto)
         .expect(404);
     });
-    it('PUT /webhooks/:public_id — should update the webhook', async () => {
+    it('PUT /webhooks/:id — should update the webhook', async () => {
       let res = await request(app.getHttpServer())
         .post('/webhooks')
         .send(mockRequestDto)
         .expect(201);
-      const public_id = res.body.public_id;
+      const public_id = res.body.id;
       const updated = { ...mockRequestDto, description: 'Updated E2E Webhook' };
 
       res = await request(app.getHttpServer())
@@ -141,37 +141,37 @@ describe('WebhooksController', () => {
         .expect(200);
 
       expect(res.body.description).toBe('Updated E2E Webhook');
-      expect(res.body.public_id).toBe(public_id);
+      expect(res.body.id).toBe(public_id);
     });
-    it('GET /webhooks/:public_id — should return 404', async () => {
+    it('GET /webhooks/:id — should return 404', async () => {
       await request(app.getHttpServer())
-        .get(`/webhooks/${mockPublicDto.public_id}`)
+        .get(`/webhooks/${mockPublicDto.id}`)
         .expect(404);
     });
-    it('GET /webhooks/:public_id — should retrieve the webhook', async () => {
+    it('GET /webhooks/:id — should retrieve the webhook', async () => {
       let res = await request(app.getHttpServer())
         .post('/webhooks')
         .send(mockRequestDto)
         .expect(201);
-      const public_id = res.body.public_id;
+      const public_id = res.body.id;
       res = await request(app.getHttpServer())
         .get(`/webhooks/${public_id}`)
         .expect(200);
 
-      expect(res.body.public_id).toBe(public_id);
+      expect(res.body.id).toBe(public_id);
       expect(res.body.description).toBe('Test Webhook');
     });
-    it('DELETE /webhooks/:public_id — should return 404', async () => {
+    it('DELETE /webhooks/:id — should return 404', async () => {
       await request(app.getHttpServer())
-        .delete(`/webhooks/${mockPublicDto.public_id}`)
+        .delete(`/webhooks/${mockPublicDto.id}`)
         .expect(404);
     });
-    it('DELETE /webhooks/:public_id — should delete the webhook', async () => {
+    it('DELETE /webhooks/:id — should delete the webhook', async () => {
       let res = await request(app.getHttpServer())
         .post('/webhooks')
         .send(mockRequestDto)
         .expect(201);
-      const public_id = res.body.public_id;
+      const public_id = res.body.id;
 
       res = await request(app.getHttpServer())
         .get(`/webhooks/${public_id}`)

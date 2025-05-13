@@ -36,7 +36,7 @@ export class WebhookRequestDto {
 
   @ApiProperty({ description: 'Field to enable or disable the webhook.' })
   @IsBoolean()
-  is_active: boolean;
+  isActive: boolean;
 
   @ApiProperty({
     description: 'Authorization header value to send with requests',
@@ -67,5 +67,5 @@ export class WebhookRequestDto {
 export class WebhookPublicDto extends WebhookRequestDto {
   @ApiProperty({ description: 'Public UUID used to identify the webhook' })
   @IsUUID()
-  public_id: string;
+  id: string;
 }
