@@ -35,7 +35,7 @@ export class WebhookService {
   }
 
   findAllActive(): Promise<Webhook[]> {
-    return this.WebHooksRepository.findBy({ isActive: true });
+    return this.WebHooksRepository.findBy({ is_active: true });
   }
 
   async getCachedActiveWebhooks(): Promise<Webhook[]> {

@@ -24,7 +24,7 @@ export class Webhook extends BaseEntity {
   description: string;
 
   @Column({ default: true })
-  isActive: boolean;
+  is_active: boolean;
 
   @Column()
   authorization: string;
@@ -120,7 +120,7 @@ export class Webhook extends BaseEntity {
       id: this.public_id,
       description: this.description,
       url: this.url,
-      isActive: this.isActive,
+      isActive: this.is_active,
       authorization: this.authorization,
       chains: this.chains.map(Number),
       events,
@@ -139,7 +139,7 @@ export class Webhook extends BaseEntity {
     webhook.description = public_webhook.description;
     webhook.authorization = public_webhook.authorization;
     webhook.chains = public_webhook.chains.map(String);
-    webhook.isActive = public_webhook.isActive;
+    webhook.is_active = public_webhook.isActive;
 
     webhook.sendConfirmations = public_webhook.events.includes(
       SendEventTypes.SEND_CONFIRMATIONS,

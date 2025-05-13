@@ -430,9 +430,7 @@ describe('Webhook service', () => {
     it('Should return the public webhook', async () => {
       const created_webhook =
         await webhookService.createWebhook(request_webhook);
-      const webhook = await webhookService.getWebhook(
-        created_webhook.id,
-      );
+      const webhook = await webhookService.getWebhook(created_webhook.id);
       expect(webhook).not.toBeNull();
       expect(webhook).not.toBeNull();
       expect(webhook?.id).toBe(created_webhook.id);

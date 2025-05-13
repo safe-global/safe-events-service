@@ -24,10 +24,10 @@ describe('WebhooksController', () => {
   };
 
   beforeAll(async () => {
+    process.env.ADMIN_WEBHOOK_AUTH = 'super-secret-auth-key';
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
     }).compile();
-
     app = moduleFixture.createNestApplication();
     await app.init();
   });
@@ -103,15 +103,20 @@ describe('WebhooksController', () => {
 
       const result = await controller.deleteWebhook(mockPublicDto.id);
       expect(result).toBeUndefined();
-      expect(service.deleteWebhook).toHaveBeenCalledWith(
-        mockPublicDto.id,
-      );
+      expect(service.deleteWebhook).toHaveBeenCalledWith(mockPublicDto.id);
     });
   });
   describe('Test E2E webhooks endpoints', () => {
+    it('POST /webhooks — should returen 403', async () => {
+      await request(app.getHttpServer())
+        .post('/webhooks')
+        .send(mockRequestDto)
+        .expect(403);
+    });
     it('POST /webhooks — should create a webhook', async () => {
       const res = await request(app.getHttpServer())
         .post('/webhooks')
+        .set('Authorization', 'Basic ' + process.env.ADMIN_WEBHOOK_AUTH)
         .send(mockRequestDto)
         .expect(201);
 
@@ -121,15 +126,23 @@ describe('WebhooksController', () => {
       expect(res.body.chains).toEqual(mockRequestDto.chains);
       expect(res.body.events.sort()).toEqual(mockRequestDto.events.sort());
     });
+    it('PUT /webhooks/:id — should return 403', async () => {
+      await request(app.getHttpServer())
+        .put(`/webhooks/${mockPublicDto.id}`)
+        .send(mockRequestDto)
+        .expect(403);
+    });
     it('PUT /webhooks/:id — should return 404', async () => {
       await request(app.getHttpServer())
         .put(`/webhooks/${mockPublicDto.id}`)
+        .set('Authorization', 'Basic ' + process.env.ADMIN_WEBHOOK_AUTH)
         .send(mockRequestDto)
         .expect(404);
     });
     it('PUT /webhooks/:id — should update the webhook', async () => {
       let res = await request(app.getHttpServer())
         .post('/webhooks')
+        .set('Authorization', 'Basic ' + process.env.ADMIN_WEBHOOK_AUTH)
         .send(mockRequestDto)
         .expect(201);
       const public_id = res.body.id;
@@ -137,52 +150,72 @@ describe('WebhooksController', () => {
 
       res = await request(app.getHttpServer())
         .put(`/webhooks/${public_id}`)
+        .set('Authorization', 'Basic ' + process.env.ADMIN_WEBHOOK_AUTH)
         .send(updated)
         .expect(200);
 
       expect(res.body.description).toBe('Updated E2E Webhook');
       expect(res.body.id).toBe(public_id);
     });
+    it('GET /webhooks/:id — should return 403', async () => {
+      await request(app.getHttpServer())
+        .get(`/webhooks/${mockPublicDto.id}`)
+        .set('Authorization', 'Basic ' + 'other-wrong-token')
+        .expect(403);
+    });
     it('GET /webhooks/:id — should return 404', async () => {
       await request(app.getHttpServer())
         .get(`/webhooks/${mockPublicDto.id}`)
+        .set('Authorization', 'Basic ' + process.env.ADMIN_WEBHOOK_AUTH)
         .expect(404);
     });
     it('GET /webhooks/:id — should retrieve the webhook', async () => {
       let res = await request(app.getHttpServer())
         .post('/webhooks')
+        .set('Authorization', 'Basic ' + process.env.ADMIN_WEBHOOK_AUTH)
         .send(mockRequestDto)
         .expect(201);
       const public_id = res.body.id;
       res = await request(app.getHttpServer())
         .get(`/webhooks/${public_id}`)
+        .set('Authorization', 'Basic ' + process.env.ADMIN_WEBHOOK_AUTH)
         .expect(200);
 
       expect(res.body.id).toBe(public_id);
       expect(res.body.description).toBe('Test Webhook');
     });
+    it('DELETE /webhooks/:id — should return 403', async () => {
+      await request(app.getHttpServer())
+        .delete(`/webhooks/${mockPublicDto.id}`)
+        .expect(403);
+    });
     it('DELETE /webhooks/:id — should return 404', async () => {
       await request(app.getHttpServer())
         .delete(`/webhooks/${mockPublicDto.id}`)
+        .set('Authorization', 'Basic ' + process.env.ADMIN_WEBHOOK_AUTH)
         .expect(404);
     });
     it('DELETE /webhooks/:id — should delete the webhook', async () => {
       let res = await request(app.getHttpServer())
         .post('/webhooks')
+        .set('Authorization', 'Basic ' + process.env.ADMIN_WEBHOOK_AUTH)
         .send(mockRequestDto)
         .expect(201);
       const public_id = res.body.id;
 
       res = await request(app.getHttpServer())
         .get(`/webhooks/${public_id}`)
+        .set('Authorization', 'Basic ' + process.env.ADMIN_WEBHOOK_AUTH)
         .expect(200);
 
       await request(app.getHttpServer())
         .delete(`/webhooks/${public_id}`)
+        .set('Authorization', 'Basic ' + process.env.ADMIN_WEBHOOK_AUTH)
         .expect(204);
 
       res = await request(app.getHttpServer())
         .get(`/webhooks/${public_id}`)
+        .set('Authorization', 'Basic ' + process.env.ADMIN_WEBHOOK_AUTH)
         .expect(404);
     });
   });

@@ -8,6 +8,7 @@ import {
   ParseUUIDPipe,
   Post,
   Put,
+  UseGuards,
 } from '@nestjs/common';
 import {
   ApiOkResponse,
@@ -19,12 +20,14 @@ import {
 import { WebhookPublicDto, WebhookRequestDto } from './dtos/webhook.dto';
 import { WebhookService } from './webhook.service';
 import { WebhookDoesNotExist } from './exceptions/webhook.exceptions';
+import { AdminWebhookGuard } from '../../auth/basic-auth.guard';
 
 @ApiTags('webhooks')
 @Controller('webhooks')
 export class WebhooksController {
   constructor(private readonly webhookService: WebhookService) {}
 
+  @UseGuards(AdminWebhookGuard)
   @Post()
   @ApiBody({ type: WebhookRequestDto })
   @ApiResponse({
@@ -38,6 +41,7 @@ export class WebhooksController {
     return await this.webhookService.createWebhook(body);
   }
 
+  @UseGuards(AdminWebhookGuard)
   @Get(':id')
   @ApiOkResponse({ type: WebhookPublicDto })
   @ApiNotFoundResponse({ description: 'Webhook not found' })
@@ -51,6 +55,7 @@ export class WebhooksController {
     return webhook;
   }
 
+  @UseGuards(AdminWebhookGuard)
   @Put(':id')
   @ApiBody({ type: WebhookRequestDto })
   @ApiResponse({
@@ -65,6 +70,7 @@ export class WebhooksController {
     return await this.webhookService.updateWebhook(public_id, body);
   }
 
+  @UseGuards(AdminWebhookGuard)
   @Delete(':id')
   @ApiResponse({
     status: 204,
