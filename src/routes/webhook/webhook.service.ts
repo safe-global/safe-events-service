@@ -216,6 +216,12 @@ export class WebhookService {
     }
   }
 
+  /**
+   * Update a Webhook with the provided request data by publicId
+   * @param publicId
+   * @param requestData
+   * @returns Public Webhook DTO
+   */
   async updateWebhook(
     publicId: string,
     requestData: WebhookRequestDto,
@@ -229,6 +235,10 @@ export class WebhookService {
     return saved.toPublicDto();
   }
 
+  /**
+   * Removes a Webhook
+   * @param publicId
+   */
   async deleteWebhook(publicId: string) {
     const result = await this.WebHooksRepository.delete({ publicId: publicId });
 
