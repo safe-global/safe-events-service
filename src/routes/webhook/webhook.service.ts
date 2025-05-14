@@ -184,7 +184,7 @@ export class WebhookService {
    * @returns PublicWebhook
    */
   async getWebhook(publicId: string): Promise<WebhookPublicDto | null> {
-    const webhook = await Webhook.findOneBy({ publicId: publicId });
+    const webhook = await Webhook.findOneBy({ id: publicId });
     return webhook ? webhook.toPublicDto() : null;
   }
 
@@ -200,7 +200,7 @@ export class WebhookService {
     const publicId = uuidv4();
     const webhookDto = {
       ...requestData,
-      publicId: publicId,
+      id: publicId,
     };
     const publicWebhookDto = plainToInstance(WebhookPublicDto, webhookDto);
     const webhook = Webhook.fromPublicDto(publicWebhookDto);
@@ -226,7 +226,7 @@ export class WebhookService {
     publicId: string,
     requestData: WebhookRequestDto,
   ): Promise<WebhookPublicDto> {
-    const webhook = await Webhook.findOneBy({ publicId: publicId });
+    const webhook = await Webhook.findOneBy({ id: publicId });
     if (webhook == null) {
       throw new WebhookDoesNotExist();
     }
@@ -240,7 +240,7 @@ export class WebhookService {
    * @param publicId
    */
   async deleteWebhook(publicId: string) {
-    const result = await this.WebHooksRepository.delete({ publicId: publicId });
+    const result = await this.WebHooksRepository.delete({ id: publicId });
 
     if (result.affected === 0) {
       throw new WebhookDoesNotExist();

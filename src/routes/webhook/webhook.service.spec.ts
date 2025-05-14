@@ -409,10 +409,10 @@ describe('Webhook service', () => {
       expect(webhook?.chains).toEqual(requestWebhook.chains);
       expect(webhook?.events.sort()).toEqual(requestWebhook.events.sort());
       const createdWebhook = await Webhook.findOneBy({
-        publicId: webhook?.id,
+        id: webhook?.id,
       });
       expect(createdWebhook).not.toBeNull();
-      expect(createdWebhook?.publicId).toBe(webhook?.id);
+      expect(createdWebhook?.id).toBe(webhook?.id);
       expect(createdWebhook?.url).toBe(requestWebhook.url);
       expect(createdWebhook?.sendTokenTransfers).toBe(true);
       expect(createdWebhook?.sendEtherTransfers).toBe(true);
@@ -474,10 +474,10 @@ describe('Webhook service', () => {
       expect(updatedWebhook.description).toBe('Modified description');
       // Check if was stored in database
       const storedWebhook = await webhookRepository.findOne({
-        where: { publicId: createdWebhook!.id },
+        where: { id: createdWebhook!.id },
       });
       expect(storedWebhook).not.toBeNull();
-      expect(storedWebhook?.publicId).toBe(createdWebhook!.id);
+      expect(storedWebhook?.id).toBe(createdWebhook!.id);
       expect(storedWebhook?.chains).toEqual(['5']);
       expect(storedWebhook?.description).toBe('Modified description');
     });
@@ -492,7 +492,7 @@ describe('Webhook service', () => {
       await webhookService.deleteWebhook(createdWebhook!.id);
 
       const storedWebhook = await webhookRepository.findOne({
-        where: { publicId: createdWebhook!.id },
+        where: { id: createdWebhook!.id },
       });
       expect(storedWebhook).toBeNull();
     });

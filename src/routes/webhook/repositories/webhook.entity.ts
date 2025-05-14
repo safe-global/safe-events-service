@@ -1,21 +1,11 @@
-import {
-  Entity,
-  Column,
-  PrimaryGeneratedColumn,
-  BaseEntity,
-  Generated,
-} from 'typeorm';
+import { Entity, Column, PrimaryGeneratedColumn, BaseEntity } from 'typeorm';
 import { TxServiceEvent } from '../../events/event.dto';
 import { SendEventTypes, WebhookPublicDto } from '../dtos/webhook.dto';
 
 @Entity()
 export class Webhook extends BaseEntity {
-  @PrimaryGeneratedColumn()
-  id: number;
-
-  @Column({ unique: true })
-  @Generated('uuid')
-  publicId: string;
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
 
   @Column({ unique: true, type: 'varchar', length: 300 })
   url: string;
@@ -117,7 +107,7 @@ export class Webhook extends BaseEntity {
     if (this.sendDelegates) events.push(SendEventTypes.SEND_DELEGATES);
 
     return {
-      id: this.publicId,
+      id: this.id,
       description: this.description,
       url: this.url,
       isActive: this.isActive,
@@ -134,7 +124,7 @@ export class Webhook extends BaseEntity {
    */
   static fromPublicDto(public_webhook: WebhookPublicDto): Webhook {
     const webhook = new Webhook();
-    webhook.publicId = public_webhook.id;
+    webhook.id = public_webhook.id;
     webhook.url = public_webhook.url;
     webhook.description = public_webhook.description;
     webhook.authorization = public_webhook.authorization;
