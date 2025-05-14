@@ -1,5 +1,6 @@
 import { TxServiceEvent, TxServiceEventType } from '../../events/event.dto';
 import { Webhook } from './webhook.entity';
+import { WebhookPublicDto } from '../dtos/webhook.dto';
 
 describe('Webhook entity', () => {
   let txServiceEvent: TxServiceEvent;
@@ -156,5 +157,62 @@ describe('Webhook entity', () => {
     expect(webhook.isEventRelevant(txServiceEvent)).toBe(true);
     webhook.sendDelegates = false;
     expect(webhook.isEventRelevant(txServiceEvent)).toBe(false);
+  });
+
+  it('Webhook should be converted right to public webhook', async () => {
+    let public_webhook = webhook.toPublicDto();
+    expect(public_webhook.id).toBe(webhook.id);
+    expect(public_webhook.description).toBe(webhook.description);
+    expect(public_webhook.url).toBe(webhook.url);
+    expect(public_webhook.authorization).toBe(webhook.authorization);
+    expect(public_webhook.chains).toHaveLength(0);
+    expect(public_webhook.events).toHaveLength(9);
+    expect(public_webhook.events).toContain('SEND_CONFIRMATIONS');
+    expect(public_webhook.events).toContain('SEND_MULTISIG_TXS');
+    expect(public_webhook.events).toContain('SEND_ETHER_TRANSFERS');
+    expect(public_webhook.events).toContain('SEND_TOKEN_TRANSFERS');
+    expect(public_webhook.events).toContain('SEND_MODULE_TXS');
+    expect(public_webhook.events).toContain('SEND_SAFE_CREATIONS');
+    expect(public_webhook.events).toContain('SEND_MESSAGES');
+    expect(public_webhook.events).toContain('SEND_REORGS');
+    expect(public_webhook.events).toContain('SEND_DELEGATES');
+    webhook.chains = ['4', '100'];
+    webhook.sendConfirmations = false;
+    public_webhook = webhook.toPublicDto();
+    expect(public_webhook.chains).toHaveLength(2);
+    expect(public_webhook.events).toHaveLength(8);
+    expect(public_webhook.events).not.toContain('confirmations');
+  });
+
+  it('Public Webhook should be converted right to Webhook', async () => {
+    const public_webhook: WebhookPublicDto = {
+      id: '550e8400-e29b-41d4-a716-446655440000',
+      description: 'Awesome webhook',
+      url: 'https://example.com/webhook',
+      authorization: 'Bearer abc123secret',
+      chains: [1, 137],
+      isActive: true,
+      events: [
+        'SEND_CONFIRMATIONS',
+        'SEND_TOKEN_TRANSFERS',
+        'SEND_ETHER_TRANSFERS',
+      ],
+    };
+    const generated_webhook = Webhook.fromPublicDto(public_webhook);
+    expect(generated_webhook.id).toBe(public_webhook.id);
+    expect(generated_webhook.description).toBe(public_webhook.description);
+    expect(generated_webhook.url).toBe(public_webhook.url);
+    expect(generated_webhook.isActive).toBe(true);
+    expect(generated_webhook.authorization).toBe(public_webhook.authorization);
+    expect(generated_webhook.chains).toHaveLength(2);
+    expect(generated_webhook.sendConfirmations).toBe(true);
+    expect(generated_webhook.sendTokenTransfers).toBe(true);
+    expect(generated_webhook.sendEtherTransfers).toBe(true);
+    expect(generated_webhook.sendMultisigTxs).toBe(false);
+    expect(generated_webhook.sendDelegates).toBe(false);
+    expect(generated_webhook.sendModuleTransactions).toBe(false);
+    expect(generated_webhook.sendSafeCreations).toBe(false);
+    expect(generated_webhook.sendMessages).toBe(false);
+    expect(generated_webhook.sendReorgs).toBe(false);
   });
 });

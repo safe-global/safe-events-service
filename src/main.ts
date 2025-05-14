@@ -2,7 +2,7 @@ import { NestFactory } from '@nestjs/core';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { AppModule } from './app.module';
 import { JsonConsoleLogger } from './logging/json-logger';
-import { INestApplication, LogLevel } from '@nestjs/common';
+import { INestApplication, LogLevel, ValidationPipe } from '@nestjs/common';
 
 /**
  * Configure swagger for app
@@ -54,6 +54,7 @@ async function bootstrap() {
   const basePath = process.env.URL_BASE_PATH || '';
   app.setGlobalPrefix(basePath);
   setupSwagger(app, basePath);
+  app.useGlobalPipes(new ValidationPipe());
   await app.listen(3000);
 }
 bootstrap();

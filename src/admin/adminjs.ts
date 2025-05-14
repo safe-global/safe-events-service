@@ -1,4 +1,4 @@
-import { Webhook } from '../routes/webhook/entities/webhook.entity';
+import { Webhook } from '../routes/webhook/repositories/webhook.entity';
 import { AuthModule } from './auth/auth.module';
 import { AuthService } from './auth/auth.service';
 
