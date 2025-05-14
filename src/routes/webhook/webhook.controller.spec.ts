@@ -145,17 +145,17 @@ describe('WebhooksController', () => {
         .set('Authorization', 'Basic ' + process.env.ADMIN_WEBHOOK_AUTH)
         .send(mockRequestDto)
         .expect(201);
-      const public_id = res.body.id;
+      const publicId = res.body.id;
       const updated = { ...mockRequestDto, description: 'Updated E2E Webhook' };
 
       res = await request(app.getHttpServer())
-        .put(`/webhooks/${public_id}`)
+        .put(`/webhooks/${publicId}`)
         .set('Authorization', 'Basic ' + process.env.ADMIN_WEBHOOK_AUTH)
         .send(updated)
         .expect(200);
 
       expect(res.body.description).toBe('Updated E2E Webhook');
-      expect(res.body.id).toBe(public_id);
+      expect(res.body.id).toBe(publicId);
     });
     it('GET /webhooks/:id — should return 403', async () => {
       await request(app.getHttpServer())
@@ -175,13 +175,13 @@ describe('WebhooksController', () => {
         .set('Authorization', 'Basic ' + process.env.ADMIN_WEBHOOK_AUTH)
         .send(mockRequestDto)
         .expect(201);
-      const public_id = res.body.id;
+      const publicId = res.body.id;
       res = await request(app.getHttpServer())
-        .get(`/webhooks/${public_id}`)
+        .get(`/webhooks/${publicId}`)
         .set('Authorization', 'Basic ' + process.env.ADMIN_WEBHOOK_AUTH)
         .expect(200);
 
-      expect(res.body.id).toBe(public_id);
+      expect(res.body.id).toBe(publicId);
       expect(res.body.description).toBe('Test Webhook');
     });
     it('DELETE /webhooks/:id — should return 403', async () => {
@@ -201,20 +201,20 @@ describe('WebhooksController', () => {
         .set('Authorization', 'Basic ' + process.env.ADMIN_WEBHOOK_AUTH)
         .send(mockRequestDto)
         .expect(201);
-      const public_id = res.body.id;
+      const publicId = res.body.id;
 
       res = await request(app.getHttpServer())
-        .get(`/webhooks/${public_id}`)
+        .get(`/webhooks/${publicId}`)
         .set('Authorization', 'Basic ' + process.env.ADMIN_WEBHOOK_AUTH)
         .expect(200);
 
       await request(app.getHttpServer())
-        .delete(`/webhooks/${public_id}`)
+        .delete(`/webhooks/${publicId}`)
         .set('Authorization', 'Basic ' + process.env.ADMIN_WEBHOOK_AUTH)
         .expect(204);
 
       res = await request(app.getHttpServer())
-        .get(`/webhooks/${public_id}`)
+        .get(`/webhooks/${publicId}`)
         .set('Authorization', 'Basic ' + process.env.ADMIN_WEBHOOK_AUTH)
         .expect(404);
     });

@@ -35,7 +35,7 @@ export class WebhookService {
   }
 
   findAllActive(): Promise<Webhook[]> {
-    return this.WebHooksRepository.findBy({ is_active: true });
+    return this.WebHooksRepository.findBy({ isActive: true });
   }
 
   async getCachedActiveWebhooks(): Promise<Webhook[]> {
@@ -176,49 +176,49 @@ export class WebhookService {
   }
   /**
    * Get public webhook by its ID.
-   * @param public_id
+   * @param publicId
    * @returns PublicWebhook
    */
-  async getWebhook(public_id: string): Promise<WebhookPublicDto | null> {
-    const webhook = await Webhook.findOneBy({ public_id });
+  async getWebhook(publicId: string): Promise<WebhookPublicDto | null> {
+    const webhook = await Webhook.findOneBy({ publicId: publicId });
     return webhook ? webhook.toPublicDto() : null;
   }
 
   /**
    * Create a webhook from the provided data.
-   * Generates a random uuid for public_id.
-   * @param request_data
+   * Generates a random uuid for publicId.
+   * @param requestData
    * @returns stored webhook.
    */
   async createWebhook(
-    request_data: WebhookRequestDto,
+    requestData: WebhookRequestDto,
   ): Promise<WebhookPublicDto> {
-    const public_id = uuidv4();
-    const webhook_dto = {
-      ...request_data,
-      public_id,
+    const publicId = uuidv4();
+    const webhookDto = {
+      ...requestData,
+      publicId: publicId,
     };
-    const public_webhook_dto = plainToInstance(WebhookPublicDto, webhook_dto);
-    const webhook = Webhook.fromPublicDto(public_webhook_dto);
+    const publicWebhookDto = plainToInstance(WebhookPublicDto, webhookDto);
+    const webhook = Webhook.fromPublicDto(publicWebhookDto);
     const saved = await webhook.save();
     return saved.toPublicDto();
   }
 
   async updateWebhook(
-    public_id: string,
-    request_data: WebhookRequestDto,
+    publicId: string,
+    requestData: WebhookRequestDto,
   ): Promise<WebhookPublicDto> {
-    const webhook = await Webhook.findOneBy({ public_id });
+    const webhook = await Webhook.findOneBy({ publicId: publicId });
     if (webhook == null) {
       throw new WebhookDoesNotExist();
     }
-    Object.assign(webhook, request_data);
+    Object.assign(webhook, requestData);
     const saved = await this.WebHooksRepository.save(webhook);
     return saved.toPublicDto();
   }
 
-  async deleteWebhook(public_id: string) {
-    const result = await this.WebHooksRepository.delete({ public_id });
+  async deleteWebhook(publicId: string) {
+    const result = await this.WebHooksRepository.delete({ publicId: publicId });
 
     if (result.affected === 0) {
       throw new WebhookDoesNotExist();

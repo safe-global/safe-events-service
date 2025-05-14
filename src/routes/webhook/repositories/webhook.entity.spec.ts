@@ -161,7 +161,7 @@ describe('Webhook entity', () => {
 
   it('Webhook should be converted right to public webhook', async () => {
     let public_webhook = webhook.toPublicDto();
-    expect(public_webhook.id).toBe(webhook.public_id);
+    expect(public_webhook.id).toBe(webhook.publicId);
     expect(public_webhook.description).toBe(webhook.description);
     expect(public_webhook.url).toBe(webhook.url);
     expect(public_webhook.authorization).toBe(webhook.authorization);
@@ -199,10 +199,10 @@ describe('Webhook entity', () => {
       ],
     };
     const generated_webhook = Webhook.fromPublicDto(public_webhook);
-    expect(generated_webhook.public_id).toBe(public_webhook.id);
+    expect(generated_webhook.publicId).toBe(public_webhook.id);
     expect(generated_webhook.description).toBe(public_webhook.description);
     expect(generated_webhook.url).toBe(public_webhook.url);
-    expect(generated_webhook.is_active).toBe(true);
+    expect(generated_webhook.isActive).toBe(true);
     expect(generated_webhook.authorization).toBe(public_webhook.authorization);
     expect(generated_webhook.chains).toHaveLength(2);
     expect(generated_webhook.sendConfirmations).toBe(true);

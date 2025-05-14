@@ -15,16 +15,16 @@ export class Webhook extends BaseEntity {
 
   @Column({ unique: true })
   @Generated('uuid')
-  public_id: string;
+  publicId: string;
 
-  @Column({ type: 'varchar', length: 300 })
+  @Column({ unique: true, type: 'varchar', length: 300 })
   url: string;
 
   @Column({ type: 'varchar', length: 300 })
   description: string;
 
   @Column({ default: true })
-  is_active: boolean;
+  isActive: boolean;
 
   @Column()
   authorization: string;
@@ -117,10 +117,10 @@ export class Webhook extends BaseEntity {
     if (this.sendDelegates) events.push(SendEventTypes.SEND_DELEGATES);
 
     return {
-      id: this.public_id,
+      id: this.publicId,
       description: this.description,
       url: this.url,
-      isActive: this.is_active,
+      isActive: this.isActive,
       authorization: this.authorization,
       chains: this.chains.map(Number),
       events,
@@ -134,12 +134,12 @@ export class Webhook extends BaseEntity {
    */
   static fromPublicDto(public_webhook: WebhookPublicDto): Webhook {
     const webhook = new Webhook();
-    webhook.public_id = public_webhook.id;
+    webhook.publicId = public_webhook.id;
     webhook.url = public_webhook.url;
     webhook.description = public_webhook.description;
     webhook.authorization = public_webhook.authorization;
     webhook.chains = public_webhook.chains.map(String);
-    webhook.is_active = public_webhook.isActive;
+    webhook.isActive = public_webhook.isActive;
 
     webhook.sendConfirmations = public_webhook.events.includes(
       SendEventTypes.SEND_CONFIRMATIONS,

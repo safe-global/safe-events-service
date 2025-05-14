@@ -46,9 +46,9 @@ export class WebhooksController {
   @ApiOkResponse({ type: WebhookPublicDto })
   @ApiNotFoundResponse({ description: 'Webhook not found' })
   async getWebhookByUuid(
-    @Param('id', ParseUUIDPipe) public_id: string,
+    @Param('id', ParseUUIDPipe) publicId: string,
   ): Promise<WebhookPublicDto> {
-    const webhook = await this.webhookService.getWebhook(public_id);
+    const webhook = await this.webhookService.getWebhook(publicId);
     if (!webhook) {
       throw new WebhookDoesNotExist();
     }
@@ -64,10 +64,10 @@ export class WebhooksController {
     type: WebhookPublicDto,
   })
   async updateWebhook(
-    @Param('id', ParseUUIDPipe) public_id: string,
+    @Param('id', ParseUUIDPipe) publicId: string,
     @Body() body: WebhookRequestDto,
   ): Promise<WebhookPublicDto> {
-    return await this.webhookService.updateWebhook(public_id, body);
+    return await this.webhookService.updateWebhook(publicId, body);
   }
 
   @UseGuards(AdminWebhookGuard)
@@ -77,7 +77,7 @@ export class WebhooksController {
     description: 'Webhook deleted',
   })
   @HttpCode(204)
-  async deleteWebhook(@Param('id', ParseUUIDPipe) public_id: string) {
-    await this.webhookService.deleteWebhook(public_id);
+  async deleteWebhook(@Param('id', ParseUUIDPipe) publicId: string) {
+    await this.webhookService.deleteWebhook(publicId);
   }
 }
