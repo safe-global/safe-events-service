@@ -196,7 +196,7 @@ export class WebhookService {
    */
   async createWebhook(
     requestData: WebhookRequestDto,
-  ): Promise<WebhookPublicDto | undefined> {
+  ): Promise<WebhookPublicDto> {
     const publicId = uuidv4();
     const webhookDto = {
       ...requestData,
@@ -213,6 +213,8 @@ export class WebhookService {
           throw new WebhookAlreadyExists(error.driverError.detail);
         }
       }
+      // Unexpected error
+      throw error;
     }
   }
 

@@ -37,7 +37,7 @@ export class WebhooksController {
   })
   async createWebhook(
     @Body() body: WebhookRequestDto,
-  ): Promise<WebhookPublicDto | undefined> {
+  ): Promise<WebhookPublicDto> {
     return await this.webhookService.createWebhook(body);
   }
 

@@ -443,11 +443,10 @@ describe('Webhook service', () => {
     });
     it('Should return the public webhook', async () => {
       const createdWebhook = await webhookService.createWebhook(requestWebhook);
-      expect(createdWebhook).not.toBeUndefined();
-      const webhook = await webhookService.getWebhook(createdWebhook!.id);
+      const webhook = await webhookService.getWebhook(createdWebhook.id);
       expect(webhook).not.toBeNull();
       expect(webhook).not.toBeNull();
-      expect(webhook?.id).toBe(createdWebhook!.id);
+      expect(webhook?.id).toBe(createdWebhook.id);
       expect(webhook?.url).toBe(requestWebhook.url);
       expect(webhook?.chains).toEqual(requestWebhook.chains);
       expect(webhook?.events.sort()).toEqual(requestWebhook.events.sort());
@@ -462,22 +461,21 @@ describe('Webhook service', () => {
     });
     it('Should update the existing webhook', async () => {
       const createdWebhook = await webhookService.createWebhook(requestWebhook);
-      expect(createdWebhook).not.toBeUndefined();
       requestWebhook.description = 'Modified description';
       requestWebhook.chains = [5];
       const updatedWebhook = await webhookService.updateWebhook(
-        createdWebhook!.id,
+        createdWebhook.id,
         requestWebhook,
       );
-      expect(updatedWebhook.id).toBe(createdWebhook!.id);
+      expect(updatedWebhook.id).toBe(createdWebhook.id);
       expect(updatedWebhook.chains).toEqual([5]);
       expect(updatedWebhook.description).toBe('Modified description');
       // Check if was stored in database
       const storedWebhook = await webhookRepository.findOne({
-        where: { id: createdWebhook!.id },
+        where: { id: createdWebhook.id },
       });
       expect(storedWebhook).not.toBeNull();
-      expect(storedWebhook?.id).toBe(createdWebhook!.id);
+      expect(storedWebhook?.id).toBe(createdWebhook.id);
       expect(storedWebhook?.chains).toEqual(['5']);
       expect(storedWebhook?.description).toBe('Modified description');
     });
@@ -488,11 +486,10 @@ describe('Webhook service', () => {
     });
     it('Should delete a webhook', async () => {
       const createdWebhook = await webhookService.createWebhook(requestWebhook);
-      expect(createdWebhook).not.toBeUndefined();
-      await webhookService.deleteWebhook(createdWebhook!.id);
+      await webhookService.deleteWebhook(createdWebhook.id);
 
       const storedWebhook = await webhookRepository.findOne({
-        where: { id: createdWebhook!.id },
+        where: { id: createdWebhook.id },
       });
       expect(storedWebhook).toBeNull();
     });

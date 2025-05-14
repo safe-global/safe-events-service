@@ -8,6 +8,8 @@ import {
   ArrayNotEmpty,
   MaxLength,
   IsBoolean,
+  IsDefined,
+  IsNotEmpty,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 
@@ -25,16 +27,21 @@ export enum SendEventTypes {
 
 export class WebhookRequestDto {
   @ApiProperty({ description: 'Short description of the webhook' })
+  @IsDefined({ message: 'Description is required' })
+  @IsNotEmpty({ message: 'Description must not be empty' })
   @IsString()
   @MaxLength(300, { message: 'Description must not exceed 300 characters' })
   description: string;
 
   @ApiProperty({ description: 'Target URL where webhook events will be sent' })
+  @IsDefined({ message: 'URL is required' })
+  @IsNotEmpty({ message: 'URL must not be empty' })
   @IsUrl()
   @MaxLength(300, { message: 'Url must not exceed 300 characters' })
   url: string;
 
   @ApiProperty({ description: 'Field to enable or disable the webhook.' })
+  @IsDefined({ message: 'isActive is required' })
   @IsBoolean()
   isActive: boolean;
 
