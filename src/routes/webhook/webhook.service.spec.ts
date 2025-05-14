@@ -12,7 +12,10 @@ import { AxiosError, AxiosHeaders, AxiosResponse } from 'axios';
 import { throwError, of } from 'rxjs';
 import { WebhookRequestDto } from './dtos/webhook.dto';
 import { DataSource, Repository } from 'typeorm';
-import { WebhookAlreadyExists, WebhookDoesNotExist } from './exceptions/webhook.exceptions';
+import {
+  WebhookAlreadyExists,
+  WebhookDoesNotExist,
+} from './exceptions/webhook.exceptions';
 
 describe('Webhook service', () => {
   let httpService: HttpService;

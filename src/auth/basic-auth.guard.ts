@@ -22,7 +22,6 @@ export class AdminWebhookGuard implements CanActivate {
   canActivate(context: ExecutionContext): boolean | Promise<boolean> {
     const request = context.switchToHttp().getRequest();
     const token = this.configService.get('ADMIN_WEBHOOK_AUTH', '');
-    // If token is not set, authentication is disabled
     return request.headers['authorization'] === `Basic ${token}`;
   }
 }
