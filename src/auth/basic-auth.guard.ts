@@ -18,7 +18,11 @@ export class BasicAuthGuard implements CanActivate {
 @Injectable()
 export class AdminWebhookGuard implements CanActivate {
   constructor(private readonly configService: ConfigService) {}
-
+  /**
+   * Guard to protect webhooks endpoint.
+   * @param context
+   * @returns
+   */
   canActivate(context: ExecutionContext): boolean | Promise<boolean> {
     const request = context.switchToHttp().getRequest();
     const token = this.configService.get('ADMIN_WEBHOOK_AUTH', '');
