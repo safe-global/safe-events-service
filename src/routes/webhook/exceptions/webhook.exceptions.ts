@@ -1,8 +1,8 @@
 import { HttpException } from '@nestjs/common';
 
 export class WebhookAlreadyExists extends HttpException {
-  constructor() {
-    super('Webhook already exists', 422);
+  constructor(details?: string) {
+    super('Webhook already exists' + (details ? `: ${details}` : ''), 422);
   }
 }
 

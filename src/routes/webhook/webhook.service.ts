@@ -1,7 +1,7 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { Cache } from 'cache-manager';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { QueryFailedError, Repository } from 'typeorm';
 import { Webhook } from './repositories/webhook.entity';
 import { WebhookPublicDto, WebhookRequestDto } from './dtos/webhook.dto';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
@@ -12,7 +12,11 @@ import { AxiosError, AxiosResponse } from 'axios';
 import { TxServiceEvent } from '../events/event.dto';
 import { v4 as uuidv4 } from 'uuid';
 import { plainToInstance } from 'class-transformer';
-import { WebhookDoesNotExist } from './exceptions/webhook.exceptions';
+import {
+  WebhookAlreadyExists,
+  WebhookDoesNotExist,
+} from './exceptions/webhook.exceptions';
+import { DUPLICATED_KEY_ERROR } from '../../datasources/db/postgres.errors';
 
 @Injectable()
 export class WebhookService {
@@ -192,7 +196,7 @@ export class WebhookService {
    */
   async createWebhook(
     requestData: WebhookRequestDto,
-  ): Promise<WebhookPublicDto> {
+  ): Promise<WebhookPublicDto | undefined> {
     const publicId = uuidv4();
     const webhookDto = {
       ...requestData,
@@ -200,8 +204,16 @@ export class WebhookService {
     };
     const publicWebhookDto = plainToInstance(WebhookPublicDto, webhookDto);
     const webhook = Webhook.fromPublicDto(publicWebhookDto);
-    const saved = await webhook.save();
-    return saved.toPublicDto();
+    try {
+      const saved = await webhook.save();
+      return saved.toPublicDto();
+    } catch (error) {
+      if (error instanceof QueryFailedError) {
+        if (error.driverError.code === DUPLICATED_KEY_ERROR) {
+          throw new WebhookAlreadyExists(error.driverError.detail);
+        }
+      }
+    }
   }
 
   async updateWebhook(
