@@ -228,11 +228,16 @@ export class WebhookService {
     publicId: string,
     requestData: WebhookRequestDto,
   ): Promise<WebhookPublicDto> {
-    const webhook = await Webhook.findOneBy({ id: publicId });
-    if (webhook == null) {
+    const webhookStored = await Webhook.findOneBy({ id: publicId });
+    if (webhookStored == null) {
       throw new WebhookDoesNotExist();
     }
-    Object.assign(webhook, requestData);
+    const webhookDto = {
+      ...requestData,
+      id: webhookStored.id,
+    };
+    const publicWebhookDto = plainToInstance(WebhookPublicDto, webhookDto);
+    const webhook = Webhook.fromPublicDto(publicWebhookDto);
     const saved = await this.WebHooksRepository.save(webhook);
     return saved.toPublicDto();
   }
