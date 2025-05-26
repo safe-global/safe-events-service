@@ -145,8 +145,15 @@ describe('WebhooksController', () => {
         .set('Authorization', 'Basic ' + process.env.ADMIN_WEBHOOK_AUTH)
         .send(mockRequestDto)
         .expect(201);
+
+      expect(res.body.events).toStrictEqual(['SEND_CONFIRMATIONS']);
+
       const publicId = res.body.id;
-      const updated = { ...mockRequestDto, description: 'Updated E2E Webhook' };
+      const updated = {
+        ...mockRequestDto,
+        description: 'Updated E2E Webhook',
+        events: ['SEND_MULTISIG_TXS'],
+      };
 
       res = await request(app.getHttpServer())
         .put(`/webhooks/${publicId}`)
@@ -155,6 +162,7 @@ describe('WebhooksController', () => {
         .expect(200);
 
       expect(res.body.description).toBe('Updated E2E Webhook');
+      expect(res.body.events).toStrictEqual(['SEND_MULTISIG_TXS']);
       expect(res.body.id).toBe(publicId);
     });
     it('GET /webhooks/:id — should return 403', async () => {
