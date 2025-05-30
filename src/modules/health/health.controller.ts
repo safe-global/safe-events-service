@@ -5,7 +5,7 @@ import {
   HealthCheck,
   TypeOrmHealthIndicator,
 } from '@nestjs/terminus';
-import { QueueHealthIndicator } from '../datasources/queue/queue.health';
+import { QueueHealthIndicator } from '../../datasources/queue/queue.health';
 import { ApiTags, ApiOkResponse } from '@nestjs/swagger';
 import { Health, HealthStatus } from './health.entities';
 
