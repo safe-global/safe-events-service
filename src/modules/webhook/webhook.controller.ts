@@ -20,7 +20,7 @@ import {
 import { WebhookPublicDto, WebhookRequestDto } from './dtos/webhook.dto';
 import { WebhookService } from './webhook.service';
 import { WebhookDoesNotExist } from './exceptions/webhook.exceptions';
-import { AdminWebhookGuard } from '../../auth/basic-auth.guard';
+import { AdminWebhookGuard } from '../../common/guards/basic-auth.guard';
 
 @ApiTags('webhooks')
 @Controller('webhooks')

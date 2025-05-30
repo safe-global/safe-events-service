@@ -3,8 +3,8 @@ import { HealthController } from './health.controller';
 import { HealthModule } from './health.module';
 import { HealthCheckResult, HealthCheckStatus } from '@nestjs/terminus';
 import { ConfigModule } from '@nestjs/config';
-import { DatabaseModule } from '../datasources/db/database.module';
-import { QueueProvider } from '../datasources/queue/queue.provider';
+import { DatabaseModule } from '../../datasources/db/database.module';
+import { QueueProvider } from '../../datasources/queue/queue.provider';
 import { Health, HealthStatus } from './health.entities';
 
 describe('HealthController', () => {

@@ -3,9 +3,9 @@ import { INestApplication } from '@nestjs/common';
 import * as request from 'supertest';
 import { AppModule } from './../src/app.module';
 import { QueueProvider } from '../src/datasources/queue/queue.provider';
-import { EventsService } from '../src/routes/events/events.service';
+import { EventsService } from '../src/modules/events/events.service';
 import { Server } from 'tls';
-import { TxServiceEventType } from '../src/routes/events/event.dto';
+import { TxServiceEventType } from '../src/modules/events/event.dto';
 import { EventSource } from 'eventsource';
 
 /* eslint-disable */
