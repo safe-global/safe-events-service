@@ -9,7 +9,7 @@ export const dataSourceOptions: DataSourceOptions = {
   type: 'postgres',
   url: process.env.MIGRATIONS_DATABASE_URL,
   entities: [Webhook],
-  migrations: [__dirname + '/../migrations/**/*{.ts,.js}'],
+  migrations: [__dirname + '/migrations/**/*{.ts,.js}'],
   ...(process.env.DATABASE_SSL_ENABLED == 'true'
     ? {
         ssl: process.env.DATABASE_CA_PATH
