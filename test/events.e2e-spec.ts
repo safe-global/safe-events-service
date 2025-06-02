@@ -1,11 +1,11 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
 import { AppModule } from '../src/app.module';
-import { EventsService } from '../src/routes/events/events.service';
-import { WebhookService } from '../src/routes/webhook/webhook.service';
-import { Webhook } from '../src/routes/webhook/repositories/webhook.entity';
+import { EventsService } from '../src/modules/events/events.service';
+import { WebhookService } from '../src/modules/webhook/webhook.service';
+import { Webhook } from '../src/modules/webhook/repositories/webhook.entity';
 import { QueueProvider } from '../src/datasources/queue/queue.provider';
-import { TxServiceEventType } from '../src/routes/events/event.dto';
+import { TxServiceEventType } from '../src/modules/events/event.dto';
 import { publishMessage } from './util';
 
 describe('Events handling', () => {

@@ -5,13 +5,13 @@ import {
   RequestMethod,
 } from '@nestjs/common';
 
-import { AboutModule } from './routes/about/about.module';
-import { AdminJsModule } from './admin/adminjs';
+import { AboutModule } from './modules/about/about.module';
+import { AdminJsModule } from './modules/admin/adminjs';
 import { ConfigModule } from '@nestjs/config';
 import { DatabaseModule } from './datasources/db/database.module';
-import { EventsModule } from './routes/events/events.module';
-import { HealthModule } from './health/health.module';
-import { WebhookModule } from './routes/webhook/webhook.module';
+import { EventsModule } from './modules/events/events.module';
+import { HealthModule } from './modules/health/health.module';
+import { WebhookModule } from './modules/webhook/webhook.module';
 import { RequestLoggerMiddleware } from './middleware/request-logger.middleware';
 
 @Module({
