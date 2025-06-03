@@ -1,13 +1,13 @@
 import { Test } from '@nestjs/testing';
 import { EventsService } from './events.service';
 import { QueueProvider } from '../../datasources/queue/queue.provider';
-import { WebhookService } from '../webhook/webhook.service';
 import { TxServiceEventType } from './event.dto';
 import { Logger } from '@nestjs/common';
+import { WebhookDispatcherService } from '../webhook/webhookDispatcher.service';
 
 describe('EventsService', () => {
   let eventsService: EventsService;
-  let webhookService: WebhookService;
+  let webhookDispatcherService: WebhookDispatcherService;
   const queueProvider = {
     /* eslint-disable @typescript-eslint/no-unused-vars */
     subscribeToEvents: async (_: (_: string) => Promise<string>) =>
@@ -17,7 +17,7 @@ describe('EventsService', () => {
   /* eslint-enable @typescript-eslint/no-unused-vars */
 
   beforeEach(async () => {
-    const webhookServiceMock = {
+    const webhookDispatcherServiceMock = {
       postEveryWebhook: async () => ({
         data: {},
         status: 200,
@@ -25,16 +25,18 @@ describe('EventsService', () => {
       }),
     };
     const module = await Test.createTestingModule({
-      providers: [EventsService, QueueProvider, WebhookService],
+      providers: [EventsService, QueueProvider, WebhookDispatcherService],
     })
       .overrideProvider(QueueProvider)
       .useValue(queueProvider)
-      .overrideProvider(WebhookService)
-      .useValue(webhookServiceMock)
+      .overrideProvider(WebhookDispatcherService)
+      .useValue(webhookDispatcherServiceMock)
       .compile();
 
     eventsService = module.get<EventsService>(EventsService);
-    webhookService = module.get<WebhookService>(WebhookService);
+    webhookDispatcherService = module.get<WebhookDispatcherService>(
+      WebhookDispatcherService,
+    );
   });
 
   describe('listenToEvents', () => {
@@ -47,7 +49,10 @@ describe('EventsService', () => {
 
   describe('processEvent', () => {
     it('should post webhooks', async () => {
-      const postEveryWebhook = jest.spyOn(webhookService, 'postEveryWebhook');
+      const postEveryWebhook = jest.spyOn(
+        webhookDispatcherService,
+        'postEveryWebhook',
+      );
       const pushEventToEventsObservable = jest.spyOn(
         eventsService,
         'pushEventToEventsObservable',
@@ -75,7 +80,10 @@ describe('EventsService', () => {
 
   describe('processMessageEvents', () => {
     it('should post webhooks', async () => {
-      const postEveryWebhook = jest.spyOn(webhookService, 'postEveryWebhook');
+      const postEveryWebhook = jest.spyOn(
+        webhookDispatcherService,
+        'postEveryWebhook',
+      );
 
       const messageCreated = {
         chainId: '1',

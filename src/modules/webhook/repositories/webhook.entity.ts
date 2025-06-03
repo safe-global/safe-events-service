@@ -162,3 +162,21 @@ export class Webhook extends BaseEntity {
     return webhook;
   }
 }
+
+export class WebhookWithStats extends Webhook {
+  private successCount = 0;
+  private failureCount = 0;
+
+  recordSuccess(): void {
+    this.successCount++;
+  }
+
+  recordFailure(): void {
+    this.failureCount++;
+  }
+
+  getSuccessRate(): number {
+    const total = this.successCount + this.failureCount;
+    return total === 0 ? 1 : this.successCount / total;
+  }
+}
