@@ -13,6 +13,7 @@ import { EventsModule } from './modules/events/events.module';
 import { HealthModule } from './modules/health/health.module';
 import { WebhookModule } from './modules/webhook/webhook.module';
 import { RequestLoggerMiddleware } from './middleware/request-logger.middleware';
+import { ScheduleModule } from '@nestjs/schedule';
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { RequestLoggerMiddleware } from './middleware/request-logger.middleware'
     DatabaseModule,
     EventsModule,
     HealthModule,
+    ScheduleModule.forRoot(),
     WebhookModule,
   ],
 })

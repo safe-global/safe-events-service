@@ -84,18 +84,22 @@ describe('Webhook service', () => {
     });
     it('should post if webhooks are defined', async () => {
       const webhooks: Webhook[] = [
-        webhookWithStatsFactory(),
-        webhookWithStatsFactory(),
-        webhookWithStatsFactory(),
+        webhookWithStatsFactory({
+          url: 'http://localhost:4815',
+          authorization: 'Basic 1234',
+          sendSafeCreations: true,
+        }),
+        webhookWithStatsFactory({
+          url: 'http://localhost:1623',
+          authorization: '',
+          sendSafeCreations: false,
+        }),
+        webhookWithStatsFactory({
+          url: 'http://localhost:42108',
+          authorization: '',
+          sendSafeCreations: true,
+        }),
       ];
-      webhooks[0].url = 'http://localhost:4815';
-      webhooks[0].authorization = 'Basic 1234';
-      webhooks[1].url = 'http://localhost:1623';
-      webhooks[2].url = 'http://localhost:42108';
-      webhooks[2].authorization = '';
-      webhooks[0].sendSafeCreations = true;
-      webhooks[1].sendSafeCreations = false;
-      webhooks[2].sendSafeCreations = true;
       webhooks.forEach((webhook: Webhook) => (webhook.chains = []));
       const findAllActiveSpy = jest
         .spyOn(webhookDispatcherService, 'getAllActive')
@@ -124,24 +128,17 @@ describe('Webhook service', () => {
       expect(findAllActiveSpy).toHaveBeenCalledTimes(1);
       // Only 2 webhooks will be called, as one of them has `sendSafeCreations=false`
       expect(postWebhookSpy).toHaveBeenCalledTimes(2);
-      expect(postWebhookSpy).toHaveBeenNthCalledWith(
-        1,
-        msg,
-        webhooks[0].url,
-        webhooks[0].authorization,
-      );
-      expect(postWebhookSpy).toHaveBeenNthCalledWith(
-        2,
-        msg,
-        webhooks[2].url,
-        webhooks[2].authorization,
-      );
+      expect(postWebhookSpy).toHaveBeenNthCalledWith(1, msg, webhooks[0]);
+      expect(postWebhookSpy).toHaveBeenNthCalledWith(2, msg, webhooks[2]);
     });
   });
 
   describe('postWebhook', () => {
     it('should post without authentication', async () => {
-      const url = 'http://localhost:4815';
+      const webhook = webhookWithStatsFactory({
+        url: 'http://localhost:4815',
+        authorization: '',
+      });
       const msg = {
         chainId: '1',
         type: 'SAFE_CREATED' as TxServiceEventType,
@@ -159,23 +156,25 @@ describe('Webhook service', () => {
             });
           return observableResponse;
         });
-      const results = await webhookDispatcherService.postWebhook(msg, url, '');
+      const results = await webhookDispatcherService.postWebhook(msg, webhook);
       expect(results).toBe(axiosResponseMocked);
       expect(httpServicePostSpy).toHaveBeenCalledTimes(1);
-      expect(httpServicePostSpy).toHaveBeenCalledWith(url, msg, {
+      expect(httpServicePostSpy).toHaveBeenCalledWith(webhook.url, msg, {
         headers: {},
       });
     });
 
     it('shoud post with authentication', async () => {
-      const url = 'http://localhost:4815';
+      const webhook = webhookWithStatsFactory({
+        url: 'http://localhost:4815',
+        authorization: 'Basic 1234',
+      });
       const event = {
         chainId: '1',
         type: 'SAFE_CREATED' as TxServiceEventType,
         text: 'hello',
         address: '0x0275FC2adfF11270F3EcC4D2F7Aa0a9784601Ca6',
       };
-      const authorization = 'Basic 1234';
 
       const axiosResponseMocked = <AxiosResponse>{ status: 200 };
       const httpServicePostSpy = jest
@@ -189,18 +188,20 @@ describe('Webhook service', () => {
         });
       const results = await webhookDispatcherService.postWebhook(
         event,
-        url,
-        authorization,
+        webhook,
       );
       expect(results).toBe(axiosResponseMocked);
       expect(httpServicePostSpy).toHaveBeenCalledTimes(1);
-      expect(httpServicePostSpy).toHaveBeenCalledWith(url, event, {
-        headers: { Authorization: authorization },
+      expect(httpServicePostSpy).toHaveBeenCalledWith(webhook.url, event, {
+        headers: { Authorization: webhook.authorization },
       });
     });
 
     it('should log an error message if response is received with non-2xx status code', async () => {
-      const url = 'http://localhost:4815';
+      const webhook = webhookWithStatsFactory({
+        url: 'http://localhost:4815',
+        authorization: '',
+      });
       const event = {
         chainId: '1',
         type: 'SAFE_CREATED' as TxServiceEventType,
@@ -235,10 +236,10 @@ describe('Webhook service', () => {
         .spyOn(Logger.prototype, 'error')
         .mockImplementation();
 
-      await webhookDispatcherService.postWebhook(event, url, '');
+      await webhookDispatcherService.postWebhook(event, webhook);
 
       expect(httpServicePostSpy).toHaveBeenCalledTimes(1);
-      expect(httpServicePostSpy).toHaveBeenCalledWith(url, event, {
+      expect(httpServicePostSpy).toHaveBeenCalledWith(webhook.url, event, {
         headers: {},
       });
       expect(loggerErrorSpy).toHaveBeenCalledWith({
@@ -247,7 +248,7 @@ describe('Webhook service', () => {
           event: event,
           httpRequest: {
             startTime: expect.any(Number),
-            url: url,
+            url: webhook.url,
           },
           httpResponse: {
             data: axiosResponseMocked.data,
@@ -258,7 +259,10 @@ describe('Webhook service', () => {
     });
 
     it('should log an error message if response is not received', async () => {
-      const url = 'http://localhost:4815';
+      const webhook = webhookWithStatsFactory({
+        url: 'http://localhost:4815',
+        authorization: '',
+      });
       const event = {
         chainId: '1',
         type: 'SAFE_CREATED' as TxServiceEventType,
@@ -289,10 +293,10 @@ describe('Webhook service', () => {
         .spyOn(Logger.prototype, 'error')
         .mockImplementation();
 
-      await webhookDispatcherService.postWebhook(event, url, '');
+      await webhookDispatcherService.postWebhook(event, webhook);
 
       expect(httpServicePostSpy).toHaveBeenCalledTimes(1);
-      expect(httpServicePostSpy).toHaveBeenCalledWith(url, event, {
+      expect(httpServicePostSpy).toHaveBeenCalledWith(webhook.url, event, {
         headers: {},
       });
       expect(loggerErrorSpy).toHaveBeenCalledWith({
@@ -300,7 +304,7 @@ describe('Webhook service', () => {
         messageContext: {
           event: event,
           httpRequest: {
-            url: url,
+            url: webhook.url,
             startTime: expect.any(Number),
           },
           httpResponse: null,
@@ -312,7 +316,10 @@ describe('Webhook service', () => {
     });
 
     it('should log an error message if request cannot be made', async () => {
-      const url = 'http://localhost:4815';
+      const webhook = webhookWithStatsFactory({
+        url: 'http://localhost:4815',
+        authorization: '',
+      });
       const event = {
         chainId: '1',
         type: 'SAFE_CREATED' as TxServiceEventType,
@@ -329,10 +336,10 @@ describe('Webhook service', () => {
         .spyOn(Logger.prototype, 'error')
         .mockImplementation();
 
-      await webhookDispatcherService.postWebhook(event, url, '');
+      await webhookDispatcherService.postWebhook(event, webhook);
 
       expect(httpServicePostSpy).toHaveBeenCalledTimes(1);
-      expect(httpServicePostSpy).toHaveBeenCalledWith(url, event, {
+      expect(httpServicePostSpy).toHaveBeenCalledWith(webhook.url, event, {
         headers: {},
       });
       expect(loggerErrorSpy).toHaveBeenCalledWith({
@@ -340,7 +347,7 @@ describe('Webhook service', () => {
         messageContext: {
           event: event,
           httpRequest: {
-            url: url,
+            url: webhook.url,
             startTime: expect.any(Number),
           },
           httpResponse: null,
@@ -352,7 +359,10 @@ describe('Webhook service', () => {
     });
 
     it('should log a debug message if request is successful.', async () => {
-      const url = 'http://localhost:4815';
+      const webhook = webhookWithStatsFactory({
+        url: 'http://localhost:4815',
+        authorization: '',
+      });
       const event = {
         chainId: '1',
         type: 'SAFE_CREATED' as TxServiceEventType,
@@ -373,10 +383,10 @@ describe('Webhook service', () => {
         .spyOn(Logger.prototype, 'debug')
         .mockImplementation();
 
-      await webhookDispatcherService.postWebhook(event, url, '');
+      await webhookDispatcherService.postWebhook(event, webhook);
 
       expect(httpServicePostSpy).toHaveBeenCalledTimes(1);
-      expect(httpServicePostSpy).toHaveBeenCalledWith(url, event, {
+      expect(httpServicePostSpy).toHaveBeenCalledWith(webhook.url, event, {
         headers: {},
       });
       expect(loggerErrorSpy).toHaveBeenCalledWith({
@@ -386,7 +396,7 @@ describe('Webhook service', () => {
           httpRequest: {
             endTime: expect.any(Number),
             startTime: expect.any(Number),
-            url: url,
+            url: webhook.url,
           },
           httpResponse: {
             data: 'null',

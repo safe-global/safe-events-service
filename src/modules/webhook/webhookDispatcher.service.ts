@@ -10,12 +10,14 @@ import { of, catchError, firstValueFrom } from 'rxjs';
 import { AxiosError, AxiosResponse } from 'axios';
 import { TxServiceEvent } from '../events/event.dto';
 import { WebhookService } from './webhook.service';
-import { Cron, CronExpression } from '@nestjs/schedule';
+import { Cron } from '@nestjs/schedule';
 
 @Injectable()
 export class WebhookDispatcherService {
   private readonly logger = new Logger(WebhookDispatcherService.name);
   private webhookMap: Map<string, WebhookWithStats> = new Map();
+  private webhookFailureThreeshold: number;
+  private checkWebhookHealthWindowTime: number;
 
   constructor(
     @InjectRepository(Webhook)
@@ -24,9 +26,19 @@ export class WebhookDispatcherService {
     private readonly configService: ConfigService,
     private readonly httpService: HttpService,
     private readonly webhookService: WebhookService,
-  ) {}
+  ) {
+    this.webhookFailureThreeshold = Number(
+      this.configService.get('WEBHOOK_FAILURE_THREESHOLD', 100),
+    );
+    this.checkWebhookHealthWindowTime = Number(
+      this.configService.get('WEBHOOK_HEALTH_MINUTES_WINDOW', 1),
+    );
+  }
 
   async onModuleInit() {
+    this.logger.log({
+      message: 'Loading webhooks list at startup',
+    });
     await this.refreshWebhookMap();
   }
 
@@ -42,6 +54,29 @@ export class WebhookDispatcherService {
     return this.WebHooksRepository.findBy({ isActive: true });
   }
 
+  async disableWebhook(id: string): Promise<void> {
+    try {
+      const result = await this.WebHooksRepository.update(
+        { id },
+        { isActive: false },
+      );
+
+      if (result.affected === 0) {
+        this.logger.error(
+          `Webhook with ID ${id} not found or already inactive.`,
+        );
+        return;
+      }
+
+      this.logger.log(`Webhook with ID ${id} has been disabled.`);
+    } catch (error) {
+      this.logger.error(
+        `Failed to disable webhook with ID ${id}: ${error.message}`,
+      );
+      throw error; // Propagate the error
+    }
+  }
+
   getCachedActiveWebhooks(): WebhookWithStats[] {
     return Array.from(this.webhookMap.values());
   }
@@ -49,20 +84,16 @@ export class WebhookDispatcherService {
   async postEveryWebhook(
     parsedMessage: TxServiceEvent,
   ): Promise<(AxiosResponse | undefined)[]> {
-    const webhooks: Webhook[] = this.getCachedActiveWebhooks();
+    const webhooks: WebhookWithStats[] = this.getCachedActiveWebhooks();
     const responses: Promise<AxiosResponse | undefined>[] = webhooks
-      .filter((webhook: Webhook) => {
+      .filter((webhook: WebhookWithStats) => {
         return webhook.isEventRelevant(parsedMessage);
       })
-      .map((webhook: Webhook) => {
+      .map((webhook: WebhookWithStats) => {
         this.logger.debug(
           `Sending ${JSON.stringify(parsedMessage)} to ${webhook.url}`,
         );
-        return this.postWebhook(
-          parsedMessage,
-          webhook.url,
-          webhook.authorization,
-        );
+        return this.postWebhook(parsedMessage, webhook);
       });
     return Promise.all(responses);
   }
@@ -82,14 +113,16 @@ export class WebhookDispatcherService {
 
   postWebhook(
     parsedMessage: TxServiceEvent,
-    url: string,
-    authorization: string,
+    webhook: WebhookWithStats,
   ): Promise<AxiosResponse | undefined> {
-    const headers = authorization ? { Authorization: authorization } : {};
+    const headers = webhook.authorization
+      ? { Authorization: webhook.authorization }
+      : {};
     const startTime = Date.now();
     return firstValueFrom(
-      this.httpService.post(url, parsedMessage, { headers }).pipe(
+      this.httpService.post(webhook.url, parsedMessage, { headers }).pipe(
         catchError((error: AxiosError) => {
+          webhook.recordFailure();
           if (error.response !== undefined) {
             // Response received status code but status code not 2xx
             const responseData = this.parseResponseData(error.response.data);
@@ -98,7 +131,7 @@ export class WebhookDispatcherService {
               messageContext: {
                 event: parsedMessage,
                 httpRequest: {
-                  url: url,
+                  url: webhook.url,
                   startTime: startTime,
                 },
                 httpResponse: {
@@ -114,7 +147,7 @@ export class WebhookDispatcherService {
               messageContext: {
                 event: parsedMessage,
                 httpRequest: {
-                  url: url,
+                  url: webhook.url,
                   startTime: startTime,
                 },
                 httpResponse: null,
@@ -130,7 +163,7 @@ export class WebhookDispatcherService {
               messageContext: {
                 event: parsedMessage,
                 httpRequest: {
-                  url: url,
+                  url: webhook.url,
                   startTime: startTime,
                 },
                 httpResponse: null,
@@ -145,6 +178,7 @@ export class WebhookDispatcherService {
       ),
     ).then((response: AxiosResponse | undefined) => {
       if (response) {
+        webhook.recordSuccess();
         const endTime = Date.now();
         const elapsedTime = endTime - startTime;
         const responseData = this.parseResponseData(response.data);
@@ -153,7 +187,7 @@ export class WebhookDispatcherService {
           messageContext: {
             event: parsedMessage,
             httpRequest: {
-              url: url,
+              url: webhook.url,
               startTime: startTime,
               endTime: endTime,
             },
@@ -169,20 +203,39 @@ export class WebhookDispatcherService {
     });
   }
 
-  @Cron(CronExpression.EVERY_MINUTE)
+  async checkWebhooksHealth() {
+    this.logger.log('Starting check webhooks health');
+    for (const [, webhook] of this.webhookMap) {
+      this.logger.log('Checking webhooks');
+      this.logger.log(webhook.getTimeFromLastCheck());
+      if (webhook.getTimeFromLastCheck() >= this.checkWebhookHealthWindowTime) {
+        this.logger.log(webhook.getTimeFromLastCheck());
+        const failureRate = webhook.getFailureRate();
+        this.logger.log('failureRate for ${webhook.id} ${failureRate}');
+        if (failureRate > this.webhookFailureThreeshold) {
+          await this.disableWebhook(webhook.id);
+        }
+        webhook.resetStats();
+      }
+    }
+  }
+
+  @Cron('* * * * *')
   async refreshWebhookMap() {
     try {
+      // First check webhooks health
+      await this.checkWebhooksHealth();
       const webhooksFromDb = await this.getAllActive();
 
       const newWebhookMap = new Map<string, WebhookWithStats>();
-
+      this.logger.log({
+        message: 'Loading webhooks list',
+      });
       for (const dbWebhook of webhooksFromDb) {
         const id = dbWebhook.id.toString();
-
         if (this.webhookMap.has(id)) {
           const existingWebhook = this.webhookMap.get(id)!;
           Object.assign(existingWebhook, dbWebhook);
-
           newWebhookMap.set(id, existingWebhook);
         } else {
           const webhookWithStats = Object.assign(

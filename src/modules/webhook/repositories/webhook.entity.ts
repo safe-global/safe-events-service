@@ -166,6 +166,12 @@ export class Webhook extends BaseEntity {
 export class WebhookWithStats extends Webhook {
   private successCount = 0;
   private failureCount = 0;
+  private startTime: number;
+
+  constructor() {
+    super();
+    this.startTime = Date.now();
+  }
 
   recordSuccess(): void {
     this.successCount++;
@@ -175,8 +181,19 @@ export class WebhookWithStats extends Webhook {
     this.failureCount++;
   }
 
-  getSuccessRate(): number {
+  getFailureRate(): number {
     const total = this.successCount + this.failureCount;
-    return total === 0 ? 1 : this.successCount / total;
+    return total > 0 ? (this.failureCount / total) * 100 : 0; // Return 0 if no attempts
+  }
+
+  getTimeFromLastCheck(): number {
+    const now = Date.now();
+    return Math.floor((now - this.startTime) / 1000 / 60); // Elapsed time in minutes
+  }
+
+  resetStats(): void {
+    this.successCount = 0;
+    this.failureCount = 0;
+    this.startTime = Date.now();
   }
 }
