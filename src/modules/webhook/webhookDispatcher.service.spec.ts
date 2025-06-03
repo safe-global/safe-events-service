@@ -546,8 +546,6 @@ describe('Webhook service', () => {
 
       expect(getCachedActiveWebhooksSpy).toHaveBeenCalledTimes(1);
       expect(disableWebhookSpy).toHaveBeenCalledWith(unHealthyWebhook.id);
-
-      jest.useRealTimers();
     });
   });
 });
