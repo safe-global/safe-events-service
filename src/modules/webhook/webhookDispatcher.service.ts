@@ -42,14 +42,6 @@ export class WebhookDispatcherService {
     await this.refreshWebhookMap();
   }
 
-  /**
-   *
-   * @returns Database configuration cache, if not defined 300_000 ms (5 minutes)
-   */
-  getWebhooksCacheTTL(): number {
-    return Number(this.configService.get('WEBHOOKS_CACHE_TTL', 300_000));
-  }
-
   getAllActive(): Promise<Webhook[]> {
     return this.WebHooksRepository.findBy({ isActive: true });
   }
@@ -205,7 +197,8 @@ export class WebhookDispatcherService {
 
   async checkWebhooksHealth() {
     this.logger.log('Starting check webhooks health');
-    for (const [, webhook] of this.webhookMap) {
+    const activeWebhooks = this.getCachedActiveWebhooks();
+    for (const webhook of activeWebhooks) {
       this.logger.log('Checking webhooks');
       this.logger.log(webhook.getTimeFromLastCheck());
       if (webhook.getTimeFromLastCheck() >= this.checkWebhookHealthWindowTime) {

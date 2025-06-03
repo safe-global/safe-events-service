@@ -17,8 +17,11 @@ describe('Webhook service', () => {
   let webhookDispatcherService: WebhookDispatcherService;
   let dataSource: DataSource;
   let webhookRepository: Repository<Webhook>;
+  
 
   beforeEach(async () => {
+    process.env.WEBHOOK_FAILURE_THRESHOLD = '90'; // 70% failure rate
+    process.env.WEBHOOK_HEALTH_WINDOW = '1'; // 1 minute
     const moduleRef = await Test.createTestingModule({
       imports: [ConfigModule.forRoot(), WebhookModule, DatabaseModule],
     }).compile();
@@ -46,7 +49,7 @@ describe('Webhook service', () => {
       expect(findAllActiveSpy).toHaveBeenCalledTimes(1);
 
       // As it's cached, it shouldn't be called again
-      results = await webhookDispatcherService.getCachedActiveWebhooks();
+      results = webhookDispatcherService.getCachedActiveWebhooks();
       expect(results).toEqual(expected);
       expect(findAllActiveSpy).toHaveBeenCalledTimes(1);
     });
@@ -405,6 +408,147 @@ describe('Webhook service', () => {
           },
         },
       });
+    });
+  });
+
+  describe('Test refreshWebhookMap', () => {
+    it('should call checkWebhooksHealth before processing webhooks', async () => {
+      const checkWebhooksHealthSpy = jest.spyOn(
+        webhookDispatcherService,
+        'checkWebhooksHealth',
+      );
+
+      await webhookDispatcherService.refreshWebhookMap();
+
+      expect(checkWebhooksHealthSpy).toHaveBeenCalledTimes(1);
+    });
+    it('should fetch webhooks from the database', async () => {
+      const getAllActiveSpy = jest
+        .spyOn(webhookDispatcherService, 'getAllActive')
+        .mockResolvedValue([webhookWithStatsFactory()]);
+
+      await webhookDispatcherService.refreshWebhookMap();
+
+      expect(getAllActiveSpy).toHaveBeenCalledTimes(1);
+    });
+
+    it('should update webhooks in the map', async () => {
+      const webhooks = [
+        webhookWithStatsFactory({ isActive: true }),
+        webhookWithStatsFactory({ isActive: true }),
+        webhookWithStatsFactory({ isActive: true }),
+      ];
+      const getAllActiveSpy = jest
+        .spyOn(webhookDispatcherService, 'getAllActive')
+        .mockResolvedValue(webhooks);
+
+      expect(webhookDispatcherService.getCachedActiveWebhooks().length).toBe(0);
+
+      await webhookDispatcherService.refreshWebhookMap();
+
+      expect(webhookDispatcherService.getCachedActiveWebhooks().length).toBe(3);
+      expect(getAllActiveSpy).toHaveBeenCalledTimes(1);
+
+      expect(webhookDispatcherService.getCachedActiveWebhooks()).toEqual(
+        webhooks,
+      );
+    });
+
+    it('should update existing active webhooks in the map', async () => {
+      const webhook = webhookWithStatsFactory({
+        url: 'https://any.com',
+        isActive: true,
+      });
+      const webhookUpdated = new WebhookWithStats();
+      Object.assign(webhookUpdated, webhook);
+      webhookUpdated.url = 'https://updated.com';
+      const getAllActiveSpy = jest
+        .spyOn(webhookDispatcherService, 'getAllActive')
+        .mockResolvedValueOnce([webhook])
+        .mockResolvedValueOnce([webhookUpdated])
+        .mockResolvedValueOnce([]);
+      expect(webhookDispatcherService.getCachedActiveWebhooks().length).toBe(0);
+      // Should update the map with webhook with old url
+      await webhookDispatcherService.refreshWebhookMap();
+      expect(getAllActiveSpy).toHaveBeenCalledTimes(1);
+      expect(webhookDispatcherService.getCachedActiveWebhooks().length).toBe(1);
+      expect(webhookDispatcherService.getCachedActiveWebhooks()[0]).toEqual(
+        webhook,
+      );
+      // Should update the map with webhook with new url
+      await webhookDispatcherService.refreshWebhookMap();
+      expect(getAllActiveSpy).toHaveBeenCalledTimes(2);
+      expect(webhookDispatcherService.getCachedActiveWebhooks()[0]).toEqual(
+        webhookUpdated,
+      );
+      // Should remove the webhooks if there are not any active
+      await webhookDispatcherService.refreshWebhookMap();
+      expect(getAllActiveSpy).toHaveBeenCalledTimes(3);
+      expect(webhookDispatcherService.getCachedActiveWebhooks()).toEqual([]);
+    });
+  });
+
+  describe('Test refreshWebhookMap', () => {
+    it('should not disable any webhook if all webhooks are healthy', async () => {
+      const healthyWebhook = webhookWithStatsFactory({ isActive: true });
+      healthyWebhook.getFailureRate = jest.fn().mockReturnValue(30);
+      const getCachedActiveWebhooksSpy = jest
+        .spyOn(webhookDispatcherService, 'getCachedActiveWebhooks')
+        .mockReturnValue([healthyWebhook]);
+      const disableWebhookSpy = jest.spyOn(
+        webhookDispatcherService,
+        'disableWebhook',
+      );
+
+      await webhookDispatcherService.checkWebhooksHealth();
+
+      expect(getCachedActiveWebhooksSpy).toHaveBeenCalledTimes(1);
+      expect(disableWebhookSpy).not.toHaveBeenCalled();
+    });
+    it('should not disable any webhook even not healthy because time window was not passed', async () => {
+      const healthyWebhook = webhookWithStatsFactory({ isActive: true });
+      healthyWebhook.getFailureRate = jest.fn().mockReturnValue(30);
+      const unHealthyWebhook = webhookWithStatsFactory({ isActive: true });
+      unHealthyWebhook.getFailureRate = jest.fn().mockReturnValue(80);
+      const getCachedActiveWebhooksSpy = jest
+        .spyOn(webhookDispatcherService, 'getCachedActiveWebhooks')
+        .mockReturnValue([healthyWebhook, unHealthyWebhook]);
+      const disableWebhookSpy = jest.spyOn(
+        webhookDispatcherService,
+        'disableWebhook',
+      );
+      expect(unHealthyWebhook.getTimeFromLastCheck()).toBe(0);
+
+      await webhookDispatcherService.checkWebhooksHealth();
+
+      expect(unHealthyWebhook.getTimeFromLastCheck()).toBe(0);
+      expect(getCachedActiveWebhooksSpy).toHaveBeenCalledTimes(1);
+      expect(disableWebhookSpy).not.toHaveBeenCalled();
+    });
+
+    it('should disable any unhealthy webhook when the time window is passed', async () => {
+      const healthyWebhook = webhookWithStatsFactory({ isActive: true });
+      healthyWebhook.getFailureRate = jest.fn().mockReturnValue(30);
+      const unHealthyWebhook = webhookWithStatsFactory({ isActive: true });
+      unHealthyWebhook.getFailureRate = jest.fn().mockReturnValue(80);
+      const getCachedActiveWebhooksSpy = jest
+        .spyOn(webhookDispatcherService, 'getCachedActiveWebhooks')
+        .mockReturnValue([healthyWebhook, unHealthyWebhook]);
+      const disableWebhookSpy = jest.spyOn(
+        webhookDispatcherService,
+        'disableWebhook',
+      );
+      expect(unHealthyWebhook.getTimeFromLastCheck()).toBe(0);
+      jest.useFakeTimers({ doNotFake: ['nextTick', 'setImmediate'] });
+      await jest.advanceTimersByTimeAsync(60000);
+      expect(unHealthyWebhook.getTimeFromLastCheck()).toBe(1);
+
+      await webhookDispatcherService.checkWebhooksHealth();
+
+      expect(getCachedActiveWebhooksSpy).toHaveBeenCalledTimes(1);
+      expect(disableWebhookSpy).toHaveBeenCalledWith(unHealthyWebhook.id);
+
+      jest.useRealTimers();
     });
   });
 });
