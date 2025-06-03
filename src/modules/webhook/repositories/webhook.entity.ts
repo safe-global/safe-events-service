@@ -173,24 +173,41 @@ export class WebhookWithStats extends Webhook {
     this.startTime = Date.now();
   }
 
-  recordSuccess(): void {
+  /**
+   * Increment the webhook success count
+   */
+  incrementSuccess(): void {
     this.successCount++;
   }
 
-  recordFailure(): void {
+  /**
+   * Increment the webhook failure count
+   */
+  incrementFailure(): void {
     this.failureCount++;
   }
 
+  /**
+   *
+   * @returns the percentage of fails for the current webhook
+   */
   getFailureRate(): number {
     const total = this.successCount + this.failureCount;
     return total > 0 ? (this.failureCount / total) * 100 : 0; // Return 0 if no attempts
   }
 
-  getTimeFromLastCheck(): number {
+  /**
+   *
+   * @returns the minutes passed from StartTime
+   */
+  getTimeDelayedFromStartTime(): number {
     const now = Date.now();
-    return Math.floor((now - this.startTime) / 1000 / 60); // Elapsed time in minutes
+    return Math.floor((now - this.startTime) / 1000 / 60);
   }
 
+  /**
+   * Reset to 0 and current epoch time the Stats
+   */
   resetStats(): void {
     this.successCount = 0;
     this.failureCount = 0;

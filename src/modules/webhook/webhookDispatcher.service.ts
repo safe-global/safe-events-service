@@ -35,6 +35,9 @@ export class WebhookDispatcherService {
     );
   }
 
+  /**
+   * Load at startup nestjs app
+   */
   async onModuleInit() {
     this.logger.log({
       message: 'Loading webhooks list at startup',
@@ -42,10 +45,17 @@ export class WebhookDispatcherService {
     await this.refreshWebhookMap();
   }
 
+  /**
+   * @returns Return active webhooks from database
+   */
   getAllActive(): Promise<Webhook[]> {
     return this.WebHooksRepository.findBy({ isActive: true });
   }
 
+  /**
+   * Disable the webhook in database by the provided id
+   * @param id webhook unique identifier
+   */
   async disableWebhook(id: string): Promise<void> {
     try {
       const result = await this.WebHooksRepository.update(
@@ -69,6 +79,10 @@ export class WebhookDispatcherService {
     }
   }
 
+  /**
+   *
+   * @returns a list of in memory stored webhooks
+   */
   getCachedActiveWebhooks(): WebhookWithStats[] {
     return Array.from(this.webhookMap.values());
   }
@@ -114,7 +128,7 @@ export class WebhookDispatcherService {
     return firstValueFrom(
       this.httpService.post(webhook.url, parsedMessage, { headers }).pipe(
         catchError((error: AxiosError) => {
-          webhook.recordFailure();
+          webhook.incrementFailure();
           if (error.response !== undefined) {
             // Response received status code but status code not 2xx
             const responseData = this.parseResponseData(error.response.data);
@@ -170,7 +184,7 @@ export class WebhookDispatcherService {
       ),
     ).then((response: AxiosResponse | undefined) => {
       if (response) {
-        webhook.recordSuccess();
+        webhook.incrementSuccess();
         const endTime = Date.now();
         const elapsedTime = endTime - startTime;
         const responseData = this.parseResponseData(response.data);
@@ -195,16 +209,21 @@ export class WebhookDispatcherService {
     });
   }
 
+  /**
+   * Evaluates the health of all webhooks by checking if any webhook has a consistently high failure rate.
+   * If a webhook exceeds the defined failure threshold within the allowed time window,
+   * it will be marked as disabled to prevent further issues.
+   */
   async checkWebhooksHealth() {
     this.logger.log('Starting check webhooks health');
     const activeWebhooks = this.getCachedActiveWebhooks();
     for (const webhook of activeWebhooks) {
-      this.logger.log('Checking webhooks');
-      this.logger.log(webhook.getTimeFromLastCheck());
-      if (webhook.getTimeFromLastCheck() >= this.checkWebhookHealthWindowTime) {
-        this.logger.log(webhook.getTimeFromLastCheck());
+      this.logger.log(webhook.getTimeDelayedFromStartTime());
+      if (
+        webhook.getTimeDelayedFromStartTime() >=
+        this.checkWebhookHealthWindowTime
+      ) {
         const failureRate = webhook.getFailureRate();
-        this.logger.log('failureRate for ${webhook.id} ${failureRate}');
         if (failureRate > this.webhookFailureThreeshold) {
           await this.disableWebhook(webhook.id);
         }
@@ -213,6 +232,12 @@ export class WebhookDispatcherService {
     }
   }
 
+  /**
+   * Refreshes the internal map of active webhooks.
+   * This method is crucial for ensuring that the webhook map is always in sync with the current state of the active webhooks
+   * in the database, while maintaining webhook health stats and status.
+   * @throws {Error} - Throws an error if there's an issue retrieving or processing the webhooks from the database.
+   */
   @Cron('* * * * *')
   async refreshWebhookMap() {
     try {

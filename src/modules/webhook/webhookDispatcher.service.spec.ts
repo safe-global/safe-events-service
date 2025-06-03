@@ -516,11 +516,11 @@ describe('Webhook service', () => {
         webhookDispatcherService,
         'disableWebhook',
       );
-      expect(unHealthyWebhook.getTimeFromLastCheck()).toBe(0);
+      expect(unHealthyWebhook.getTimeDelayedFromStartTime()).toBe(0);
 
       await webhookDispatcherService.checkWebhooksHealth();
 
-      expect(unHealthyWebhook.getTimeFromLastCheck()).toBe(0);
+      expect(unHealthyWebhook.getTimeDelayedFromStartTime()).toBe(0);
       expect(getCachedActiveWebhooksSpy).toHaveBeenCalledTimes(1);
       expect(disableWebhookSpy).not.toHaveBeenCalled();
     });
@@ -537,10 +537,10 @@ describe('Webhook service', () => {
         webhookDispatcherService,
         'disableWebhook',
       );
-      expect(unHealthyWebhook.getTimeFromLastCheck()).toBe(0);
+      expect(unHealthyWebhook.getTimeDelayedFromStartTime()).toBe(0);
       const now = Date.now();
       jest.spyOn(Date, 'now').mockReturnValue(now + 61000);
-      expect(unHealthyWebhook.getTimeFromLastCheck()).toBe(1);
+      expect(unHealthyWebhook.getTimeDelayedFromStartTime()).toBe(1);
 
       await webhookDispatcherService.checkWebhooksHealth();
 
