@@ -17,7 +17,6 @@ describe('Webhook service', () => {
   let webhookDispatcherService: WebhookDispatcherService;
   let dataSource: DataSource;
   let webhookRepository: Repository<Webhook>;
-  
 
   beforeEach(async () => {
     process.env.WEBHOOK_FAILURE_THRESHOLD = '90'; // 70% failure rate
@@ -539,8 +538,8 @@ describe('Webhook service', () => {
         'disableWebhook',
       );
       expect(unHealthyWebhook.getTimeFromLastCheck()).toBe(0);
-      jest.useFakeTimers({ doNotFake: ['nextTick', 'setImmediate'] });
-      await jest.advanceTimersByTimeAsync(60000);
+      const now = Date.now();
+      jest.spyOn(Date, 'now').mockReturnValue(now + 61000);
       expect(unHealthyWebhook.getTimeFromLastCheck()).toBe(1);
 
       await webhookDispatcherService.checkWebhooksHealth();
