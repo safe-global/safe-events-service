@@ -29,11 +29,12 @@ export class WebhookDispatcherService {
     private readonly webhookService: WebhookService,
   ) {
     this.webhookFailureThreshold = Number(
-      this.configService.get('WEBHOOK_FAILURE_THRESHOLD', 100),
+      this.configService.get('WEBHOOK_FAILURE_THRESHOLD', 90),
     );
     this.checkWebhookHealthWindowTime = Number(
-      this.configService.get('WEBHOOK_HEALTH_MINUTES_WINDOW', 1),
+      this.configService.get('WEBHOOK_HEALTH_MINUTES_WINDOW', 60),
     );
+    // Disabled by default
     this.autoDisableWebhook =
       this.configService.get('WEBHOOK_AUTO_DISABLE') === 'true';
   }
