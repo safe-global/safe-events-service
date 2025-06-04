@@ -3,7 +3,7 @@ import { Webhook, WebhookWithStats } from './repositories/webhook.entity';
 import { WebhookModule } from './webhook.module';
 import { DatabaseModule } from '../../datasources/db/database.module';
 import { ConfigModule } from '@nestjs/config';
-import { DataSource, Repository } from 'typeorm';
+import { DataSource, Repository, UpdateResult } from 'typeorm';
 import { WebhookDispatcherService } from './webhookDispatcher.service';
 import { TxServiceEventType } from '../events/event.dto';
 import { AxiosError, AxiosHeaders, AxiosResponse } from 'axios';
@@ -15,23 +15,43 @@ import { webhookWithStatsFactory } from './repositories/webhook.test.factory';
 describe('Webhook service', () => {
   let httpService: HttpService;
   let webhookDispatcherService: WebhookDispatcherService;
-  let dataSource: DataSource;
   let webhookRepository: Repository<Webhook>;
 
-  beforeEach(async () => {
-    process.env.WEBHOOK_FAILURE_THRESHOLD = '90'; // 70% failure rate
-    process.env.WEBHOOK_HEALTH_WINDOW = '1'; // 1 minute
+  async function createTestingModuleWithEnv(env: Record<string, string>) {
+    // Environment overrides
+    Object.entries(env).forEach(([key, value]) => {
+      process.env[key] = value;
+    });
+
+    // Reset modules to apply new environment variables to ConfigModule
+    jest.resetModules();
+
     const moduleRef = await Test.createTestingModule({
       imports: [ConfigModule.forRoot(), WebhookModule, DatabaseModule],
     }).compile();
 
-    httpService = moduleRef.get<HttpService>(HttpService);
-    webhookDispatcherService = moduleRef.get<WebhookDispatcherService>(
+    const httpService = moduleRef.get<HttpService>(HttpService);
+    const webhookDispatcherService = moduleRef.get<WebhookDispatcherService>(
       WebhookDispatcherService,
     );
-    //await webhookDispatcherService.onModuleInit();
-    dataSource = moduleRef.get<DataSource>(DataSource);
-    webhookRepository = dataSource.getRepository(Webhook);
+    const dataSource = moduleRef.get<DataSource>(DataSource);
+    const webhookRepository = dataSource.getRepository(Webhook);
+
+    return {
+      httpService,
+      webhookDispatcherService,
+      webhookRepository,
+    };
+  }
+
+  beforeEach(async () => {
+    ({ httpService, webhookDispatcherService, webhookRepository } =
+      await createTestingModuleWithEnv({
+        WEBHOOK_AUTO_DISABLE: 'true',
+        WEBHOOK_FAILURE_THRESHOLD: '80',
+        WEBHOOK_HEALTH_WINDOW: '1',
+      }));
+    jest.clearAllMocks();
     await webhookRepository.clear();
   });
 
@@ -410,6 +430,64 @@ describe('Webhook service', () => {
     });
   });
 
+  describe('Test disableWebhook', () => {
+    it('should return true if webhook is successfully disabled', async () => {
+      const mockedWebhookUpdate = jest
+        .spyOn(webhookRepository, 'update')
+        .mockResolvedValue({
+          affected: 1,
+        } as UpdateResult);
+
+      const result = await webhookDispatcherService.disableWebhook('123');
+
+      expect(result).toBe(true);
+      expect(mockedWebhookUpdate).toHaveBeenCalledWith(
+        { id: '123' },
+        { isActive: false },
+      );
+    });
+    it('should return false if webhook is successfully disabled', async () => {
+      const mockedWebhookUpdate = jest
+        .spyOn(webhookRepository, 'update')
+        .mockResolvedValue({
+          affected: 0,
+        } as UpdateResult);
+      const loggerErrorSpy = jest
+        .spyOn(Logger.prototype, 'error')
+        .mockImplementation();
+
+      const result = await webhookDispatcherService.disableWebhook('123');
+
+      expect(result).toBe(false);
+      expect(mockedWebhookUpdate).toHaveBeenCalledWith(
+        { id: '123' },
+        { isActive: false },
+      );
+      expect(loggerErrorSpy).toHaveBeenCalledWith({
+        message: 'Webhook with ID 123 not found or already inactive.',
+      });
+    });
+    it('should catch any exception and return False', async () => {
+      const mockedWebhookUpdate = jest
+        .spyOn(webhookRepository, 'update')
+        .mockRejectedValue(new Error('Database failure'));
+      const loggerErrorSpy = jest
+        .spyOn(Logger.prototype, 'error')
+        .mockImplementation();
+
+      const result = await webhookDispatcherService.disableWebhook('123');
+
+      expect(result).toBe(false);
+      expect(mockedWebhookUpdate).toHaveBeenCalledWith(
+        { id: '123' },
+        { isActive: false },
+      );
+      expect(loggerErrorSpy).toHaveBeenCalledWith({
+        message: 'Failed to disable webhook with ID 123: Database failure',
+      });
+    });
+  });
+
   describe('Test refreshWebhookMap', () => {
     it('should call checkWebhooksHealth before processing webhooks', async () => {
       const checkWebhooksHealthSpy = jest.spyOn(
@@ -533,19 +611,89 @@ describe('Webhook service', () => {
       const getCachedActiveWebhooksSpy = jest
         .spyOn(webhookDispatcherService, 'getCachedActiveWebhooks')
         .mockReturnValue([healthyWebhook, unHealthyWebhook]);
-      const disableWebhookSpy = jest.spyOn(
-        webhookDispatcherService,
-        'disableWebhook',
-      );
+      const disableWebhookSpy = jest
+        .spyOn(webhookDispatcherService, 'disableWebhook')
+        .mockResolvedValue(true);
+
       expect(unHealthyWebhook.getTimeDelayedFromStartTime()).toBe(0);
-      const now = Date.now();
-      jest.spyOn(Date, 'now').mockReturnValue(now + 61000);
-      expect(unHealthyWebhook.getTimeDelayedFromStartTime()).toBe(1);
+      const getTimeDelayedFromStartTimeSpy = jest
+        .spyOn(unHealthyWebhook, 'getTimeDelayedFromStartTime')
+        .mockReturnValue(1);
+      const loggerWarnSpy = jest
+        .spyOn(Logger.prototype, 'warn')
+        .mockImplementation();
 
       await webhookDispatcherService.checkWebhooksHealth();
 
       expect(getCachedActiveWebhooksSpy).toHaveBeenCalledTimes(1);
+      expect(getTimeDelayedFromStartTimeSpy).toHaveBeenCalledTimes(1);
       expect(disableWebhookSpy).toHaveBeenCalledWith(unHealthyWebhook.id);
+      expect(loggerWarnSpy).toHaveBeenCalledWith({
+        message: `Webhook disabled — ID: ${unHealthyWebhook.id}, URL: ${unHealthyWebhook.url}, failure rate exceeded threshold.`,
+      });
+    });
+    it('should not disable any unhealthy webhook when the auto disable webhook is false', async () => {
+      ({ httpService, webhookDispatcherService, webhookRepository } =
+        await createTestingModuleWithEnv({
+          WEBHOOK_AUTO_DISABLE: 'false',
+          WEBHOOK_FAILURE_THRESHOLD: '50',
+          WEBHOOK_HEALTH_WINDOW: '1',
+        }));
+      const healthyWebhook = webhookWithStatsFactory({ isActive: true });
+      healthyWebhook.getFailureRate = jest.fn().mockReturnValue(30);
+      const unHealthyWebhook = webhookWithStatsFactory({ isActive: true });
+      unHealthyWebhook.getFailureRate = jest.fn().mockReturnValue(80);
+      const getCachedActiveWebhooksSpy = jest
+        .spyOn(webhookDispatcherService, 'getCachedActiveWebhooks')
+        .mockReturnValue([healthyWebhook, unHealthyWebhook]);
+      const disableWebhookSpy = jest
+        .spyOn(webhookDispatcherService, 'disableWebhook')
+        .mockResolvedValue(true);
+      expect(unHealthyWebhook.getTimeDelayedFromStartTime()).toBe(0);
+      const getTimeDelayedFromStartTimeSpy = jest
+        .spyOn(unHealthyWebhook, 'getTimeDelayedFromStartTime')
+        .mockReturnValue(1);
+      const loggerWarnSpy = jest
+        .spyOn(Logger.prototype, 'warn')
+        .mockImplementation();
+
+      await webhookDispatcherService.checkWebhooksHealth();
+
+      expect(getCachedActiveWebhooksSpy).toHaveBeenCalledTimes(1);
+      expect(getTimeDelayedFromStartTimeSpy).toHaveBeenCalledTimes(1);
+      expect(disableWebhookSpy).not.toHaveBeenCalledWith(unHealthyWebhook.id);
+      expect(loggerWarnSpy).toHaveBeenCalledWith({
+        message: `Webhook exceeded failure threshold but was not disabled (autoDisableWebhook is OFF) — ID: ${unHealthyWebhook.id}, URL: ${unHealthyWebhook.url}.`
+      });
+    });
+    it('should log error if it was not able to disable the webhook', async () => {
+      const healthyWebhook = webhookWithStatsFactory({ isActive: true });
+      healthyWebhook.getFailureRate = jest.fn().mockReturnValue(30);
+      const unHealthyWebhook = webhookWithStatsFactory({ isActive: true });
+      unHealthyWebhook.getFailureRate = jest.fn().mockReturnValue(80);
+      const getCachedActiveWebhooksSpy = jest
+        .spyOn(webhookDispatcherService, 'getCachedActiveWebhooks')
+        .mockReturnValue([healthyWebhook, unHealthyWebhook]);
+      const disableWebhookSpy = jest
+        .spyOn(webhookDispatcherService, 'disableWebhook')
+        .mockResolvedValue(false);
+
+      expect(unHealthyWebhook.getTimeDelayedFromStartTime()).toBe(0);
+      const getTimeDelayedFromStartTimeSpy = jest
+        .spyOn(unHealthyWebhook, 'getTimeDelayedFromStartTime')
+        .mockReturnValue(1);
+      const loggerErrorSpy = jest
+        .spyOn(Logger.prototype, 'error')
+        .mockImplementation();
+
+      await webhookDispatcherService.checkWebhooksHealth();
+
+      expect(getCachedActiveWebhooksSpy).toHaveBeenCalledTimes(1);
+      expect(getTimeDelayedFromStartTimeSpy).toHaveBeenCalledTimes(1);
+      expect(disableWebhookSpy).toHaveBeenCalledWith(unHealthyWebhook.id);
+      expect(loggerErrorSpy).toHaveBeenCalledWith({
+        message: `Failed to disable webhook — ID: ${unHealthyWebhook.id}, URL: ${unHealthyWebhook.url}.`,
+      });
     });
   });
 });

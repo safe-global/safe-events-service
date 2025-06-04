@@ -18,6 +18,7 @@ export class WebhookDispatcherService {
   private webhookMap: Map<string, WebhookWithStats> = new Map();
   private webhookFailureThreeshold: number;
   private checkWebhookHealthWindowTime: number;
+  private autoDisableWebhook: boolean;
 
   constructor(
     @InjectRepository(Webhook)
@@ -33,6 +34,8 @@ export class WebhookDispatcherService {
     this.checkWebhookHealthWindowTime = Number(
       this.configService.get('WEBHOOK_HEALTH_MINUTES_WINDOW', 1),
     );
+    this.autoDisableWebhook =
+      this.configService.get('WEBHOOK_AUTO_DISABLE') === 'true';
   }
 
   /**
@@ -75,7 +78,7 @@ export class WebhookDispatcherService {
       this.logger.error({
         message: `Failed to disable webhook with ID ${id}: ${error.message}`,
       });
-      throw error; // Propagate the error
+      return false;
     }
   }
 
@@ -224,10 +227,21 @@ export class WebhookDispatcherService {
       ) {
         const failureRate = webhook.getFailureRate();
         if (failureRate > this.webhookFailureThreeshold) {
-          if (await this.disableWebhook(webhook.id)) {
-            this.logger.log(
-              `Webhook with ID ${webhook.id} and URL ${webhook.url} disabled due to high failure rate.`,
-            );
+          if (this.autoDisableWebhook) {
+            const wasDisabled = await this.disableWebhook(webhook.id);
+            if (wasDisabled) {
+              this.logger.warn({
+                message: `Webhook disabled — ID: ${webhook.id}, URL: ${webhook.url}, failure rate exceeded threshold.`,
+              });
+            } else {
+              this.logger.error({
+                message: `Failed to disable webhook — ID: ${webhook.id}, URL: ${webhook.url}.`,
+              });
+            }
+          } else {
+            this.logger.warn({
+              message: `Webhook exceeded failure threshold but was not disabled (autoDisableWebhook is OFF) — ID: ${webhook.id}, URL: ${webhook.url}.`,
+            });
           }
         }
         webhook.resetStats();
