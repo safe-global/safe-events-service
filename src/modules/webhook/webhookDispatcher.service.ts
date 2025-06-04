@@ -55,8 +55,9 @@ export class WebhookDispatcherService {
   /**
    * Disable the webhook in database by the provided id
    * @param id webhook unique identifier
+   * @returns true if was correctly disabled, false otherwise.
    */
-  async disableWebhook(id: string): Promise<void> {
+  async disableWebhook(id: string): Promise<boolean> {
     try {
       const result = await this.WebHooksRepository.update(
         { id },
@@ -64,17 +65,16 @@ export class WebhookDispatcherService {
       );
 
       if (result.affected === 0) {
-        this.logger.error(
-          `Webhook with ID ${id} not found or already inactive.`,
-        );
-        return;
+        this.logger.error({
+          message: `Webhook with ID ${id} not found or already inactive.`,
+        });
+        return false;
       }
-
-      this.logger.log(`Webhook with ID ${id} has been disabled.`);
+      return true;
     } catch (error) {
-      this.logger.error(
-        `Failed to disable webhook with ID ${id}: ${error.message}`,
-      );
+      this.logger.error({
+        message: `Failed to disable webhook with ID ${id}: ${error.message}`,
+      });
       throw error; // Propagate the error
     }
   }
@@ -215,21 +215,25 @@ export class WebhookDispatcherService {
    * it will be marked as disabled to prevent further issues.
    */
   async checkWebhooksHealth() {
-    this.logger.log('Starting check webhooks health');
+    this.logger.debug('Starting check webhooks health');
     const activeWebhooks = this.getCachedActiveWebhooks();
     for (const webhook of activeWebhooks) {
-      this.logger.log(webhook.getTimeDelayedFromStartTime());
       if (
         webhook.getTimeDelayedFromStartTime() >=
         this.checkWebhookHealthWindowTime
       ) {
         const failureRate = webhook.getFailureRate();
         if (failureRate > this.webhookFailureThreeshold) {
-          await this.disableWebhook(webhook.id);
+          if (await this.disableWebhook(webhook.id)) {
+            this.logger.log({
+              message: `Webhook with ID ${webhook.id} and url ${webhook.url} has been disabled.`,
+            });
+          }
         }
         webhook.resetStats();
       }
     }
+    this.logger.debug('Ending check webhooks health');
   }
 
   /**
@@ -238,7 +242,7 @@ export class WebhookDispatcherService {
    * in the database, while maintaining webhook health stats and status.
    * @throws {Error} - Throws an error if there's an issue retrieving or processing the webhooks from the database.
    */
-  @Cron('* * * * *')
+  @Cron('* * * * *') // Run every minute
   async refreshWebhookMap() {
     try {
       // First check webhooks health
@@ -246,7 +250,7 @@ export class WebhookDispatcherService {
       const webhooksFromDb = await this.getAllActive();
 
       const newWebhookMap = new Map<string, WebhookWithStats>();
-      this.logger.log({
+      this.logger.debug({
         message: 'Loading webhooks list',
       });
       for (const dbWebhook of webhooksFromDb) {
@@ -272,5 +276,8 @@ export class WebhookDispatcherService {
         },
       });
     }
+    this.logger.debug({
+      message: 'Ending loading webhooks list',
+    });
   }
 }
