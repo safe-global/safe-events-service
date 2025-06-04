@@ -16,7 +16,7 @@ import { Cron } from '@nestjs/schedule';
 export class WebhookDispatcherService {
   private readonly logger = new Logger(WebhookDispatcherService.name);
   private webhookMap: Map<string, WebhookWithStats> = new Map();
-  private webhookFailureThreeshold: number;
+  private webhookFailureThreshold: number;
   private checkWebhookHealthWindowTime: number;
   private autoDisableWebhook: boolean;
 
@@ -28,8 +28,8 @@ export class WebhookDispatcherService {
     private readonly httpService: HttpService,
     private readonly webhookService: WebhookService,
   ) {
-    this.webhookFailureThreeshold = Number(
-      this.configService.get('WEBHOOK_FAILURE_THREESHOLD', 100),
+    this.webhookFailureThreshold = Number(
+      this.configService.get('WEBHOOK_FAILURE_THRESHOLD', 100),
     );
     this.checkWebhookHealthWindowTime = Number(
       this.configService.get('WEBHOOK_HEALTH_MINUTES_WINDOW', 1),
@@ -226,7 +226,7 @@ export class WebhookDispatcherService {
         this.checkWebhookHealthWindowTime
       ) {
         const failureRate = webhook.getFailureRate();
-        if (failureRate > this.webhookFailureThreeshold) {
+        if (failureRate > this.webhookFailureThreshold) {
           if (this.autoDisableWebhook) {
             const wasDisabled = await this.disableWebhook(webhook.id);
             if (wasDisabled) {

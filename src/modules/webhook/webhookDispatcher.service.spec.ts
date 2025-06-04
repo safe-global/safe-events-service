@@ -17,14 +17,14 @@ describe('Webhook service', () => {
   let webhookDispatcherService: WebhookDispatcherService;
   let webhookRepository: Repository<Webhook>;
 
-  async function createTestingModuleWithEnv(env: Record<string, string>) {
-    // Environment overrides
-    Object.entries(env).forEach(([key, value]) => {
-      process.env[key] = value;
-    });
-
+  async function createTestingModuleWithEnv(
+    autoDisableWebhook: boolean,
+    webhookFailureThreshold: number,
+    checkWebhookHealthWindowTime: number,
+  ) {
     // Reset modules to apply new environment variables to ConfigModule
     jest.resetModules();
+    // Environment overrides
 
     const moduleRef = await Test.createTestingModule({
       imports: [ConfigModule.forRoot(), WebhookModule, DatabaseModule],
@@ -34,6 +34,13 @@ describe('Webhook service', () => {
     const webhookDispatcherService = moduleRef.get<WebhookDispatcherService>(
       WebhookDispatcherService,
     );
+    // @ts-expect-error: accessing private field for testing purposes
+    webhookDispatcherService.autoDisableWebhook = autoDisableWebhook;
+    // @ts-expect-error: accessing private field for testing purposes
+    webhookDispatcherService.webhookFailureThreshold = webhookFailureThreshold;
+    // @ts-expect-error: accessing private field for testing purposes
+    webhookDispatcherService.checkWebhookHealthWindowTime =
+      checkWebhookHealthWindowTime;
     const dataSource = moduleRef.get<DataSource>(DataSource);
     const webhookRepository = dataSource.getRepository(Webhook);
 
@@ -46,11 +53,7 @@ describe('Webhook service', () => {
 
   beforeEach(async () => {
     ({ httpService, webhookDispatcherService, webhookRepository } =
-      await createTestingModuleWithEnv({
-        WEBHOOK_AUTO_DISABLE: 'true',
-        WEBHOOK_FAILURE_THRESHOLD: '80',
-        WEBHOOK_HEALTH_WINDOW: '1',
-      }));
+      await createTestingModuleWithEnv(true, 50, 1));
     jest.clearAllMocks();
     await webhookRepository.clear();
   });
@@ -634,11 +637,7 @@ describe('Webhook service', () => {
     });
     it('should not disable any unhealthy webhook when the auto disable webhook is false', async () => {
       ({ httpService, webhookDispatcherService, webhookRepository } =
-        await createTestingModuleWithEnv({
-          WEBHOOK_AUTO_DISABLE: 'false',
-          WEBHOOK_FAILURE_THRESHOLD: '50',
-          WEBHOOK_HEALTH_WINDOW: '1',
-        }));
+        await createTestingModuleWithEnv(false, 50, 1));
       const healthyWebhook = webhookWithStatsFactory({ isActive: true });
       healthyWebhook.getFailureRate = jest.fn().mockReturnValue(30);
       const unHealthyWebhook = webhookWithStatsFactory({ isActive: true });
@@ -663,7 +662,7 @@ describe('Webhook service', () => {
       expect(getTimeDelayedFromStartTimeSpy).toHaveBeenCalledTimes(1);
       expect(disableWebhookSpy).not.toHaveBeenCalledWith(unHealthyWebhook.id);
       expect(loggerWarnSpy).toHaveBeenCalledWith({
-        message: `Webhook exceeded failure threshold but was not disabled (autoDisableWebhook is OFF) — ID: ${unHealthyWebhook.id}, URL: ${unHealthyWebhook.url}.`
+        message: `Webhook exceeded failure threshold but was not disabled (autoDisableWebhook is OFF) — ID: ${unHealthyWebhook.id}, URL: ${unHealthyWebhook.url}.`,
       });
     });
     it('should log error if it was not able to disable the webhook', async () => {
