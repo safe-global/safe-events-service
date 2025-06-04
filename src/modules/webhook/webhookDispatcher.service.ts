@@ -217,7 +217,7 @@ export class WebhookDispatcherService {
   async checkWebhooksHealth() {
     this.logger.debug('Starting check webhooks health');
     const activeWebhooks = this.getCachedActiveWebhooks();
-    for (const webhook of activeWebhooks) {
+    const healthChecks = activeWebhooks.map(async (webhook) => {
       if (
         webhook.getTimeDelayedFromStartTime() >=
         this.checkWebhookHealthWindowTime
@@ -225,14 +225,15 @@ export class WebhookDispatcherService {
         const failureRate = webhook.getFailureRate();
         if (failureRate > this.webhookFailureThreeshold) {
           if (await this.disableWebhook(webhook.id)) {
-            this.logger.log({
-              message: `Webhook with ID ${webhook.id} and url ${webhook.url} has been disabled.`,
-            });
+            this.logger.log(
+              `Webhook with ID ${webhook.id} and URL ${webhook.url} disabled due to high failure rate.`,
+            );
           }
         }
         webhook.resetStats();
       }
-    }
+    });
+    await Promise.all(healthChecks);
     this.logger.debug('Ending check webhooks health');
   }
 
