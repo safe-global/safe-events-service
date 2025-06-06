@@ -17,7 +17,7 @@ export class WebhookDispatcherService {
   private readonly logger = new Logger(WebhookDispatcherService.name);
   private webhookMap: Map<string, WebhookWithStats> = new Map();
   private webhookFailureThreshold: number;
-  private checkWebhookHealthWindowTime: number;
+  private webhookHealthMinutesWindow: number;
   private autoDisableWebhook: boolean;
 
   constructor(
@@ -28,11 +28,13 @@ export class WebhookDispatcherService {
     private readonly httpService: HttpService,
     private readonly webhookService: WebhookService,
   ) {
-    this.webhookFailureThreshold = Number(
-      this.configService.get('WEBHOOK_FAILURE_THRESHOLD', 90),
+    this.webhookFailureThreshold = this.configService.get<number>(
+      'WEBHOOK_FAILURE_THRESHOLD',
+      90,
     );
-    this.checkWebhookHealthWindowTime = Number(
-      this.configService.get('WEBHOOK_HEALTH_MINUTES_WINDOW', 60),
+    this.webhookHealthMinutesWindow = this.configService.get<number>(
+      'WEBHOOK_HEALTH_MINUTES_WINDOW',
+      60,
     );
     // Disabled by default
     this.autoDisableWebhook =
@@ -219,12 +221,11 @@ export class WebhookDispatcherService {
    * it will be marked as disabled to prevent further issues.
    */
   async checkWebhooksHealth() {
-    this.logger.debug('Starting check webhooks health');
+    this.logger.debug('Starting to check webhooks health');
     const activeWebhooks = this.getCachedActiveWebhooks();
     const healthChecks = activeWebhooks.map(async (webhook) => {
       if (
-        webhook.getTimeDelayedFromStartTime() >=
-        this.checkWebhookHealthWindowTime
+        webhook.getMinutesFromStartTime() >= this.webhookHealthMinutesWindow
       ) {
         const failureRate = webhook.getFailureRate();
         if (failureRate > this.webhookFailureThreshold) {

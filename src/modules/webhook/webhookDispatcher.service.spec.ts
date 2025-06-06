@@ -20,7 +20,7 @@ describe('Webhook service', () => {
   async function createTestingModuleWithEnv(
     autoDisableWebhook: boolean,
     webhookFailureThreshold: number,
-    checkWebhookHealthWindowTime: number,
+    webhookHealthMinutesWindow: number,
   ) {
     // Reset modules to apply new environment variables to ConfigModule
     jest.resetModules();
@@ -39,8 +39,8 @@ describe('Webhook service', () => {
     // @ts-expect-error: accessing private field for testing purposes
     webhookDispatcherService.webhookFailureThreshold = webhookFailureThreshold;
     // @ts-expect-error: accessing private field for testing purposes
-    webhookDispatcherService.checkWebhookHealthWindowTime =
-      checkWebhookHealthWindowTime;
+    webhookDispatcherService.webhookHealthMinutesWindow =
+      webhookHealthMinutesWindow;
     const dataSource = moduleRef.get<DataSource>(DataSource);
     const webhookRepository = dataSource.getRepository(Webhook);
 
@@ -597,11 +597,11 @@ describe('Webhook service', () => {
         webhookDispatcherService,
         'disableWebhook',
       );
-      expect(unHealthyWebhook.getTimeDelayedFromStartTime()).toBe(0);
+      expect(unHealthyWebhook.getMinutesFromStartTime()).toBe(0);
 
       await webhookDispatcherService.checkWebhooksHealth();
 
-      expect(unHealthyWebhook.getTimeDelayedFromStartTime()).toBe(0);
+      expect(unHealthyWebhook.getMinutesFromStartTime()).toBe(0);
       expect(getCachedActiveWebhooksSpy).toHaveBeenCalledTimes(1);
       expect(disableWebhookSpy).not.toHaveBeenCalled();
     });
@@ -618,9 +618,9 @@ describe('Webhook service', () => {
         .spyOn(webhookDispatcherService, 'disableWebhook')
         .mockResolvedValue(true);
 
-      expect(unHealthyWebhook.getTimeDelayedFromStartTime()).toBe(0);
-      const getTimeDelayedFromStartTimeSpy = jest
-        .spyOn(unHealthyWebhook, 'getTimeDelayedFromStartTime')
+      expect(unHealthyWebhook.getMinutesFromStartTime()).toBe(0);
+      const getMinutesFromStartTimeSpy = jest
+        .spyOn(unHealthyWebhook, 'getMinutesFromStartTime')
         .mockReturnValue(1);
       const loggerWarnSpy = jest
         .spyOn(Logger.prototype, 'warn')
@@ -629,7 +629,7 @@ describe('Webhook service', () => {
       await webhookDispatcherService.checkWebhooksHealth();
 
       expect(getCachedActiveWebhooksSpy).toHaveBeenCalledTimes(1);
-      expect(getTimeDelayedFromStartTimeSpy).toHaveBeenCalledTimes(1);
+      expect(getMinutesFromStartTimeSpy).toHaveBeenCalledTimes(1);
       expect(disableWebhookSpy).toHaveBeenCalledWith(unHealthyWebhook.id);
       expect(loggerWarnSpy).toHaveBeenCalledWith({
         message: `Webhook disabled — ID: ${unHealthyWebhook.id}, URL: ${unHealthyWebhook.url}, failure rate exceeded threshold.`,
@@ -648,9 +648,9 @@ describe('Webhook service', () => {
       const disableWebhookSpy = jest
         .spyOn(webhookDispatcherService, 'disableWebhook')
         .mockResolvedValue(true);
-      expect(unHealthyWebhook.getTimeDelayedFromStartTime()).toBe(0);
-      const getTimeDelayedFromStartTimeSpy = jest
-        .spyOn(unHealthyWebhook, 'getTimeDelayedFromStartTime')
+      expect(unHealthyWebhook.getMinutesFromStartTime()).toBe(0);
+      const getMinutesFromStartTimeSpy = jest
+        .spyOn(unHealthyWebhook, 'getMinutesFromStartTime')
         .mockReturnValue(1);
       const loggerWarnSpy = jest
         .spyOn(Logger.prototype, 'warn')
@@ -659,7 +659,7 @@ describe('Webhook service', () => {
       await webhookDispatcherService.checkWebhooksHealth();
 
       expect(getCachedActiveWebhooksSpy).toHaveBeenCalledTimes(1);
-      expect(getTimeDelayedFromStartTimeSpy).toHaveBeenCalledTimes(1);
+      expect(getMinutesFromStartTimeSpy).toHaveBeenCalledTimes(1);
       expect(disableWebhookSpy).not.toHaveBeenCalledWith(unHealthyWebhook.id);
       expect(loggerWarnSpy).toHaveBeenCalledWith({
         message: `Webhook exceeded failure threshold but was not disabled (autoDisableWebhook is OFF) — ID: ${unHealthyWebhook.id}, URL: ${unHealthyWebhook.url}.`,
@@ -677,9 +677,9 @@ describe('Webhook service', () => {
         .spyOn(webhookDispatcherService, 'disableWebhook')
         .mockResolvedValue(false);
 
-      expect(unHealthyWebhook.getTimeDelayedFromStartTime()).toBe(0);
-      const getTimeDelayedFromStartTimeSpy = jest
-        .spyOn(unHealthyWebhook, 'getTimeDelayedFromStartTime')
+      expect(unHealthyWebhook.getMinutesFromStartTime()).toBe(0);
+      const getMinutesFromStartTimeSpy = jest
+        .spyOn(unHealthyWebhook, 'getMinutesFromStartTime')
         .mockReturnValue(1);
       const loggerErrorSpy = jest
         .spyOn(Logger.prototype, 'error')
@@ -688,7 +688,7 @@ describe('Webhook service', () => {
       await webhookDispatcherService.checkWebhooksHealth();
 
       expect(getCachedActiveWebhooksSpy).toHaveBeenCalledTimes(1);
-      expect(getTimeDelayedFromStartTimeSpy).toHaveBeenCalledTimes(1);
+      expect(getMinutesFromStartTimeSpy).toHaveBeenCalledTimes(1);
       expect(disableWebhookSpy).toHaveBeenCalledWith(unHealthyWebhook.id);
       expect(loggerErrorSpy).toHaveBeenCalledWith({
         message: `Failed to disable webhook — ID: ${unHealthyWebhook.id}, URL: ${unHealthyWebhook.url}.`,

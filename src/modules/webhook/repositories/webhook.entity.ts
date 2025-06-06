@@ -200,7 +200,7 @@ export class WebhookWithStats extends Webhook {
    *
    * @returns the minutes passed from StartTime
    */
-  getTimeDelayedFromStartTime(): number {
+  getMinutesFromStartTime(): number {
     const now = Date.now();
     return Math.floor((now - this.startTime) / 1000 / 60);
   }
