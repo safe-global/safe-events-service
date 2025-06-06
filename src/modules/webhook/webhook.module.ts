@@ -3,6 +3,7 @@ import { CacheModule } from '@nestjs/cache-manager';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Webhook } from './repositories/webhook.entity';
 import { WebhookService } from './webhook.service';
+import { WebhookDispatcherService } from './webhookDispatcher.service';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { HttpModule } from '@nestjs/axios';
 import { WebhooksController } from './webhook.controller';
@@ -22,7 +23,7 @@ import { WebhooksController } from './webhook.controller';
     }),
   ],
   controllers: [WebhooksController],
-  providers: [WebhookService],
-  exports: [TypeOrmModule, WebhookService],
+  providers: [WebhookService, WebhookDispatcherService],
+  exports: [TypeOrmModule, WebhookService, WebhookDispatcherService],
 })
 export class WebhookModule {}

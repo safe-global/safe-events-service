@@ -2,17 +2,17 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
 import { AppModule } from '../src/app.module';
 import { EventsService } from '../src/modules/events/events.service';
-import { WebhookService } from '../src/modules/webhook/webhook.service';
-import { Webhook } from '../src/modules/webhook/repositories/webhook.entity';
+import { WebhookDispatcherService } from '../src/modules/webhook/webhookDispatcher.service';
 import { QueueProvider } from '../src/datasources/queue/queue.provider';
 import { TxServiceEventType } from '../src/modules/events/event.dto';
 import { publishMessage } from './util';
+import { webhookWithStatsFactory } from '../src/modules/webhook/repositories/webhook.test.factory';
 
 describe('Events handling', () => {
   let app: INestApplication;
   let eventsService: EventsService;
   let queueProvider: QueueProvider;
-  let webhookService: WebhookService;
+  let webhookDispatcherService: WebhookDispatcherService;
 
   beforeEach(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
@@ -21,7 +21,9 @@ describe('Events handling', () => {
 
     eventsService = moduleFixture.get<EventsService>(EventsService);
     queueProvider = moduleFixture.get<QueueProvider>(QueueProvider);
-    webhookService = moduleFixture.get<WebhookService>(WebhookService);
+    webhookDispatcherService = moduleFixture.get<WebhookDispatcherService>(
+      WebhookDispatcherService,
+    );
 
     // Wait for queue provider connection to be established, as it could take a little
     const { channel } = await queueProvider.getConnection();
@@ -44,23 +46,27 @@ describe('Events handling', () => {
       address: '0x0275FC2adfF11270F3EcC4D2F7Aa0a9784601Ca6',
     };
     const processEventSpy = jest.spyOn(eventsService, 'processEvent');
-    const postEveryWebhookSpy = jest.spyOn(webhookService, 'postEveryWebhook');
-    const mockedWebhook = new Webhook();
-    mockedWebhook.url = 'http://localhost';
-    mockedWebhook.authorization = 'Basic QWxhZGRpbjpvcGVuIHNlc2FtZQ==';
-    mockedWebhook.isActive = true;
-    mockedWebhook.chains = ['1'];
-    mockedWebhook.sendSafeCreations = true;
+    const postEveryWebhookSpy = jest.spyOn(
+      webhookDispatcherService,
+      'postEveryWebhook',
+    );
+    const mockedWebhook = webhookWithStatsFactory({
+      isActive: true,
+      url: 'http://localhost',
+      authorization: 'Basic QWxhZGRpbjpvcGVuIHNlc2FtZQ==',
+      chains: ['1'],
+      sendSafeCreations: true,
+    });
     const getCachedActiveWebhooksSpy = jest
-      .spyOn(webhookService, 'getCachedActiveWebhooks')
-      .mockImplementation(async () => [mockedWebhook]);
+      .spyOn(webhookDispatcherService, 'getCachedActiveWebhooks')
+      .mockImplementation(() => [mockedWebhook]);
     const postWebhookResponse: any = {
       data: {},
       status: 200,
       statusText: 'OK',
     };
     const postWebhookSpy = jest
-      .spyOn(webhookService, 'postWebhook')
+      .spyOn(webhookDispatcherService, 'postWebhook')
       .mockImplementation(async () => postWebhookResponse);
 
     const isMessagePublished = await publishMessage(
@@ -79,10 +85,6 @@ describe('Events handling', () => {
     expect(getCachedActiveWebhooksSpy).toHaveBeenCalledTimes(1);
 
     expect(postWebhookSpy).toHaveBeenCalledTimes(1);
-    expect(postWebhookSpy).toHaveBeenCalledWith(
-      msg,
-      mockedWebhook.url,
-      mockedWebhook.authorization,
-    );
+    expect(postWebhookSpy).toHaveBeenCalledWith(msg, mockedWebhook);
   });
 });

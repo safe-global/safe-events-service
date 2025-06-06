@@ -4,7 +4,7 @@ import { ConfigModule } from '@nestjs/config';
 import { EventsController } from './events.controller';
 import { EventsService } from './events.service';
 import { QueueProvider } from '../../datasources/queue/queue.provider';
-import { WebhookService } from '../webhook/webhook.service';
+import { WebhookDispatcherService } from '../webhook/webhookDispatcher.service';
 import { firstValueFrom } from 'rxjs';
 import { TxServiceEvent, TxServiceEventType } from './event.dto';
 
@@ -16,11 +16,11 @@ describe('EventsController', () => {
     const module: TestingModule = await Test.createTestingModule({
       imports: [ConfigModule.forRoot()],
       controllers: [EventsController],
-      providers: [EventsService, QueueProvider, WebhookService],
+      providers: [EventsService, QueueProvider, WebhookDispatcherService],
     })
       .overrideProvider(QueueProvider)
       .useValue({})
-      .overrideProvider(WebhookService)
+      .overrideProvider(WebhookDispatcherService)
       .useValue({})
       .compile();
 

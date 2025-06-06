@@ -1,9 +1,9 @@
 import { Observable, Subject, filter } from 'rxjs';
 import { Injectable, Logger, OnApplicationBootstrap } from '@nestjs/common';
-import { WebhookService } from '../webhook/webhook.service';
 import { QueueProvider } from '../../datasources/queue/queue.provider';
 import { AxiosResponse } from 'axios';
 import { TxServiceEvent } from './event.dto';
+import { WebhookDispatcherService } from '../webhook/webhookDispatcher.service';
 
 @Injectable()
 export class EventsService implements OnApplicationBootstrap {
@@ -12,7 +12,7 @@ export class EventsService implements OnApplicationBootstrap {
 
   constructor(
     private readonly queueProvider: QueueProvider,
-    private readonly webhookService: WebhookService,
+    private readonly webhookDispatcherService: WebhookDispatcherService,
   ) {}
 
   onApplicationBootstrap() {
@@ -91,6 +91,6 @@ export class EventsService implements OnApplicationBootstrap {
     }
 
     this.pushEventToEventsObservable(txServiceEvent);
-    return this.webhookService.postEveryWebhook(txServiceEvent);
+    return this.webhookDispatcherService.postEveryWebhook(txServiceEvent);
   }
 }

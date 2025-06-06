@@ -162,3 +162,55 @@ export class Webhook extends BaseEntity {
     return webhook;
   }
 }
+
+export class WebhookWithStats extends Webhook {
+  private successCount = 0;
+  private failureCount = 0;
+  private startTime: number;
+
+  constructor() {
+    super();
+    this.startTime = Date.now();
+  }
+
+  /**
+   * Increment the webhook success count
+   */
+  incrementSuccess(): void {
+    this.successCount++;
+  }
+
+  /**
+   * Increment the webhook failure count
+   */
+  incrementFailure(): void {
+    this.failureCount++;
+  }
+
+  /**
+   *
+   * @returns the percentage of fails for the current webhook
+   */
+  getFailureRate(): number {
+    const total = this.successCount + this.failureCount;
+    return total > 0 ? (this.failureCount / total) * 100 : 0; // Return 0 if no attempts
+  }
+
+  /**
+   *
+   * @returns the minutes passed from StartTime
+   */
+  getMinutesFromStartTime(): number {
+    const now = Date.now();
+    return Math.floor((now - this.startTime) / 1000 / 60);
+  }
+
+  /**
+   * Reset to 0 and current epoch time the Stats
+   */
+  resetStats(): void {
+    this.successCount = 0;
+    this.failureCount = 0;
+    this.startTime = Date.now();
+  }
+}
