@@ -12,6 +12,11 @@ function setupSwagger(app: INestApplication, basePath: string) {
     .setTitle('Safe Events Service')
     .setDescription('Safe Events Service API')
     .setVersion('1.0')
+    .addSecurity('apiKeyHeader', {
+      type: 'apiKey',
+      name: 'Authorization',
+      in: 'header',
+    })
     // .addTag('safe')
     .build();
   const document = SwaggerModule.createDocument(app, config);

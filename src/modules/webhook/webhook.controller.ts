@@ -16,6 +16,7 @@ import {
   ApiTags,
   ApiBody,
   ApiResponse,
+  ApiSecurity,
 } from '@nestjs/swagger';
 import { WebhookPublicDto, WebhookRequestDto } from './dtos/webhook.dto';
 import { WebhookService } from './webhook.service';
@@ -23,6 +24,7 @@ import { WebhookDoesNotExist } from './exceptions/webhook.exceptions';
 import { AdminWebhookGuard } from '../../common/guards/basic-auth.guard';
 
 @ApiTags('webhooks')
+@ApiSecurity('apiKeyHeader')
 @Controller('webhooks')
 export class WebhooksController {
   constructor(private readonly webhookService: WebhookService) {}
