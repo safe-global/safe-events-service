@@ -22,6 +22,9 @@ export class Webhook extends BaseEntity {
   @Column('bigint', { array: true, default: [] })
   chains: string[];
 
+  @Column('varchar', { array: true, default: [] })
+  addresses: string[];
+
   @Column({ default: true })
   sendConfirmations: boolean;
 
@@ -58,8 +61,11 @@ export class Webhook extends BaseEntity {
   isEventRelevant(message: TxServiceEvent): boolean {
     const chainMatches: boolean =
       this.chains.length === 0 || this.chains.includes(message.chainId);
+    const addressMatches: boolean =
+      this.addresses.length === 0 || this.addresses.includes(message.address);
     return (
       chainMatches &&
+      addressMatches &&
       ((this.sendConfirmations &&
         (message.type === 'NEW_CONFIRMATION' ||
           message.type === 'CONFIRMATION_REQUEST')) ||
@@ -113,6 +119,7 @@ export class Webhook extends BaseEntity {
       isActive: this.isActive,
       authorization: this.authorization,
       chains: this.chains.map(Number),
+      addresses: this.addresses,
       events,
     };
   }
@@ -129,6 +136,7 @@ export class Webhook extends BaseEntity {
     webhook.description = public_webhook.description;
     webhook.authorization = public_webhook.authorization;
     webhook.chains = public_webhook.chains.map(String);
+    webhook.addresses = public_webhook.addresses;
     webhook.isActive = public_webhook.isActive;
 
     webhook.sendConfirmations = public_webhook.events.includes(

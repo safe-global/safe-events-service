@@ -21,6 +21,10 @@ describe('Webhook service', () => {
     isActive: true,
     authorization: 'Bearer abc123secret',
     chains: [1, 137],
+    addresses: [
+      '0x0275FC2adfF11270F3EcC4D2F7Aa0a9784601Ca6',
+      '0x742d35Cc6634C0532925a3b844Bc454e4438f44e',
+    ],
     events: [
       'SEND_CONFIRMATIONS',
       'SEND_TOKEN_TRANSFERS',
