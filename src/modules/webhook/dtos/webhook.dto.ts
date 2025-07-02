@@ -13,7 +13,7 @@ import {
   ArrayMaxSize,
 } from 'class-validator';
 import { Type } from 'class-transformer';
-import { IsEthereumAddressArray } from '../../../common/validators/is-ethereum-address';
+import { IsEthAddress } from '../../../common/validators/is-ethereum-address';
 
 export enum SendEventTypes {
   SEND_CONFIRMATIONS = 'SEND_CONFIRMATIONS',
@@ -64,8 +64,9 @@ export class WebhookRequestDto {
 
   @ApiProperty({
     description:
-      'List of Ethereum addresses the webhook should monitor. Each address must be a valid Ethereum address (e.g., 0x...). Maximum of 100 addresses allowed.',
+      'List of Ethereum addresses the webhook should monitor. Each address must be a valid Ethereum checksumed address. Maximum of 100 addresses allowed.',
     type: [String],
+    required: false,
     example: [
       '0x742d35Cc6634C0532925a3b844Bc454e4438f44e',
       '0x53d284357ec70cE289D6D64134DfAc8E511c8a3D',
@@ -75,10 +76,11 @@ export class WebhookRequestDto {
   @ArrayMaxSize(100, {
     message: 'A maximum of 100 addresses is allowed',
   })
-  @IsEthereumAddressArray({
-    message: 'All addresses must be valid Ethereum addresses (e.g., 0x...)',
+  @IsEthAddress({
+    each: true,
+    message: 'Each address must be a valid Ethereum checksumed address',
   })
-  addresses: string[];
+  addresses?: string[] = [];
 
   @ApiProperty({
     description: 'List of event types this webhook subscribes to',

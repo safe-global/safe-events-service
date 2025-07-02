@@ -5,7 +5,7 @@ import {
 } from 'class-validator';
 import { isAddress } from 'viem';
 
-export function IsEthereumAddressArray(validationOptions?: ValidationOptions) {
+export function IsEthAddress(validationOptions?: ValidationOptions) {
   return function (object: object, propertyName: string) {
     registerDecorator({
       name: 'isEthereumAddressArray',
@@ -13,16 +13,11 @@ export function IsEthereumAddressArray(validationOptions?: ValidationOptions) {
       propertyName,
       options: validationOptions,
       validator: {
-        validate(addresses: any) {
-          return (
-            Array.isArray(addresses) &&
-            addresses.every(
-              (addr) => typeof addr === 'string' && isAddress(addr),
-            )
-          );
+        validate(address: any) {
+          return typeof address === 'string' && isAddress(address);
         },
         defaultMessage(args: ValidationArguments) {
-          return `Each element in ${args.property} must be a valid Ethereum address`;
+          return `${args.property} must be a valid Ethereum checksumed address`;
         },
       },
     });

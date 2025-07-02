@@ -136,7 +136,7 @@ export class Webhook extends BaseEntity {
     webhook.description = public_webhook.description;
     webhook.authorization = public_webhook.authorization;
     webhook.chains = public_webhook.chains.map(String);
-    webhook.addresses = public_webhook.addresses;
+    webhook.addresses = public_webhook.addresses ?? [];
     webhook.isActive = public_webhook.isActive;
 
     webhook.sendConfirmations = public_webhook.events.includes(
