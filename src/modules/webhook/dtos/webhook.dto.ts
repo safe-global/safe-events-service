@@ -12,7 +12,7 @@ import {
   IsNotEmpty,
   ArrayMaxSize,
 } from 'class-validator';
-import { Type } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 import { IsEthAddress } from '../../../common/validators/is-ethereum-address';
 
 export enum SendEventTypes {
@@ -80,6 +80,7 @@ export class WebhookRequestDto {
     each: true,
     message: 'Each address must be a valid Ethereum checksumed address',
   })
+  @Transform(({ value }) => Array.from(new Set(value)))
   addresses?: string[] = [];
 
   @ApiProperty({
