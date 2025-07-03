@@ -8,6 +8,7 @@ interface WebhookOptions {
   isActive?: boolean;
   authorization?: string;
   chains?: string[];
+  addresses?: string[];
   sendConfirmations?: boolean;
   sendMultisigTxs?: boolean;
   sendEtherTransfers?: boolean;
@@ -29,6 +30,10 @@ export function webhookFactory(options: WebhookOptions = {}): Webhook {
     options.authorization ?? `Bearer ${faker.string.alphanumeric(20)}`;
   webhook.chains = options.chains ?? [
     faker.number.int({ min: 1, max: 10 }).toString(),
+  ];
+  webhook.addresses = options.addresses ?? [
+    '0x0275FC2adfF11270F3EcC4D2F7Aa0a9784601Ca6',
+    '0x742d35Cc6634C0532925a3b844Bc454e4438f44e',
   ];
   webhook.sendConfirmations =
     options.sendConfirmations ?? faker.datatype.boolean();

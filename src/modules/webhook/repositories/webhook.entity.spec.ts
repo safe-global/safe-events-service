@@ -15,6 +15,7 @@ describe('Webhook entity', () => {
     };
     webhook = new Webhook();
     webhook.chains = [];
+    webhook.addresses = [];
     webhook.sendConfirmations = true;
     webhook.sendMultisigTxs = true;
     webhook.sendEtherTransfers = true;
@@ -37,6 +38,26 @@ describe('Webhook entity', () => {
     webhook.chains = ['5'];
     expect(webhook.isEventRelevant(txServiceEvent)).toBe(true);
     webhook.chains = [];
+    expect(webhook.isEventRelevant(txServiceEvent)).toBe(true);
+  });
+
+  it('If address is set, only those address messages will be sent', async () => {
+    expect(webhook.isEventRelevant(txServiceEvent)).toBe(true);
+    webhook.addresses = [
+      '0xFE9e8709d3215310075d67E3ed32A380CCf451C8',
+      '0x742d35Cc6634C0532925a3b844Bc454e4438f44e',
+    ];
+    expect(webhook.isEventRelevant(txServiceEvent)).toBe(false);
+    webhook.addresses = [
+      '0x0275FC2adfF11270F3EcC4D2F7Aa0a9784601Ca6',
+      '0x742d35Cc6634C0532925a3b844Bc454e4438f44e',
+    ];
+    expect(webhook.isEventRelevant(txServiceEvent)).toBe(true);
+    txServiceEvent.address = '0x53d284357ec70cE289D6D64134DfAc8E511c8a3D';
+    expect(webhook.isEventRelevant(txServiceEvent)).toBe(false);
+    webhook.addresses = ['0x53d284357ec70cE289D6D64134DfAc8E511c8a3D'];
+    expect(webhook.isEventRelevant(txServiceEvent)).toBe(true);
+    webhook.addresses = [];
     expect(webhook.isEventRelevant(txServiceEvent)).toBe(true);
   });
 
@@ -166,6 +187,7 @@ describe('Webhook entity', () => {
     expect(public_webhook.url).toBe(webhook.url);
     expect(public_webhook.authorization).toBe(webhook.authorization);
     expect(public_webhook.chains).toHaveLength(0);
+    expect(public_webhook.addresses).toHaveLength(0);
     expect(public_webhook.events).toHaveLength(9);
     expect(public_webhook.events).toContain('SEND_CONFIRMATIONS');
     expect(public_webhook.events).toContain('SEND_MULTISIG_TXS');
@@ -177,9 +199,15 @@ describe('Webhook entity', () => {
     expect(public_webhook.events).toContain('SEND_REORGS');
     expect(public_webhook.events).toContain('SEND_DELEGATES');
     webhook.chains = ['4', '100'];
+    webhook.addresses = [
+      '0x0275FC2adfF11270F3EcC4D2F7Aa0a9784601Ca6',
+      '0x742d35Cc6634C0532925a3b844Bc454e4438f44e',
+      '0x53d284357ec70cE289D6D64134DfAc8E511c8a3D',
+    ];
     webhook.sendConfirmations = false;
     public_webhook = webhook.toPublicDto();
     expect(public_webhook.chains).toHaveLength(2);
+    expect(public_webhook.addresses).toHaveLength(3);
     expect(public_webhook.events).toHaveLength(8);
     expect(public_webhook.events).not.toContain('confirmations');
   });
@@ -191,6 +219,11 @@ describe('Webhook entity', () => {
       url: 'https://example.com/webhook',
       authorization: 'Bearer abc123secret',
       chains: [1, 137],
+      addresses: [
+        '0x0275FC2adfF11270F3EcC4D2F7Aa0a9784601Ca6',
+        '0x742d35Cc6634C0532925a3b844Bc454e4438f44e',
+        '0x53d284357ec70cE289D6D64134DfAc8E511c8a3D',
+      ],
       isActive: true,
       events: [
         'SEND_CONFIRMATIONS',
@@ -205,6 +238,7 @@ describe('Webhook entity', () => {
     expect(generated_webhook.isActive).toBe(true);
     expect(generated_webhook.authorization).toBe(public_webhook.authorization);
     expect(generated_webhook.chains).toHaveLength(2);
+    expect(generated_webhook.addresses).toHaveLength(3);
     expect(generated_webhook.sendConfirmations).toBe(true);
     expect(generated_webhook.sendTokenTransfers).toBe(true);
     expect(generated_webhook.sendEtherTransfers).toBe(true);

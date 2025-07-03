@@ -61,6 +61,7 @@ describe('WebhooksController', () => {
     isActive: true,
     authorization: 'Bearer token',
     chains: [1, 2],
+    addresses: ['0x0275FC2adfF11270F3EcC4D2F7Aa0a9784601Ca6'],
     events: ['SEND_CONFIRMATIONS'],
   };
 

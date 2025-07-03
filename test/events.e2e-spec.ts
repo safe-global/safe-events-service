@@ -55,6 +55,7 @@ describe('Events handling', () => {
       url: 'http://localhost',
       authorization: 'Basic QWxhZGRpbjpvcGVuIHNlc2FtZQ==',
       chains: ['1'],
+      addresses: ['0x0275FC2adfF11270F3EcC4D2F7Aa0a9784601Ca6'],
       sendSafeCreations: true,
     });
     const getCachedActiveWebhooksSpy = jest
