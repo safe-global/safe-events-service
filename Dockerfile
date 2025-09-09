@@ -6,8 +6,7 @@ USER node
 WORKDIR /app
 COPY --chown=node:node package*.json tsconfig*.json ./
 
-# Fix arm64 timeouts
-RUN npm ci --fetch-timeout 3600000 --maxsockets 5
+RUN npm ci
 COPY --chown=node:node . .
 ENV NODE_ENV=production
 RUN npm run build
