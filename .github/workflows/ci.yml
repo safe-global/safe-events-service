@@ -16,7 +16,7 @@ jobs:
         with:
           node-version: '22.x'
           cache: 'npm'
-      - run: npm i
+      - run: npm ci
       - run: npm run format
 
   lint:
@@ -27,7 +27,7 @@ jobs:
         with:
           node-version: '22.x'
           cache: 'npm'
-      - run: npm i
+      - run: npm ci
       - run: npm run lint
 
   db-migrations:
@@ -53,7 +53,7 @@ jobs:
         with:
           node-version: '22.x'
           cache: 'npm'
-      - run: npm i
+      - run: npm ci
       - run: cp .env.sample .env
       - run: npm run build
       - run: bash ./scripts/db_run_migrations.sh
@@ -95,7 +95,7 @@ jobs:
         with:
           node-version: '22.x'
           cache: 'npm'
-      - run: npm i
+      - run: npm ci
       - run: cp .env.sample .env
       - run: npm run build
       - run: npm run ${{matrix.task}}
