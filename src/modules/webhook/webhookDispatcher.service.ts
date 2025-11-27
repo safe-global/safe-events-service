@@ -22,7 +22,7 @@ export class WebhookDispatcherService {
 
   constructor(
     @InjectRepository(Webhook)
-    private readonly WebHooksRepository: Repository<Webhook>,
+    private readonly webhooksRepository: Repository<Webhook>,
     @Inject(CACHE_MANAGER) private readonly cacheManager: Cache,
     private readonly configService: ConfigService,
     private readonly httpService: HttpService,
@@ -55,7 +55,7 @@ export class WebhookDispatcherService {
    * @returns Return active webhooks from database
    */
   getAllActive(): Promise<Webhook[]> {
-    return this.WebHooksRepository.findBy({ isActive: true });
+    return this.webhooksRepository.findBy({ isActive: true });
   }
 
   /**
@@ -65,7 +65,7 @@ export class WebhookDispatcherService {
    */
   async disableWebhook(id: string): Promise<boolean> {
     try {
-      const result = await this.WebHooksRepository.update(
+      const result = await this.webhooksRepository.update(
         { id },
         { isActive: false },
       );

@@ -28,9 +28,10 @@ describe('AppController (e2e)', () => {
     await app.init();
   }, 10000);
 
-  afterEach(() => {
+  afterEach(async () => {
     // Nest.js Shutdown hooks are not triggered
-    queueProvider.disconnect();
+    await queueProvider.disconnect();
+    await app.close();
   });
 
   it('/about (GET)', () => {
