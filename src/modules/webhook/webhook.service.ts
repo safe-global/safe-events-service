@@ -1,8 +1,8 @@
 import { InjectRepository } from '@nestjs/typeorm';
 import { QueryFailedError, Repository } from 'typeorm';
+import { randomUUID } from 'crypto';
 import { Webhook } from './repositories/webhook.entity';
 import { WebhookPublicDto, WebhookRequestDto } from './dtos/webhook.dto';
-import { v4 as uuidv4 } from 'uuid';
 import { plainToInstance } from 'class-transformer';
 import {
   WebhookAlreadyExists,
@@ -13,7 +13,7 @@ import { DUPLICATED_KEY_ERROR } from '../../datasources/db/postgres.errors';
 export class WebhookService {
   constructor(
     @InjectRepository(Webhook)
-    private readonly WebHooksRepository: Repository<Webhook>,
+    private readonly webhooksRepository: Repository<Webhook>,
   ) {}
   /**
    * Get public webhook by its ID.
@@ -34,7 +34,7 @@ export class WebhookService {
   async createWebhook(
     requestData: WebhookRequestDto,
   ): Promise<WebhookPublicDto> {
-    const publicId = uuidv4();
+    const publicId = randomUUID();
     const webhookDto = {
       ...requestData,
       id: publicId,
@@ -75,7 +75,7 @@ export class WebhookService {
     };
     const publicWebhookDto = plainToInstance(WebhookPublicDto, webhookDto);
     const webhook = Webhook.fromPublicDto(publicWebhookDto);
-    const saved = await this.WebHooksRepository.save(webhook);
+    const saved = await this.webhooksRepository.save(webhook);
     return saved.toPublicDto();
   }
 
@@ -84,7 +84,7 @@ export class WebhookService {
    * @param publicId
    */
   async deleteWebhook(publicId: string) {
-    const result = await this.WebHooksRepository.delete({ id: publicId });
+    const result = await this.webhooksRepository.delete({ id: publicId });
 
     if (result.affected === 0) {
       throw new WebhookDoesNotExist();
