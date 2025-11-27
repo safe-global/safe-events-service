@@ -1,7 +1,7 @@
 [![CI](https://github.com/safe-global/safe-events-service/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/safe-global/safe-events-service/actions/workflows/ci.yml)
 [![Coverage Status](https://coveralls.io/repos/github/safe-global/safe-events-service/badge.svg?branch=main)](https://coveralls.io/github/safe-global/safe-events-service?branch=main)
 ![Docker Image Version (latest by date)](https://img.shields.io/docker/v/safeglobal/safe-events-service?sort=date)
-![Node required Version](https://img.shields.io/badge/node.js-v22-green)
+![Node required Version](https://img.shields.io/badge/node.js-v42-green)
 
 # User documentation
 
@@ -213,7 +213,7 @@ We don't send notifications when a reorg happens. We send the events as soon as 
 
 ## Installation
 
-Node 22 LTS is required.
+Node 24 LTS is required.
 
 ```bash
 $ npm install
