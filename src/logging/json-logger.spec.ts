@@ -1,13 +1,16 @@
 import { JsonConsoleLogger } from './json-logger';
 
-const consoleLogSpy = jest.spyOn(process.stdout, 'write');
-const dateNowSpy = jest
-  .spyOn(Date, 'now')
-  .mockImplementation(() => 958694400000);
-
 describe('JsonLogger', () => {
+  let consoleLogSpy: jest.SpyInstance;
+  let dateNowSpy: jest.SpyInstance;
+
+  beforeEach(() => {
+    consoleLogSpy = jest.spyOn(process.stdout, 'write').mockImplementation();
+    dateNowSpy = jest.spyOn(Date, 'now').mockImplementation(() => 958694400000);
+  });
+
   afterEach(() => {
-    jest.clearAllMocks();
+    jest.restoreAllMocks();
   });
 
   it('should return a stringified JSON', async () => {

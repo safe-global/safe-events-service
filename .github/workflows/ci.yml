@@ -11,23 +11,23 @@ jobs:
   format:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
         with:
-          node-version: '22.x'
+          node-version: '24.x'
           cache: 'npm'
-      - run: npm i
+      - run: npm ci
       - run: npm run format
 
   lint:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
         with:
-          node-version: '22.x'
+          node-version: '24.x'
           cache: 'npm'
-      - run: npm i
+      - run: npm ci
       - run: npm run lint
 
   db-migrations:
@@ -48,12 +48,12 @@ jobs:
           - 5433:5432
 
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
         with:
-          node-version: '22.x'
+          node-version: '24.x'
           cache: 'npm'
-      - run: npm i
+      - run: npm ci
       - run: cp .env.sample .env
       - run: npm run build
       - run: bash ./scripts/db_run_migrations.sh
@@ -90,17 +90,17 @@ jobs:
       matrix:
         task: ['test:cov', 'test:e2e:cov']
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
         with:
-          node-version: '22.x'
+          node-version: '24.x'
           cache: 'npm'
-      - run: npm i
+      - run: npm ci
       - run: cp .env.sample .env
       - run: npm run build
       - run: npm run ${{matrix.task}}
       - name: Coveralls Parallel
-        uses: coverallsapp/github-action@v2.3.6
+        uses: coverallsapp/github-action@v2.3.7
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           flag-name: run-${{ matrix.task }}
@@ -111,7 +111,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Coveralls Finished
-        uses: coverallsapp/github-action@v2.3.6
+        uses: coverallsapp/github-action@v2.3.7
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           parallel-finished: true
@@ -124,8 +124,8 @@ jobs:
       - tests
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: docker/setup-qemu-action@v3.6.0
+      - uses: actions/checkout@v6
+      - uses: docker/setup-qemu-action@v3.7.0
         with:
           platforms: arm64
       - uses: docker/setup-buildx-action@v3
@@ -159,7 +159,7 @@ jobs:
     needs: [docker-publish]
     if: github.ref == 'refs/heads/main'
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
     - name: Deploy Staging
       if: github.ref == 'refs/heads/main'
       run: bash scripts/autodeploy.sh

@@ -213,7 +213,7 @@ We don't send notifications when a reorg happens. We send the events as soon as 
 
 ## Installation
 
-Node 22 LTS is required.
+Node 24 LTS is required.
 
 ```bash
 $ npm install
