@@ -51,7 +51,7 @@
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.2",
     "typeorm": "^0.3.27",
-    "viem": "^2.40.3"
+    "viem": "^2.42.1"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.3.3",
