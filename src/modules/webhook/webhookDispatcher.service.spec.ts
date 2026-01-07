@@ -632,7 +632,13 @@ describe('Webhook service', () => {
       expect(getMinutesFromStartTimeSpy).toHaveBeenCalledTimes(1);
       expect(disableWebhookSpy).toHaveBeenCalledWith(unHealthyWebhook.id);
       expect(loggerWarnSpy).toHaveBeenCalledWith({
-        message: `Webhook disabled — ID: ${unHealthyWebhook.id}, URL: ${unHealthyWebhook.url}, failure rate exceeded threshold.`,
+        message: 'Webhook disabled, failure rate exceeded threshold.',
+        messageContext: {
+          webhook: {
+            id: unHealthyWebhook.id,
+            url: unHealthyWebhook.url,
+          },
+        },
       });
     });
     it('should not disable any unhealthy webhook when the auto disable webhook is false', async () => {
@@ -662,7 +668,14 @@ describe('Webhook service', () => {
       expect(getMinutesFromStartTimeSpy).toHaveBeenCalledTimes(1);
       expect(disableWebhookSpy).not.toHaveBeenCalledWith(unHealthyWebhook.id);
       expect(loggerWarnSpy).toHaveBeenCalledWith({
-        message: `Webhook exceeded failure threshold but was not disabled (autoDisableWebhook is OFF) — ID: ${unHealthyWebhook.id}, URL: ${unHealthyWebhook.url}.`,
+        message:
+          'Webhook exceeded failure threshold but was not disabled (autoDisableWebhook is OFF)',
+        messageContext: {
+          webhook: {
+            id: unHealthyWebhook.id,
+            url: unHealthyWebhook.url,
+          },
+        },
       });
     });
     it('should log error if it was not able to disable the webhook', async () => {
@@ -691,7 +704,13 @@ describe('Webhook service', () => {
       expect(getMinutesFromStartTimeSpy).toHaveBeenCalledTimes(1);
       expect(disableWebhookSpy).toHaveBeenCalledWith(unHealthyWebhook.id);
       expect(loggerErrorSpy).toHaveBeenCalledWith({
-        message: `Failed to disable webhook — ID: ${unHealthyWebhook.id}, URL: ${unHealthyWebhook.url}.`,
+        message: 'Failed to disable webhook',
+        messageContext: {
+          webhook: {
+            id: unHealthyWebhook.id,
+            url: unHealthyWebhook.url,
+          },
+        },
       });
     });
   });
