@@ -634,7 +634,10 @@ describe('Webhook service', () => {
       expect(loggerWarnSpy).toHaveBeenCalledWith({
         message: 'Webhook disabled, failure rate exceeded threshold.',
         messageContext: {
-          webhook: unHealthyWebhook,
+          webhook: {
+            id: unHealthyWebhook.id,
+            url: unHealthyWebhook.url,
+          },
         },
       });
     });
@@ -668,7 +671,10 @@ describe('Webhook service', () => {
         message:
           'Webhook exceeded failure threshold but was not disabled (autoDisableWebhook is OFF)',
         messageContext: {
-          webhook: unHealthyWebhook,
+          webhook: {
+            id: unHealthyWebhook.id,
+            url: unHealthyWebhook.url,
+          },
         },
       });
     });
@@ -700,7 +706,10 @@ describe('Webhook service', () => {
       expect(loggerErrorSpy).toHaveBeenCalledWith({
         message: 'Failed to disable webhook',
         messageContext: {
-          webhook: unHealthyWebhook,
+          webhook: {
+            id: unHealthyWebhook.id,
+            url: unHealthyWebhook.url,
+          },
         },
       });
     });

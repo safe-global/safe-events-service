@@ -235,14 +235,20 @@ export class WebhookDispatcherService {
               this.logger.warn({
                 message: 'Webhook disabled, failure rate exceeded threshold.',
                 messageContext: {
-                  webhook: webhook,
+                  webhook: {
+                    id: webhook.id,
+                    url: webhook.url,
+                  },
                 },
               });
             } else {
               this.logger.error({
                 message: 'Failed to disable webhook',
                 messageContext: {
-                  webhook: webhook,
+                  webhook: {
+                    id: webhook.id,
+                    url: webhook.url,
+                  },
                 },
               });
             }
@@ -251,7 +257,10 @@ export class WebhookDispatcherService {
               message:
                 'Webhook exceeded failure threshold but was not disabled (autoDisableWebhook is OFF)',
               messageContext: {
-                webhook: webhook,
+                webhook: {
+                  id: webhook.id,
+                  url: webhook.url,
+                },
               },
             });
           }
