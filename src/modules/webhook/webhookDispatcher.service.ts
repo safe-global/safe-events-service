@@ -233,16 +233,26 @@ export class WebhookDispatcherService {
             const wasDisabled = await this.disableWebhook(webhook.id);
             if (wasDisabled) {
               this.logger.warn({
-                message: `Webhook disabled — ID: ${webhook.id}, URL: ${webhook.url}, failure rate exceeded threshold.`,
+                message: 'Webhook disabled, failure rate exceeded threshold.',
+                messageContext: {
+                  webhook: webhook,
+                },
               });
             } else {
               this.logger.error({
-                message: `Failed to disable webhook — ID: ${webhook.id}, URL: ${webhook.url}.`,
+                message: 'Failed to disable webhook',
+                messageContext: {
+                  webhook: webhook,
+                },
               });
             }
           } else {
             this.logger.warn({
-              message: `Webhook exceeded failure threshold but was not disabled (autoDisableWebhook is OFF) — ID: ${webhook.id}, URL: ${webhook.url}.`,
+              message:
+                'Webhook exceeded failure threshold but was not disabled (autoDisableWebhook is OFF)',
+              messageContext: {
+                webhook: webhook,
+              },
             });
           }
         }
