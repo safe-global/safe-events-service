@@ -32,7 +32,7 @@
     "@nestjs/cache-manager": "^3.0.1",
     "@nestjs/common": "^11.1.9",
     "@nestjs/config": "^4.0.2",
-    "@nestjs/core": "^11.1.9",
+    "@nestjs/core": "^11.1.13",
     "@nestjs/platform-express": "^11.1.9",
     "@nestjs/schedule": "^6.0.1",
     "@nestjs/swagger": "^11.2.3",
