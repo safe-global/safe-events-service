@@ -278,3 +278,13 @@ Remember to add the new database entities to `./src/datasources/db/database.opti
 ```bash
 bash ./scripts/db_generate_migrations.sh RELEVANT_MIGRATION_NAME
 ```
+## Licensing
+
+This repository contains code developed under two different ownership and licensing regimes, split by a defined cut-over date.
+
+- Up to and including February 16, 2026: code is Copyright (c) Safe Ecosystem Foundation and licensed under the MIT License. The final SEF-owned MIT snapshot is tagged as `sef-mit-final`.
+- From February 17, 2026 onward: new development is Copyright (c) Safe Labs GmbH and licensed under the Functional Source License, Version 1.1 (MIT Future License).
+
+Users who require a purely MIT-licensed codebase should base their work on the `sef-mit-final` tag. The historical MIT-licensed code remains MIT and is not retroactively relicensed.
+
+For details, see `LICENSE` and `NOTICE`.
