@@ -13,6 +13,7 @@ import { EventsModule } from './modules/events/events.module';
 import { HealthModule } from './modules/health/health.module';
 import { WebhookModule } from './modules/webhook/webhook.module';
 import { RequestLoggerMiddleware } from './middleware/request-logger.middleware';
+import { ReverseProxyMiddleware } from './middleware/reverse-proxy.middleware';
 import { ScheduleModule } from '@nestjs/schedule';
 
 @Module({
@@ -30,7 +31,7 @@ import { ScheduleModule } from '@nestjs/schedule';
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
     consumer
-      .apply(RequestLoggerMiddleware)
+      .apply(ReverseProxyMiddleware, RequestLoggerMiddleware)
       .forRoutes({ path: '*', method: RequestMethod.ALL });
   }
 }
