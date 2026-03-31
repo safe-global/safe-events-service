@@ -32,7 +32,7 @@ If you want to integrate with the events service, you need to:
 - Endpoint need to answer with:
   - `HTTP 202` status
   - Nothing in the body.
-  - It should answer **as soon as possible**, as events service will timeout in 2 seconds, if multiple timeouts are detected **service will stop sending requests** to your endpoint. So you should receive the event, return a HTTP response and then act upon it.
+  - It should answer **as soon as possible**, as events service will timeout in 1 second by default (configurable via `HTTP_TIMEOUT`), if multiple timeouts are detected **service will stop sending requests** to your endpoint. So you should receive the event, return a HTTP response and then act upon it.
   - Configuring HTTP Basic Auth in your endpoint is recommended so a malicious user cannot post fake events to your service.
 
 ## Events supported
@@ -267,6 +267,35 @@ npm run test:e2e
 # test coverage
 npm run test:cov
 ```
+
+## Configuration
+
+All configuration is done through environment variables. See `.env.sample` for a full template.
+
+| Variable | Required | Default | Description |
+|---|---|---|---|
+| `DATABASE_URL` | Yes | — | PostgreSQL connection URL |
+| `AMQP_URL` | Yes | — | RabbitMQ connection URL |
+| `AMQP_EXCHANGE` | Yes | — | RabbitMQ exchange name |
+| `AMQP_QUEUE` | Yes | `safe-events-service` | RabbitMQ queue name |
+| `ADMIN_EMAIL` | Yes | — | Admin panel login email |
+| `ADMIN_PASSWORD` | Yes | — | Admin panel login password |
+| `ADMIN_COOKIE_SECRET` | Yes | — | Secret used to sign admin session cookies |
+| `ADMIN_SESSION_SECRET` | Yes | — | Secret used to encrypt admin sessions |
+| `ADMIN_WEBHOOK_AUTH` | Yes | — | Bearer token for webhook management endpoints |
+| `SSE_AUTH_TOKEN` | No | `""` (disabled) | Base64 token for SSE endpoint (`Authorization: Basic <token>`). Auth is disabled when empty. |
+| `NODE_ENV` | No | — | Set to `production` to disable schema auto-sync and enable production mode |
+| `URL_BASE_PATH` | No | `""` | Global URL prefix (e.g. `/v1`) |
+| `DATABASE_SSL_ENABLED` | No | `false` | Enable SSL for database connection |
+| `DATABASE_CA_PATH` | No | — | Path to CA certificate file for database SSL |
+| `HTTP_TIMEOUT` | No | `1000` | Webhook HTTP client timeout in milliseconds |
+| `HTTP_MAX_REDIRECTS` | No | `0` | Max redirects followed when dispatching webhooks |
+| `DB_HEALTH_CHECK_TIMEOUT` | No | `5000` | Database health check timeout in milliseconds |
+| `AMQP_PREFETCH_MESSAGES` | No | `10` | RabbitMQ prefetch message count |
+| `WEBHOOK_AUTO_DISABLE` | No | `false` | Auto-disable webhooks that exceed the failure threshold |
+| `WEBHOOK_FAILURE_THRESHOLD` | No | `90` | Failure rate percentage (0–100) above which a webhook is auto-disabled |
+| `WEBHOOK_HEALTH_MINUTES_WINDOW` | No | `60` | Rolling window in minutes used to compute per-webhook failure rates |
+| `LOG_LEVEL` | No | `log` | Log verbosity: `verbose`, `debug`, `log`, `warn`, `error`, `fatal` |
 
 ## Creating database migrations
 
