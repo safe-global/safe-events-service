@@ -46,12 +46,12 @@ async function buildAdminJsModule() {
         authenticate: (email: string, password: string) =>
           authService.authenticate(email, password),
         cookieName: 'adminjs',
-        cookiePassword: 'secret',
+        cookiePassword: process.env.ADMIN_COOKIE_SECRET,
       },
       sessionOptions: {
         resave: true,
         saveUninitialized: true,
-        secret: 'secret',
+        secret: process.env.ADMIN_SESSION_SECRET,
       },
     }),
   });

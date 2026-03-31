@@ -1,4 +1,6 @@
-#!/bin/bash 
+#!/bin/bash
+
+set -e
 
 export MIGRATIONS_DATABASE_URL=$DATABASE_URL
 bash ./scripts/db_run_migrations_production.sh
