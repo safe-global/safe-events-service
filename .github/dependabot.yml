@@ -5,24 +5,17 @@ updates:
     schedule:
       interval: weekly
       day: monday
-    reviewers:
-      - "uxio0"
-      - "moisses89"
+    cooldown:
+      default-days: 7
 
   - package-ecosystem: docker
     directory: "/"
     schedule:
       interval: weekly
       day: monday
-    reviewers:
-      - "uxio0"
-      - "moisses89"
 
   - package-ecosystem: github-actions
     directory: "/"
     schedule:
       interval: weekly
       day: monday
-    reviewers:
-      - "uxio0"
-      - "moisses89"
