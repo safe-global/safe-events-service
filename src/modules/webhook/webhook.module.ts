@@ -1,3 +1,5 @@
+import * as http from 'http';
+import * as https from 'https';
 import { Module } from '@nestjs/common';
 import { CacheModule } from '@nestjs/cache-manager';
 import { TypeOrmModule } from '@nestjs/typeorm';
@@ -16,10 +18,15 @@ import { WebhooksController } from './webhook.controller';
     HttpModule.registerAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
-      useFactory: async (configService: ConfigService) => ({
-        timeout: Number(configService.get('HTTP_TIMEOUT', 1_000)),
-        maxRedirects: Number(configService.get('HTTP_MAX_REDIRECTS', 0)),
-      }),
+      useFactory: async (configService: ConfigService) => {
+        const timeout = Number(configService.get('HTTP_TIMEOUT', 1_000));
+        return {
+          timeout,
+          maxRedirects: Number(configService.get('HTTP_MAX_REDIRECTS', 0)),
+          httpAgent: new http.Agent({ keepAlive: true, timeout }),
+          httpsAgent: new https.Agent({ keepAlive: true, timeout }),
+        };
+      },
     }),
   ],
   controllers: [WebhooksController],
