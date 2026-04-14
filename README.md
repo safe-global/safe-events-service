@@ -32,7 +32,8 @@ If you want to integrate with the events service, you need to:
 - Endpoint need to answer with:
   - `HTTP 202` status
   - Nothing in the body.
-  - It should answer **as soon as possible**, as events service will timeout in 1 second by default (configurable via `HTTP_TIMEOUT`), if multiple timeouts are detected **service will stop sending requests** to your endpoint. So you should receive the event, return a HTTP response and then act upon it.
+  - It should answer **as soon as possible**, as events service will timeout in 5 seconds by default (configurable via `HTTP_TIMEOUT`), if multiple timeouts are detected **service will stop sending requests** to your endpoint. So you should receive the event, return a HTTP response and then act upon it.
+  - Each delivery includes a `X-Delivery-Id` header with a unique UUID. The same UUID is kept across retry attempts for the same event, so you can use it to deduplicate re-deliveries.
   - Configuring HTTP Basic Auth in your endpoint is recommended so a malicious user cannot post fake events to your service.
 
 ## Events supported
@@ -183,7 +184,7 @@ Indexing can take 1-2 minutes in the worst cases and less than 15 seconds in goo
 
 ## Will the webhooks do retries?
 
-Currently no, and please count on that maybe due to some network issues you can lose a webhook. We will work on resilience patterns like retrying or removing an integration if service cannot deliver webhooks for some time.
+Yes. The service retries up to `HTTP_MAX_RETRIES` times (default: 2) with exponential backoff on transient network errors (e.g. `ECONNRESET`, `ETIMEDOUT`) and on `429` / `5xx` responses. Every delivery attempt for the same event shares the same `X-Delivery-Id` header value, so your endpoint can use it to deduplicate re-deliveries.
 
 ## Do you plan to have a way to trigger a backfill in case our systems go down?
 
@@ -203,7 +204,7 @@ No, we would like to keep webhook information minimal. Doing queries afterwards 
 
 ## One thing that could be useful is a unique id for the events:
 
-https://github.com/safe-global/safe-events-service/issues/116
+Every webhook request includes a `X-Delivery-Id` header containing a UUID that is unique per delivery and stable across retries. You can use it to implement idempotent processing on your end.
 
 ## How do you handle confirmed/unconfirmed blocks and reorgs. When do you send an event? After waiting for confirmation or immediately? If a transaction is removed due to a chain reorg, would you still send the event before it is confirmed?
 
@@ -289,7 +290,7 @@ All configuration is done through environment variables. See `.env.sample` for a
 | `DATABASE_SSL_ENABLED` | No | `false` | Enable SSL for database connection |
 | `DATABASE_CA_PATH` | No | — | Path to CA certificate file for database SSL |
 | `HTTP_TIMEOUT` | No | `5000` | Webhook HTTP client timeout in milliseconds |
-| `HTTP_MAX_REDIRECTS` | No | `0` | Max redirects followed when dispatching webhooks |
+| `HTTP_MAX_RETRIES` | No | `2` | Max retry attempts for transient network errors and 5xx/429 responses |
 | `DB_HEALTH_CHECK_TIMEOUT` | No | `5000` | Database health check timeout in milliseconds |
 | `AMQP_PREFETCH_MESSAGES` | No | `100` | RabbitMQ prefetch message count |
 | `WEBHOOK_AUTO_DISABLE` | No | `false` | Auto-disable webhooks that exceed the failure threshold |

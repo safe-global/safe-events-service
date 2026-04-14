@@ -11,6 +11,26 @@ import { UNDICI_AGENT, WebhookResponse } from './webhookDispatcher.service';
 import { Logger } from '@nestjs/common';
 import { webhookWithStatsFactory } from './repositories/webhook.test.factory';
 
+function makeEvent() {
+  return {
+    chainId: '1',
+    type: 'SAFE_CREATED' as TxServiceEventType,
+    text: 'hello',
+    address: '0x0275FC2adfF11270F3EcC4D2F7Aa0a9784601Ca6',
+  };
+}
+
+function makeHttpAgentResponse(statusCode: number, data = '') {
+  return {
+    statusCode,
+    headers: {},
+    body: { text: jest.fn().mockResolvedValue(data) },
+    trailers: {},
+    opaque: null,
+    context: {},
+  } as any;
+}
+
 describe('Webhook service', () => {
   let agent: Dispatcher;
   let webhookDispatcherService: WebhookDispatcherService;
@@ -86,21 +106,15 @@ describe('Webhook service', () => {
       // Refresh webhooks list
       await webhookDispatcherService.refreshWebhookMap();
 
-      const postWebhookResponse: any = {
-        data: {},
-        status: 200,
-        statusText: 'OK',
+      const postWebhookResponse: WebhookResponse = {
+        statusCode: 200,
+        data: '',
       };
       const postWebhookSpy = jest
         .spyOn(webhookDispatcherService, 'postWebhook')
         .mockImplementation(async () => postWebhookResponse);
 
-      const msg = {
-        chainId: '1',
-        type: 'SAFE_CREATED' as TxServiceEventType,
-        text: 'hello',
-        address: '0x0275FC2adfF11270F3EcC4D2F7Aa0a9784601Ca6',
-      };
+      const msg = makeEvent();
       const results = await webhookDispatcherService.postEveryWebhook(msg);
       expect(results).toEqual([]);
       expect(findAllActiveSpy).toHaveBeenCalledTimes(1);
@@ -132,21 +146,15 @@ describe('Webhook service', () => {
       // Refresh webhooks list
       await webhookDispatcherService.refreshWebhookMap();
 
-      const postWebhookResponse: any = {
-        data: {},
-        status: 200,
-        statusText: 'OK',
+      const postWebhookResponse: WebhookResponse = {
+        statusCode: 200,
+        data: '',
       };
       const postWebhookSpy = jest
         .spyOn(webhookDispatcherService, 'postWebhook')
         .mockImplementation(async () => postWebhookResponse);
 
-      const msg = {
-        chainId: '1',
-        type: 'SAFE_CREATED' as TxServiceEventType,
-        text: 'hello',
-        address: '0x0275FC2adfF11270F3EcC4D2F7Aa0a9784601Ca6',
-      };
+      const msg = makeEvent();
       const results = await webhookDispatcherService.postEveryWebhook(msg);
       expect(results).toEqual([postWebhookResponse, postWebhookResponse]);
       expect(findAllActiveSpy).toHaveBeenCalledTimes(1);
@@ -163,21 +171,11 @@ describe('Webhook service', () => {
         url: 'http://localhost:4815',
         authorization: '',
       });
-      const msg = {
-        chainId: '1',
-        type: 'SAFE_CREATED' as TxServiceEventType,
-        text: 'hello',
-        address: '0x0275FC2adfF11270F3EcC4D2F7Aa0a9784601Ca6',
-      };
+      const msg = makeEvent();
 
-      const agentRequestSpy = jest.spyOn(agent, 'request').mockResolvedValue({
-        statusCode: 200,
-        headers: {},
-        body: { text: jest.fn().mockResolvedValue('') },
-        trailers: {},
-        opaque: null,
-        context: {},
-      } as any);
+      const agentRequestSpy = jest
+        .spyOn(agent, 'request')
+        .mockResolvedValue(makeHttpAgentResponse(200));
       const results = await webhookDispatcherService.postWebhook(msg, webhook);
       expect(results).toEqual<WebhookResponse>({ statusCode: 200, data: '' });
       expect(agentRequestSpy).toHaveBeenCalledTimes(1);
@@ -185,7 +183,10 @@ describe('Webhook service', () => {
         origin: 'http://localhost:4815',
         path: '/',
         method: 'POST',
-        headers: { 'content-type': 'application/json' },
+        headers: {
+          'content-type': 'application/json',
+          'x-delivery-id': expect.any(String),
+        },
         body: JSON.stringify(msg),
       });
     });
@@ -195,21 +196,11 @@ describe('Webhook service', () => {
         url: 'http://localhost:4815',
         authorization: 'Basic 1234',
       });
-      const event = {
-        chainId: '1',
-        type: 'SAFE_CREATED' as TxServiceEventType,
-        text: 'hello',
-        address: '0x0275FC2adfF11270F3EcC4D2F7Aa0a9784601Ca6',
-      };
+      const event = makeEvent();
 
-      const agentRequestSpy = jest.spyOn(agent, 'request').mockResolvedValue({
-        statusCode: 200,
-        headers: {},
-        body: { text: jest.fn().mockResolvedValue('') },
-        trailers: {},
-        opaque: null,
-        context: {},
-      } as any);
+      const agentRequestSpy = jest
+        .spyOn(agent, 'request')
+        .mockResolvedValue(makeHttpAgentResponse(200));
       const results = await webhookDispatcherService.postWebhook(
         event,
         webhook,
@@ -222,6 +213,7 @@ describe('Webhook service', () => {
         method: 'POST',
         headers: {
           'content-type': 'application/json',
+          'x-delivery-id': expect.any(String),
           authorization: webhook.authorization,
         },
         body: JSON.stringify(event),
@@ -233,21 +225,11 @@ describe('Webhook service', () => {
         url: 'http://localhost:4815',
         authorization: '',
       });
-      const event = {
-        chainId: '1',
-        type: 'SAFE_CREATED' as TxServiceEventType,
-        text: 'hello',
-        address: '0x0275FC2adfF11270F3EcC4D2F7Aa0a9784601Ca6',
-      };
+      const event = makeEvent();
 
-      jest.spyOn(agent, 'request').mockResolvedValue({
-        statusCode: 503,
-        headers: {},
-        body: { text: jest.fn().mockResolvedValue('No data') },
-        trailers: {},
-        opaque: null,
-        context: {},
-      } as any);
+      jest
+        .spyOn(agent, 'request')
+        .mockResolvedValue(makeHttpAgentResponse(503, 'No data'));
       const loggerErrorSpy = jest
         .spyOn(Logger.prototype, 'error')
         .mockImplementation();
@@ -275,12 +257,7 @@ describe('Webhook service', () => {
         url: 'http://localhost:4815',
         authorization: '',
       });
-      const event = {
-        chainId: '1',
-        type: 'SAFE_CREATED' as TxServiceEventType,
-        text: 'hello',
-        address: '0x0275FC2adfF11270F3EcC4D2F7Aa0a9784601Ca6',
-      };
+      const event = makeEvent();
 
       const networkError = Object.assign(new Error('read ECONNRESET'), {
         code: 'ECONNRESET',
@@ -313,12 +290,7 @@ describe('Webhook service', () => {
         url: 'http://localhost:4815',
         authorization: '',
       });
-      const event = {
-        chainId: '1',
-        type: 'SAFE_CREATED' as TxServiceEventType,
-        text: 'hello',
-        address: '0x0275FC2adfF11270F3EcC4D2F7Aa0a9784601Ca6',
-      };
+      const event = makeEvent();
 
       jest
         .spyOn(agent, 'request')
@@ -350,21 +322,11 @@ describe('Webhook service', () => {
         url: 'http://localhost:4815',
         authorization: '',
       });
-      const event = {
-        chainId: '1',
-        type: 'SAFE_CREATED' as TxServiceEventType,
-        text: 'hello',
-        address: '0x0275FC2adfF11270F3EcC4D2F7Aa0a9784601Ca6',
-      };
+      const event = makeEvent();
 
-      jest.spyOn(agent, 'request').mockResolvedValue({
-        statusCode: 204,
-        headers: {},
-        body: { text: jest.fn().mockResolvedValue('') },
-        trailers: {},
-        opaque: null,
-        context: {},
-      } as any);
+      jest
+        .spyOn(agent, 'request')
+        .mockResolvedValue(makeHttpAgentResponse(204));
       const loggerDebugSpy = jest
         .spyOn(Logger.prototype, 'debug')
         .mockImplementation();
