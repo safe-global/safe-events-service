@@ -258,6 +258,39 @@ describe('Webhook service', () => {
       });
     });
 
+    it('should log an error message if response is a 3xx redirect', async () => {
+      const webhook = webhookWithStatsFactory({
+        url: 'http://localhost:4815',
+        authorization: '',
+      });
+      const event = makeEvent();
+
+      jest
+        .spyOn(agent, 'request')
+        .mockResolvedValue(makeHttpAgentResponse(301, ''));
+      const loggerErrorSpy = jest
+        .spyOn(Logger.prototype, 'error')
+        .mockImplementation();
+
+      const result = await webhookDispatcherService.postWebhook(event, webhook);
+
+      expect(result).toBeUndefined();
+      expect(loggerErrorSpy).toHaveBeenCalledWith({
+        message: 'Error sending event',
+        messageContext: {
+          event: event,
+          httpRequest: {
+            startTime: expect.any(Number),
+            url: webhook.url,
+          },
+          httpResponse: {
+            data: '',
+            statusCode: 301,
+          },
+        },
+      });
+    });
+
     it('should log an error message if response is not received', async () => {
       const webhook = webhookWithStatsFactory({
         url: 'http://localhost:4815',

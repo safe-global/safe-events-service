@@ -238,7 +238,7 @@ export class WebhookDispatcherService implements OnModuleDestroy {
         data: this.parseResponseData(await response.body.text()),
       };
 
-      if (webhookResponse.statusCode >= 400) {
+      if (webhookResponse.statusCode < 200 || webhookResponse.statusCode >= 300) {
         webhook.incrementFailure();
         this.logSendError(parsedMessage, webhook, startTime, {
           data: webhookResponse.data,
