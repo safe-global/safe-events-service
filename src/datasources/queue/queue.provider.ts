@@ -64,7 +64,7 @@ export class QueueProvider implements OnApplicationShutdown {
    *          at the same time
    */
   getPrefetchMessages(): number {
-    const value = Number(this.configService.get('AMQP_PREFETCH_MESSAGES', 10));
+    const value = Number(this.configService.get('AMQP_PREFETCH_MESSAGES', 100));
     this.logger.log(`AMQP_PREFETCH_MESSAGES=${value}`);
     return value;
   }
@@ -149,10 +149,15 @@ export class QueueProvider implements OnApplicationShutdown {
       );
       const consumer = await channel.consume(
         this.getQueueName(),
-        (message: ConsumeMessage) => {
+        async (message: ConsumeMessage) => {
           if (message.content) {
-            func(message.content.toString());
-            channel.ack(message);
+            try {
+              await func(message.content.toString());
+            } catch (error) {
+              this.logger.error(`Error processing message: ${error.message}`);
+            } finally {
+              channel.ack(message);
+            }
           }
         },
         {
