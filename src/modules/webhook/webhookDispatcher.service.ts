@@ -1,4 +1,4 @@
-import { Inject, Injectable, Logger } from '@nestjs/common';
+import { Inject, Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
 import { Cache } from 'cache-manager';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -29,7 +29,7 @@ export interface WebhookResponse {
 }
 
 @Injectable()
-export class WebhookDispatcherService {
+export class WebhookDispatcherService implements OnModuleDestroy {
   private readonly logger = new Logger(WebhookDispatcherService.name);
   private webhookMap: Map<string, WebhookWithStats> = new Map();
   private webhookFailureThreshold: number;
@@ -65,6 +65,10 @@ export class WebhookDispatcherService {
       message: 'Loading webhooks list at startup',
     });
     await this.refreshWebhookMap();
+  }
+
+  async onModuleDestroy() {
+    await this.agent.close();
   }
 
   /**

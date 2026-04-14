@@ -1,4 +1,4 @@
-import { Test } from '@nestjs/testing';
+import { Test, TestingModule } from '@nestjs/testing';
 import { Webhook, WebhookWithStats } from './repositories/webhook.entity';
 import { WebhookModule } from './webhook.module';
 import { DatabaseModule } from '../../datasources/db/database.module';
@@ -32,6 +32,7 @@ function makeHttpAgentResponse(statusCode: number, data = '') {
 }
 
 describe('Webhook service', () => {
+  let moduleRef: TestingModule;
   let agent: Dispatcher;
   let webhookDispatcherService: WebhookDispatcherService;
   let webhookRepository: Repository<Webhook>;
@@ -64,6 +65,7 @@ describe('Webhook service', () => {
     const webhookRepository = dataSource.getRepository(Webhook);
 
     return {
+      moduleRef,
       agent,
       webhookDispatcherService,
       webhookRepository,
@@ -71,10 +73,14 @@ describe('Webhook service', () => {
   }
 
   beforeEach(async () => {
-    ({ agent, webhookDispatcherService, webhookRepository } =
+    ({ moduleRef, agent, webhookDispatcherService, webhookRepository } =
       await createTestingModuleWithEnv(true, 50, 1));
     jest.clearAllMocks();
     await webhookRepository.clear();
+  });
+
+  afterEach(async () => {
+    await moduleRef.close();
   });
 
   describe('getCachedActiveWebhooks', () => {
@@ -561,7 +567,8 @@ describe('Webhook service', () => {
       });
     });
     it('should not disable any unhealthy webhook when the auto disable webhook is false', async () => {
-      ({ agent, webhookDispatcherService, webhookRepository } =
+      await moduleRef.close();
+      ({ moduleRef, agent, webhookDispatcherService, webhookRepository } =
         await createTestingModuleWithEnv(false, 50, 1));
       const healthyWebhook = webhookWithStatsFactory({ isActive: true });
       healthyWebhook.getFailureRate = jest.fn().mockReturnValue(30);
