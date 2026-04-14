@@ -5,12 +5,17 @@ import { Repository } from 'typeorm';
 import { Webhook, WebhookWithStats } from './repositories/webhook.entity';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { ConfigService } from '@nestjs/config';
-import { HttpService } from '@nestjs/axios';
-import { of, catchError, firstValueFrom } from 'rxjs';
-import { AxiosError, AxiosResponse } from 'axios';
+import { Dispatcher } from 'undici';
 import { TxServiceEvent } from '../events/event.dto';
 import { WebhookService } from './webhook.service';
 import { Cron } from '@nestjs/schedule';
+
+export const UNDICI_AGENT = 'UNDICI_AGENT';
+
+export interface WebhookResponse {
+  statusCode: number;
+  data: string;
+}
 
 @Injectable()
 export class WebhookDispatcherService {
@@ -25,7 +30,7 @@ export class WebhookDispatcherService {
     private readonly webhooksRepository: Repository<Webhook>,
     @Inject(CACHE_MANAGER) private readonly cacheManager: Cache,
     private readonly configService: ConfigService,
-    private readonly httpService: HttpService,
+    @Inject(UNDICI_AGENT) private readonly agent: Dispatcher,
     private readonly webhookService: WebhookService,
   ) {
     this.webhookFailureThreshold = this.configService.get<number>(
@@ -95,9 +100,9 @@ export class WebhookDispatcherService {
 
   async postEveryWebhook(
     parsedMessage: TxServiceEvent,
-  ): Promise<(AxiosResponse | undefined)[]> {
+  ): Promise<(WebhookResponse | undefined)[]> {
     const webhooks: WebhookWithStats[] = this.getCachedActiveWebhooks();
-    const responses: Promise<AxiosResponse | undefined>[] = webhooks
+    const responses: Promise<WebhookResponse | undefined>[] = webhooks
       .filter((webhook: WebhookWithStats) => {
         return webhook.isEventRelevant(parsedMessage);
       })
@@ -123,96 +128,116 @@ export class WebhookDispatcherService {
     return dataStr;
   }
 
-  postWebhook(
+  async postWebhook(
     parsedMessage: TxServiceEvent,
     webhook: WebhookWithStats,
-  ): Promise<AxiosResponse | undefined> {
-    const headers = webhook.authorization
-      ? { Authorization: webhook.authorization }
-      : {};
+  ): Promise<WebhookResponse | undefined> {
+    const headers: Record<string, string> = {
+      'content-type': 'application/json',
+    };
+    if (webhook.authorization) {
+      headers['authorization'] = webhook.authorization;
+    }
+
     const startTime = Date.now();
-    return firstValueFrom(
-      this.httpService.post(webhook.url, parsedMessage, { headers }).pipe(
-        catchError((error: AxiosError) => {
-          webhook.incrementFailure();
-          if (error.response !== undefined) {
-            // Response received status code but status code not 2xx
-            const responseData = this.parseResponseData(error.response.data);
-            this.logger.error({
-              message: 'Error sending event',
-              messageContext: {
-                event: parsedMessage,
-                httpRequest: {
-                  url: webhook.url,
-                  startTime: startTime,
-                },
-                httpResponse: {
-                  data: responseData,
-                  statusCode: error.response.status,
-                },
-              },
-            });
-          } else if (error.request !== undefined) {
-            // Request was made but response was not received
-            this.logger.error({
-              message: 'Error sending event',
-              messageContext: {
-                event: parsedMessage,
-                httpRequest: {
-                  url: webhook.url,
-                  startTime: startTime,
-                },
-                httpResponse: null,
-                httpRequestError: {
-                  message: `Response not received. Error: ${error.message}`,
-                },
-              },
-            });
-          } else {
-            // Cannot make request
-            this.logger.error({
-              message: 'Error sending event',
-              messageContext: {
-                event: parsedMessage,
-                httpRequest: {
-                  url: webhook.url,
-                  startTime: startTime,
-                },
-                httpResponse: null,
-                httpRequestError: {
-                  message: error.message,
-                },
-              },
-            });
-          }
-          return of(undefined);
-        }),
-      ),
-    ).then((response: AxiosResponse | undefined) => {
-      if (response) {
-        webhook.incrementSuccess();
-        const endTime = Date.now();
-        const elapsedTime = endTime - startTime;
-        const responseData = this.parseResponseData(response.data);
-        this.logger.debug({
-          message: 'Success sending event',
+    const url = new URL(webhook.url);
+
+    try {
+      const response = await this.agent.request({
+        origin: url.origin,
+        path: url.pathname + url.search,
+        method: 'POST',
+        headers,
+        body: JSON.stringify(parsedMessage),
+      });
+
+      const responseData = this.parseResponseData(await response.body.text());
+
+      if (response.statusCode >= 400) {
+        webhook.incrementFailure();
+        this.logger.error({
+          message: 'Error sending event',
           messageContext: {
             event: parsedMessage,
             httpRequest: {
               url: webhook.url,
               startTime: startTime,
-              endTime: endTime,
             },
             httpResponse: {
               data: responseData,
-              statusCode: response.status,
-              elapsedTimeMs: elapsedTime,
+              statusCode: response.statusCode,
+            },
+          },
+        });
+        return undefined;
+      }
+
+      webhook.incrementSuccess();
+      const endTime = Date.now();
+      const elapsedTime = endTime - startTime;
+      this.logger.debug({
+        message: 'Success sending event',
+        messageContext: {
+          event: parsedMessage,
+          httpRequest: {
+            url: webhook.url,
+            startTime: startTime,
+            endTime: endTime,
+          },
+          httpResponse: {
+            data: responseData,
+            statusCode: response.statusCode,
+            elapsedTimeMs: elapsedTime,
+          },
+        },
+      });
+      return { statusCode: response.statusCode, data: responseData };
+    } catch (error: any) {
+      webhook.incrementFailure();
+
+      // Errors where a request was dispatched but no response was received
+      const noResponseCodes = new Set([
+        'UND_ERR_CONNECT_TIMEOUT',
+        'UND_ERR_HEADERS_TIMEOUT',
+        'UND_ERR_BODY_TIMEOUT',
+        'UND_ERR_SOCKET',
+        'ECONNRESET',
+        'ETIMEDOUT',
+      ]);
+
+      if (error?.code && noResponseCodes.has(error.code)) {
+        this.logger.error({
+          message: 'Error sending event',
+          messageContext: {
+            event: parsedMessage,
+            httpRequest: {
+              url: webhook.url,
+              startTime: startTime,
+            },
+            httpResponse: null,
+            httpRequestError: {
+              message: `Response not received. Error: ${error.message}`,
+            },
+          },
+        });
+      } else {
+        this.logger.error({
+          message: 'Error sending event',
+          messageContext: {
+            event: parsedMessage,
+            httpRequest: {
+              url: webhook.url,
+              startTime: startTime,
+            },
+            httpResponse: null,
+            httpRequestError: {
+              message: error.message,
             },
           },
         });
       }
-      return response;
-    });
+      return undefined;
+    }
   }
 
   /**

@@ -6,14 +6,13 @@ import { ConfigModule } from '@nestjs/config';
 import { DataSource, Repository, UpdateResult } from 'typeorm';
 import { WebhookDispatcherService } from './webhookDispatcher.service';
 import { TxServiceEventType } from '../events/event.dto';
-import { AxiosError, AxiosHeaders, AxiosResponse } from 'axios';
-import { HttpService } from '@nestjs/axios';
-import { Observable, of, throwError } from 'rxjs';
+import { Dispatcher } from 'undici';
+import { UNDICI_AGENT, WebhookResponse } from './webhookDispatcher.service';
 import { Logger } from '@nestjs/common';
 import { webhookWithStatsFactory } from './repositories/webhook.test.factory';
 
 describe('Webhook service', () => {
-  let httpService: HttpService;
+  let agent: Dispatcher;
   let webhookDispatcherService: WebhookDispatcherService;
   let webhookRepository: Repository<Webhook>;
 
@@ -30,7 +29,7 @@ describe('Webhook service', () => {
       imports: [ConfigModule.forRoot(), WebhookModule, DatabaseModule],
     }).compile();
 
-    const httpService = moduleRef.get<HttpService>(HttpService);
+    const agent = moduleRef.get<Dispatcher>(UNDICI_AGENT);
     const webhookDispatcherService = moduleRef.get<WebhookDispatcherService>(
       WebhookDispatcherService,
     );
@@ -45,14 +44,14 @@ describe('Webhook service', () => {
     const webhookRepository = dataSource.getRepository(Webhook);
 
     return {
-      httpService,
+      agent,
       webhookDispatcherService,
       webhookRepository,
     };
   }
 
   beforeEach(async () => {
-    ({ httpService, webhookDispatcherService, webhookRepository } =
+    ({ agent, webhookDispatcherService, webhookRepository } =
       await createTestingModuleWithEnv(true, 50, 1));
     jest.clearAllMocks();
     await webhookRepository.clear();
@@ -171,25 +170,27 @@ describe('Webhook service', () => {
         address: '0x0275FC2adfF11270F3EcC4D2F7Aa0a9784601Ca6',
       };
 
-      const axiosResponseMocked = <AxiosResponse>{ status: 200 };
-      const httpServicePostSpy = jest
-        .spyOn(httpService, 'post')
-        .mockImplementation(() => {
-          const observableResponse: Observable<AxiosResponse<unknown, any>> =
-            new Observable((subscriber) => {
-              subscriber.next(axiosResponseMocked);
-            });
-          return observableResponse;
-        });
-      const results = await webhookDispatcherService.postWebhook(msg, webhook);
-      expect(results).toBe(axiosResponseMocked);
-      expect(httpServicePostSpy).toHaveBeenCalledTimes(1);
-      expect(httpServicePostSpy).toHaveBeenCalledWith(webhook.url, msg, {
+      const agentRequestSpy = jest.spyOn(agent, 'request').mockResolvedValue({
+        statusCode: 200,
         headers: {},
+        body: { text: jest.fn().mockResolvedValue('') },
+        trailers: {},
+        opaque: null,
+        context: {},
+      } as any);
+      const results = await webhookDispatcherService.postWebhook(msg, webhook);
+      expect(results).toEqual<WebhookResponse>({ statusCode: 200, data: '' });
+      expect(agentRequestSpy).toHaveBeenCalledTimes(1);
+      expect(agentRequestSpy).toHaveBeenCalledWith({
+        origin: 'http://localhost:4815',
+        path: '/',
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(msg),
       });
     });
 
-    it('shoud post with authentication', async () => {
+    it('should post with authentication', async () => {
       const webhook = webhookWithStatsFactory({
         url: 'http://localhost:4815',
         authorization: 'Basic 1234',
@@ -201,24 +202,29 @@ describe('Webhook service', () => {
         address: '0x0275FC2adfF11270F3EcC4D2F7Aa0a9784601Ca6',
       };
 
-      const axiosResponseMocked = <AxiosResponse>{ status: 200 };
-      const httpServicePostSpy = jest
-        .spyOn(httpService, 'post')
-        .mockImplementation(() => {
-          const observableResponse: Observable<AxiosResponse<unknown, any>> =
-            new Observable((subscriber) => {
-              subscriber.next(axiosResponseMocked);
-            });
-          return observableResponse;
-        });
+      const agentRequestSpy = jest.spyOn(agent, 'request').mockResolvedValue({
+        statusCode: 200,
+        headers: {},
+        body: { text: jest.fn().mockResolvedValue('') },
+        trailers: {},
+        opaque: null,
+        context: {},
+      } as any);
       const results = await webhookDispatcherService.postWebhook(
         event,
         webhook,
       );
-      expect(results).toBe(axiosResponseMocked);
-      expect(httpServicePostSpy).toHaveBeenCalledTimes(1);
-      expect(httpServicePostSpy).toHaveBeenCalledWith(webhook.url, event, {
-        headers: { Authorization: webhook.authorization },
+      expect(results).toEqual<WebhookResponse>({ statusCode: 200, data: '' });
+      expect(agentRequestSpy).toHaveBeenCalledTimes(1);
+      expect(agentRequestSpy).toHaveBeenCalledWith({
+        origin: 'http://localhost:4815',
+        path: '/',
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+          authorization: webhook.authorization,
+        },
+        body: JSON.stringify(event),
       });
     });
 
@@ -234,39 +240,20 @@ describe('Webhook service', () => {
         address: '0x0275FC2adfF11270F3EcC4D2F7Aa0a9784601Ca6',
       };
 
-      const axiosConfigMocked = {
-        headers: new AxiosHeaders(),
-      };
-      const axiosResponseMocked = <AxiosResponse>{
-        status: 503,
-        statusText: 'Service Unavailable',
-        data: 'No data',
-      };
-
-      const httpServicePostSpy = jest
-        .spyOn(httpService, 'post')
-        .mockReturnValue(
-          throwError(
-            () =>
-              new AxiosError(
-                'Service Unavailable',
-                '503',
-                axiosConfigMocked,
-                {},
-                axiosResponseMocked,
-              ),
-          ),
-        );
+      jest.spyOn(agent, 'request').mockResolvedValue({
+        statusCode: 503,
+        headers: {},
+        body: { text: jest.fn().mockResolvedValue('No data') },
+        trailers: {},
+        opaque: null,
+        context: {},
+      } as any);
       const loggerErrorSpy = jest
         .spyOn(Logger.prototype, 'error')
         .mockImplementation();
 
       await webhookDispatcherService.postWebhook(event, webhook);
 
-      expect(httpServicePostSpy).toHaveBeenCalledTimes(1);
-      expect(httpServicePostSpy).toHaveBeenCalledWith(webhook.url, event, {
-        headers: {},
-      });
       expect(loggerErrorSpy).toHaveBeenCalledWith({
         message: 'Error sending event',
         messageContext: {
@@ -276,8 +263,8 @@ describe('Webhook service', () => {
             url: webhook.url,
           },
           httpResponse: {
-            data: axiosResponseMocked.data,
-            statusCode: axiosResponseMocked.status,
+            data: 'No data',
+            statusCode: 503,
           },
         },
       });
@@ -295,35 +282,16 @@ describe('Webhook service', () => {
         address: '0x0275FC2adfF11270F3EcC4D2F7Aa0a9784601Ca6',
       };
 
-      const axiosConfigMocked = {
-        headers: new AxiosHeaders(),
-      };
-      const errorMessageMocked = 'Service Unavailable';
-
-      const httpServicePostSpy = jest
-        .spyOn(httpService, 'post')
-        .mockReturnValue(
-          throwError(
-            () =>
-              new AxiosError(
-                errorMessageMocked,
-                '503',
-                axiosConfigMocked,
-                {},
-                undefined,
-              ),
-          ),
-        );
+      const networkError = Object.assign(new Error('read ECONNRESET'), {
+        code: 'ECONNRESET',
+      });
+      jest.spyOn(agent, 'request').mockRejectedValue(networkError);
       const loggerErrorSpy = jest
         .spyOn(Logger.prototype, 'error')
         .mockImplementation();
 
       await webhookDispatcherService.postWebhook(event, webhook);
 
-      expect(httpServicePostSpy).toHaveBeenCalledTimes(1);
-      expect(httpServicePostSpy).toHaveBeenCalledWith(webhook.url, event, {
-        headers: {},
-      });
       expect(loggerErrorSpy).toHaveBeenCalledWith({
         message: 'Error sending event',
         messageContext: {
@@ -352,21 +320,15 @@ describe('Webhook service', () => {
         address: '0x0275FC2adfF11270F3EcC4D2F7Aa0a9784601Ca6',
       };
 
-      const errorMessage = 'Internal Server Error';
-
-      const httpServicePostSpy = jest
-        .spyOn(httpService, 'post')
-        .mockReturnValue(throwError(() => new Error(errorMessage)));
+      jest
+        .spyOn(agent, 'request')
+        .mockRejectedValue(new Error('Internal Server Error'));
       const loggerErrorSpy = jest
         .spyOn(Logger.prototype, 'error')
         .mockImplementation();
 
       await webhookDispatcherService.postWebhook(event, webhook);
 
-      expect(httpServicePostSpy).toHaveBeenCalledTimes(1);
-      expect(httpServicePostSpy).toHaveBeenCalledWith(webhook.url, event, {
-        headers: {},
-      });
       expect(loggerErrorSpy).toHaveBeenCalledWith({
         message: 'Error sending event',
         messageContext: {
@@ -395,26 +357,21 @@ describe('Webhook service', () => {
         address: '0x0275FC2adfF11270F3EcC4D2F7Aa0a9784601Ca6',
       };
 
-      const httpServicePostSpy = jest
-        .spyOn(httpService, 'post')
-        .mockReturnValue(
-          of({
-            status: 204,
-            statusText: 'No Content',
-            data: null,
-          } as AxiosResponse<any>),
-        );
-      const loggerErrorSpy = jest
+      jest.spyOn(agent, 'request').mockResolvedValue({
+        statusCode: 204,
+        headers: {},
+        body: { text: jest.fn().mockResolvedValue('') },
+        trailers: {},
+        opaque: null,
+        context: {},
+      } as any);
+      const loggerDebugSpy = jest
         .spyOn(Logger.prototype, 'debug')
         .mockImplementation();
 
       await webhookDispatcherService.postWebhook(event, webhook);
 
-      expect(httpServicePostSpy).toHaveBeenCalledTimes(1);
-      expect(httpServicePostSpy).toHaveBeenCalledWith(webhook.url, event, {
-        headers: {},
-      });
-      expect(loggerErrorSpy).toHaveBeenCalledWith({
+      expect(loggerDebugSpy).toHaveBeenCalledWith({
         message: 'Success sending event',
         messageContext: {
           event: event,
@@ -424,7 +381,7 @@ describe('Webhook service', () => {
             url: webhook.url,
           },
           httpResponse: {
-            data: 'null',
+            data: '',
             elapsedTimeMs: expect.any(Number),
             statusCode: 204,
           },
@@ -642,7 +599,7 @@ describe('Webhook service', () => {
       });
     });
     it('should not disable any unhealthy webhook when the auto disable webhook is false', async () => {
-      ({ httpService, webhookDispatcherService, webhookRepository } =
+      ({ agent, webhookDispatcherService, webhookRepository } =
         await createTestingModuleWithEnv(false, 50, 1));
       const healthyWebhook = webhookWithStatsFactory({ isActive: true });
       healthyWebhook.getFailureRate = jest.fn().mockReturnValue(30);

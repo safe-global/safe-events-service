@@ -28,7 +28,6 @@
     "@adminjs/express": "^6.1.1",
     "@adminjs/nestjs": "7.0.0",
     "@adminjs/typeorm": "^5.0.1",
-    "@nestjs/axios": "^4.0.1",
     "@nestjs/cache-manager": "^3.0.1",
     "@nestjs/common": "^11.1.9",
     "@nestjs/config": "^4.0.2",
@@ -41,7 +40,6 @@
     "adminjs": "^7.8.17",
     "amqp-connection-manager": "^5.0.0",
     "amqplib": "^0.10.9",
-    "axios": "^1.15.0",
     "cache-manager": "^7.2.5",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.3",
@@ -51,6 +49,7 @@
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.2",
     "typeorm": "^0.3.28",
+    "undici": "^8.0.2",
     "viem": "^2.42.1"
   },
   "devDependencies": {

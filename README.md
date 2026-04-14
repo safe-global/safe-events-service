@@ -288,7 +288,7 @@ All configuration is done through environment variables. See `.env.sample` for a
 | `URL_BASE_PATH` | No | `""` | Global URL prefix (e.g. `/v1`) |
 | `DATABASE_SSL_ENABLED` | No | `false` | Enable SSL for database connection |
 | `DATABASE_CA_PATH` | No | — | Path to CA certificate file for database SSL |
-| `HTTP_TIMEOUT` | No | `1000` | Webhook HTTP client timeout in milliseconds |
+| `HTTP_TIMEOUT` | No | `5000` | Webhook HTTP client timeout in milliseconds |
 | `HTTP_MAX_REDIRECTS` | No | `0` | Max redirects followed when dispatching webhooks |
 | `DB_HEALTH_CHECK_TIMEOUT` | No | `5000` | Database health check timeout in milliseconds |
 | `AMQP_PREFETCH_MESSAGES` | No | `100` | RabbitMQ prefetch message count |
