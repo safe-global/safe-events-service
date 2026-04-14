@@ -291,7 +291,7 @@ All configuration is done through environment variables. See `.env.sample` for a
 | `HTTP_TIMEOUT` | No | `1000` | Webhook HTTP client timeout in milliseconds |
 | `HTTP_MAX_REDIRECTS` | No | `0` | Max redirects followed when dispatching webhooks |
 | `DB_HEALTH_CHECK_TIMEOUT` | No | `5000` | Database health check timeout in milliseconds |
-| `AMQP_PREFETCH_MESSAGES` | No | `10` | RabbitMQ prefetch message count |
+| `AMQP_PREFETCH_MESSAGES` | No | `100` | RabbitMQ prefetch message count |
 | `WEBHOOK_AUTO_DISABLE` | No | `false` | Auto-disable webhooks that exceed the failure threshold |
 | `WEBHOOK_FAILURE_THRESHOLD` | No | `90` | Failure rate percentage (0–100) above which a webhook is auto-disabled |
 | `WEBHOOK_HEALTH_MINUTES_WINDOW` | No | `60` | Rolling window in minutes used to compute per-webhook failure rates |
