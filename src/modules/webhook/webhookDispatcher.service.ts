@@ -131,6 +131,7 @@ export class WebhookDispatcherService implements OnModuleDestroy {
     parsedMessage: TxServiceEvent,
     webhook: WebhookWithStats,
     startTime: number,
+    deliveryId: string,
     httpResponse: { data: string; statusCode: number } | null,
     error?: Error & { code?: string },
   ): void {
@@ -147,7 +148,7 @@ export class WebhookDispatcherService implements OnModuleDestroy {
       message: 'Error sending event',
       messageContext: {
         event: parsedMessage,
-        httpRequest: { url: webhook.url, startTime },
+        httpRequest: { url: webhook.url, startTime, deliveryId },
         httpResponse,
         ...(httpRequestError ? { httpRequestError } : {}),
       },
@@ -169,10 +170,11 @@ export class WebhookDispatcherService implements OnModuleDestroy {
 
   private buildRequestHeaders(
     webhook: WebhookWithStats,
+    deliveryId: string,
   ): Record<string, string> {
     const headers: Record<string, string> = {
       'content-type': JSON_CONTENT_TYPE,
-      'x-delivery-id': crypto.randomUUID(),
+      'x-delivery-id': deliveryId,
     };
 
     if (webhook.authorization) {
@@ -185,6 +187,7 @@ export class WebhookDispatcherService implements OnModuleDestroy {
   private buildRequestOptions(
     parsedMessage: TxServiceEvent,
     webhook: WebhookWithStats,
+    deliveryId: string,
   ) {
     const url = new URL(webhook.url);
 
@@ -192,7 +195,7 @@ export class WebhookDispatcherService implements OnModuleDestroy {
       origin: url.origin,
       path: url.pathname + url.search,
       method: 'POST' as const,
-      headers: this.buildRequestHeaders(webhook),
+      headers: this.buildRequestHeaders(webhook, deliveryId),
       body: JSON.stringify(parsedMessage),
     };
   }
@@ -201,6 +204,7 @@ export class WebhookDispatcherService implements OnModuleDestroy {
     parsedMessage: TxServiceEvent,
     webhook: WebhookWithStats,
     startTime: number,
+    deliveryId: string,
     response: WebhookResponse,
   ): void {
     const endTime = Date.now();
@@ -213,6 +217,7 @@ export class WebhookDispatcherService implements OnModuleDestroy {
           url: webhook.url,
           startTime,
           endTime,
+          deliveryId,
         },
         httpResponse: {
           data: response.data,
@@ -228,10 +233,11 @@ export class WebhookDispatcherService implements OnModuleDestroy {
     webhook: WebhookWithStats,
   ): Promise<WebhookResponse | undefined> {
     const startTime = Date.now();
+    const deliveryId = crypto.randomUUID();
 
     try {
       const response = await this.agent.request(
-        this.buildRequestOptions(parsedMessage, webhook),
+        this.buildRequestOptions(parsedMessage, webhook, deliveryId),
       );
       const webhookResponse = {
         statusCode: response.statusCode,
@@ -243,7 +249,7 @@ export class WebhookDispatcherService implements OnModuleDestroy {
         webhookResponse.statusCode >= 300
       ) {
         webhook.incrementFailure();
-        this.logSendError(parsedMessage, webhook, startTime, {
+        this.logSendError(parsedMessage, webhook, startTime, deliveryId, {
           data: webhookResponse.data,
           statusCode: webhookResponse.statusCode,
         });
@@ -251,11 +257,24 @@ export class WebhookDispatcherService implements OnModuleDestroy {
       }
 
       webhook.incrementSuccess();
-      this.logSendSuccess(parsedMessage, webhook, startTime, webhookResponse);
+      this.logSendSuccess(
+        parsedMessage,
+        webhook,
+        startTime,
+        deliveryId,
+        webhookResponse,
+      );
       return webhookResponse;
     } catch (error: any) {
       webhook.incrementFailure();
-      this.logSendError(parsedMessage, webhook, startTime, null, error);
+      this.logSendError(
+        parsedMessage,
+        webhook,
+        startTime,
+        deliveryId,
+        null,
+        error,
+      );
       return undefined;
     }
   }

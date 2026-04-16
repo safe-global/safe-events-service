@@ -249,6 +249,7 @@ describe('Webhook service', () => {
           httpRequest: {
             startTime: expect.any(Number),
             url: webhook.url,
+            deliveryId: expect.any(String),
           },
           httpResponse: {
             data: 'No data',
@@ -282,6 +283,7 @@ describe('Webhook service', () => {
           httpRequest: {
             startTime: expect.any(Number),
             url: webhook.url,
+            deliveryId: expect.any(String),
           },
           httpResponse: {
             data: '',
@@ -315,6 +317,7 @@ describe('Webhook service', () => {
           httpRequest: {
             url: webhook.url,
             startTime: expect.any(Number),
+            deliveryId: expect.any(String),
           },
           httpResponse: null,
           httpRequestError: {
@@ -347,6 +350,7 @@ describe('Webhook service', () => {
           httpRequest: {
             url: webhook.url,
             startTime: expect.any(Number),
+            deliveryId: expect.any(String),
           },
           httpResponse: null,
           httpRequestError: {
@@ -380,6 +384,7 @@ describe('Webhook service', () => {
             endTime: expect.any(Number),
             startTime: expect.any(Number),
             url: webhook.url,
+            deliveryId: expect.any(String),
           },
           httpResponse: {
             data: '',

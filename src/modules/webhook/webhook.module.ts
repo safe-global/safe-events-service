@@ -11,7 +11,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { WebhooksController } from './webhook.controller';
 import { Agent, Dispatcher, RetryAgent } from 'undici';
 
-const WEBHOOK_RETRYABLE_STATUS_CODES = [429, 500, 502, 503, 504];
+const WEBHOOK_RETRYABLE_STATUS_CODES = [500, 502, 503, 504];
 const WEBHOOK_RETRYABLE_ERROR_CODES = [
   'ECONNRESET',
   'ECONNREFUSED',
