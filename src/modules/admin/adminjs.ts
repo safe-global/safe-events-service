@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { Webhook } from '../webhook/repositories/webhook.entity';
+import { ADMIN_BASE_PATH } from './admin.constants';
 import { AuthModule } from './auth/auth.module';
 import { AuthService } from './auth/auth.service';
 
@@ -31,15 +32,14 @@ async function buildAdminJsModule() {
   const { AdminModule } = await (eval(
     `import('@adminjs/nestjs')`,
   ) as Promise<any>);
-  const basePath = (process.env.URL_BASE_PATH || '') + '/admin';
   return AdminModule.createAdminAsync({
     imports: [AuthModule],
     inject: [AuthService],
     useFactory: (authService: AuthService) => ({
       adminJsOptions: {
-        rootPath: basePath,
-        loginPath: basePath + '/login',
-        logoutPath: basePath + '/logout',
+        rootPath: ADMIN_BASE_PATH,
+        loginPath: ADMIN_BASE_PATH + '/login',
+        logoutPath: ADMIN_BASE_PATH + '/logout',
         resources: [Webhook],
       },
       auth: {
