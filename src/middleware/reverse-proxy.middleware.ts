@@ -13,7 +13,10 @@ function header(req: Request, name: string): string | undefined {
 export function getForwardedPrefix(req: Request): string {
   const raw = header(req, 'x-forwarded-prefix');
   if (!raw) return '';
-  return raw.replace(/\/+$/, '');
+  const stripped = raw.replace(/\/+$/, '');
+  // Reject values that aren't a safe URL path prefix
+  if (!/^(\/[\w.-]+)+$/.test(stripped)) return '';
+  return stripped;
 }
 
 /**

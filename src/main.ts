@@ -8,8 +8,12 @@ import {
 import { AppModule } from './app.module';
 import { JsonConsoleLogger } from './logging/json-logger';
 import { INestApplication, LogLevel, ValidationPipe } from '@nestjs/common';
-import { Request, Response } from 'express';
-import { getForwardedPrefix } from './middleware/reverse-proxy.middleware';
+import { Request, RequestHandler, Response } from 'express';
+import { wrapAdminResponse } from './middleware/admin-proxy.middleware';
+import {
+  getForwardedPrefix,
+  ReverseProxyMiddleware,
+} from './middleware/reverse-proxy.middleware';
 
 /**
  * Configure swagger for app
@@ -71,6 +75,46 @@ function getLogLevels(): LogLevel[] {
   return all_log_levels.slice(all_log_levels.indexOf(log_level));
 }
 
+/**
+ * `@adminjs/nestjs` mounts its Express router in `onModuleInit` and then
+ * reorders it to the front of the Express stack, so Nest `MiddlewareConsumer`
+ * entries never run for `/admin/*`. We wrap the admin layer's handler after
+ * `app.listen()` with two pieces:
+ *
+ *  - `ReverseProxyMiddleware`: rewrites `Location` headers emitted by
+ *    `res.redirect(...)` so post-login/logout redirects point to the
+ *    externally-visible proxy URL.
+ *  - `wrapAdminResponse`: patches `res.send` so AdminJS's HTML/JSON bodies
+ *    (which hardcode the internal `rootPath`) get rewritten to include the
+ *    proxy prefix.
+ *
+ * Both are no-op when `x-forwarded-prefix` is absent.
+ */
+function installAdminProxyBodyRewrite(app: INestApplication): void {
+  type ExpressLayer = { name?: string; handle: RequestHandler };
+  const expressApp = app.getHttpAdapter().getInstance() as {
+    router?: { stack: ExpressLayer[] };
+    _router?: { stack: ExpressLayer[] };
+  };
+  const stack = expressApp.router?.stack ?? expressApp._router?.stack;
+  const adminLayer = stack?.find((layer) => layer.name === 'admin');
+  if (!adminLayer) {
+    console.warn(
+      '[installAdminProxyBodyRewrite] admin layer not found in Express stack — proxy rewriting will not work',
+    );
+    return;
+  }
+
+  const originalHandle = adminLayer.handle;
+  const reverseProxy = new ReverseProxyMiddleware();
+  adminLayer.handle = (req, res, next) => {
+    reverseProxy.use(req, res, () => {
+      wrapAdminResponse(req, res);
+      originalHandle(req, res, next);
+    });
+  };
+}
+
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
     logger:
@@ -86,5 +130,6 @@ async function bootstrap() {
   setupSwagger(app, basePath);
   app.useGlobalPipes(new ValidationPipe());
   await app.listen(3000);
+  installAdminProxyBodyRewrite(app);
 }
 bootstrap();
