@@ -98,7 +98,12 @@ function installAdminProxyBodyRewrite(app: INestApplication): void {
   };
   const stack = expressApp.router?.stack ?? expressApp._router?.stack;
   const adminLayer = stack?.find((layer) => layer.name === 'admin');
-  if (!adminLayer) return;
+  if (!adminLayer) {
+    console.warn(
+      '[installAdminProxyBodyRewrite] admin layer not found in Express stack — proxy rewriting will not work',
+    );
+    return;
+  }
 
   const originalHandle = adminLayer.handle;
   const reverseProxy = new ReverseProxyMiddleware();
