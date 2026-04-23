@@ -18,6 +18,7 @@ ENV NODE_ENV=production
 RUN pnpm run build
 
 # Clean and reinstall only production dependencies
+ENV CI=true
 RUN pnpm prune --prod --ignore-scripts
 
 #
