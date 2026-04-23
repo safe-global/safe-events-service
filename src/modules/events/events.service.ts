@@ -1,9 +1,11 @@
 import { Observable, Subject, filter } from 'rxjs';
 import { Injectable, Logger, OnApplicationBootstrap } from '@nestjs/common';
 import { QueueProvider } from '../../datasources/queue/queue.provider';
-import { AxiosResponse } from 'axios';
 import { TxServiceEvent } from './event.dto';
-import { WebhookDispatcherService } from '../webhook/webhookDispatcher.service';
+import {
+  WebhookDispatcherService,
+  WebhookResponse,
+} from '../webhook/webhookDispatcher.service';
 
 @Injectable()
 export class EventsService implements OnApplicationBootstrap {
@@ -67,7 +69,7 @@ export class EventsService implements OnApplicationBootstrap {
     );
   }
 
-  processEvent(message: string): Promise<(AxiosResponse | undefined)[]> {
+  processEvent(message: string): Promise<(WebhookResponse | undefined)[]> {
     let txServiceEvent: TxServiceEvent;
     try {
       txServiceEvent = JSON.parse(message);
