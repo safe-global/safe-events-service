@@ -44,7 +44,7 @@
     "amqplib": "^0.10.9",
     "cache-manager": "^7.2.5",
     "class-transformer": "^0.5.1",
-    "class-validator": "^0.14.3",
+    "class-validator": "^0.14.4",
     "express-formidable": "^1.2.0",
     "express-session": "^1.18.2",
     "pg": "^8.16.3",
