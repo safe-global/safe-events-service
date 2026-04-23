@@ -1,0 +1,12 @@
+# Block packages published within the last 7 days.
+# Gives time for the community to detect malicious publishes before
+# they reach developer machines or CI. Introduced in pnpm 10.16.
+minimumReleaseAge: 10080  # minutes (7 days)
+# Only packages listed here are allowed to run install scripts
+# (postinstall, preinstall, etc). All others are silently skipped.
+# Add only packages that genuinely require native compilation.
+onlyBuiltDependencies: []
+# No reviewed dependency currently requires install-time scripts.
+# Prevent packages from sub-dependencies using exotic specifiers
+# (git://, file://, link://) without explicit approval.
+blockExoticSubdeps: true

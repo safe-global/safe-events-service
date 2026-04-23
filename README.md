@@ -217,7 +217,8 @@ We don't send notifications when a reorg happens. We send the events as soon as 
 Node 24 LTS is required.
 
 ```bash
-$ npm install
+$ corepack enable
+$ pnpm install --frozen-lockfile
 ```
 
 ## Running the app
@@ -230,13 +231,13 @@ cp .env.sample .env
 docker compose up -d
 
 # development
-$ npm run start
+$ pnpm run start
 
 # watch mode
-$ npm run start:dev
+$ pnpm run start:dev
 
 # production mode
-$ npm run start:prod
+$ pnpm run start:prod
 ```
 
 ## Test
@@ -260,13 +261,13 @@ Manual way:
 docker compose down
 docker compose up -d rabbitmq db db-migrations
 # unit tests
-npm run test
+pnpm test
 
 # e2e tests
-npm run test:e2e
+pnpm run test:e2e
 
 # test coverage
-npm run test:cov
+pnpm run test:cov
 ```
 
 ## Configuration

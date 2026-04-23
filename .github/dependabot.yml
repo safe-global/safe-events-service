@@ -1,20 +1,49 @@
 version: 2
 updates:
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 10
+
   - package-ecosystem: npm
     directory: "/"
     schedule:
       interval: weekly
       day: monday
+    open-pull-requests-limit: 10
     cooldown:
       default-days: 7
+    groups:
+      nestjs:
+        patterns:
+          - "@nestjs/*"
+        update-types:
+          - minor
+          - patch
+      typescript-toolchain:
+        patterns:
+          - "typescript"
+          - "ts-jest"
+          - "ts-node"
+          - "ts-loader"
+          - "tsconfig-paths"
+          - "@types/*"
+          - "@typescript-eslint/*"
+        update-types:
+          - minor
+          - patch
+      lint-and-format:
+        patterns:
+          - "eslint"
+          - "eslint-*"
+          - "prettier"
+        update-types:
+          - minor
+          - patch
 
   - package-ecosystem: docker
-    directory: "/"
-    schedule:
-      interval: weekly
-      day: monday
-
-  - package-ecosystem: github-actions
     directory: "/"
     schedule:
       interval: weekly

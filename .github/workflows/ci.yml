@@ -11,24 +11,30 @@ jobs:
   format:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-node@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v5.0.0
+      - uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
         with:
           node-version: '24.x'
-          cache: 'npm'
-      - run: npm ci
-      - run: npm run format
+          cache: 'pnpm'
+      - run: pnpm install --frozen-lockfile
+        env:
+          HUSKY: 0
+      - run: pnpm run format
 
   lint:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-node@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v5.0.0
+      - uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
         with:
           node-version: '24.x'
-          cache: 'npm'
-      - run: npm ci
-      - run: npm run lint
+          cache: 'pnpm'
+      - run: pnpm install --frozen-lockfile
+        env:
+          HUSKY: 0
+      - run: pnpm run lint
 
   db-migrations:
     runs-on: ubuntu-latest
@@ -48,14 +54,17 @@ jobs:
           - 5433:5432
 
     steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-node@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v5.0.0
+      - uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
         with:
           node-version: '24.x'
-          cache: 'npm'
-      - run: npm ci
+          cache: 'pnpm'
+      - run: pnpm install --frozen-lockfile
+        env:
+          HUSKY: 0
       - run: cp .env.sample .env
-      - run: npm run build
+      - run: pnpm run build
       - run: bash ./scripts/db_run_migrations.sh
       - run: bash ./scripts/db_check_migrations.sh
 
@@ -90,17 +99,20 @@ jobs:
       matrix:
         task: ['test:cov', 'test:e2e:cov']
     steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-node@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v5.0.0
+      - uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
         with:
           node-version: '24.x'
-          cache: 'npm'
-      - run: npm ci
+          cache: 'pnpm'
+      - run: pnpm install --frozen-lockfile
+        env:
+          HUSKY: 0
       - run: cp .env.sample .env
-      - run: npm run build
-      - run: npm run ${{matrix.task}}
+      - run: pnpm run build
+      - run: pnpm run ${{matrix.task}}
       - name: Coveralls Parallel
-        uses: coverallsapp/github-action@v2.3.7
+        uses: coverallsapp/github-action@648a8eb78e6d50909eff900e4ec85cab4524a45b # v2.3.6
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           flag-name: run-${{ matrix.task }}
@@ -111,7 +123,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Coveralls Finished
-        uses: coverallsapp/github-action@v2.3.7
+        uses: coverallsapp/github-action@648a8eb78e6d50909eff900e4ec85cab4524a45b # v2.3.6
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           parallel-finished: true
@@ -124,18 +136,18 @@ jobs:
       - tests
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
-      - uses: docker/setup-qemu-action@v4.0.0
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: docker/setup-qemu-action@ce360397dd3f832beb865e1373c09c0e9f86d70a # v4.0.0
         with:
           platforms: arm64
-      - uses: docker/setup-buildx-action@v4
-      - uses: docker/login-action@v4
+      - uses: docker/setup-buildx-action@4d04d5d9486b7bd6fa91e7baf45bbb4f8b9deedd # v4.0.0
+      - uses: docker/login-action@b45d80f862d83dbcd57f89517bcf500b2ab88fb2 # v4.0.0
         with:
           username: ${{ secrets.DOCKER_USER }}
           password: ${{ secrets.DOCKER_PASSWORD }}
       - name: Deploy main
         if: github.ref == 'refs/heads/main'
-        uses: docker/build-push-action@v7
+        uses: docker/build-push-action@bcafcacb16a39f128d818304e6c9c0c18556b85f # v7.1.0
         with:
           platforms: linux/amd64,linux/arm64
           push: true
@@ -144,7 +156,7 @@ jobs:
           cache-to: type=gha,mode=max
       - name: Deploy Tag
         if: (github.event_name == 'release' && github.event.action == 'released')
-        uses: docker/build-push-action@v7
+        uses: docker/build-push-action@bcafcacb16a39f128d818304e6c9c0c18556b85f # v7.1.0
         with:
           platforms: linux/amd64,linux/arm64
           push: true
@@ -159,7 +171,7 @@ jobs:
     needs: [docker-publish]
     if: github.ref == 'refs/heads/main'
     steps:
-    - uses: actions/checkout@v6
+    - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
     - name: Deploy Staging
       if: github.ref == 'refs/heads/main'
       run: bash scripts/autodeploy.sh
