@@ -47,7 +47,7 @@
     "class-validator": "^0.14.3",
     "express-formidable": "^1.2.0",
     "express-session": "^1.18.2",
-    "pg": "^8.16.3",
+    "pg": "^8.20.0",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.2",
     "typeorm": "^0.3.28",
