@@ -7,8 +7,12 @@ on:
   release:
     types: [released]
 
+permissions: {}
+
 jobs:
   format:
+    permissions:
+      contents: read
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -23,6 +27,8 @@ jobs:
       - run: pnpm run format
 
   lint:
+    permissions:
+      contents: read
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -37,6 +43,8 @@ jobs:
       - run: pnpm run lint
 
   db-migrations:
+    permissions:
+      contents: read
     runs-on: ubuntu-latest
     services:
       postgres:
@@ -69,6 +77,9 @@ jobs:
       - run: bash ./scripts/db_check_migrations.sh
 
   tests:
+    permissions:
+      contents: read
+      statuses: write
     runs-on: ubuntu-latest
     services:
       postgres:
@@ -119,6 +130,8 @@ jobs:
           parallel: true
 
   tests-finish:
+    permissions:
+      statuses: write
     needs: tests
     runs-on: ubuntu-latest
     steps:
@@ -129,6 +142,8 @@ jobs:
           parallel-finished: true
 
   docker-publish:
+    permissions:
+      contents: read
     if: github.ref == 'refs/heads/main' || (github.event_name == 'release' && github.event.action == 'released')
     needs:
       - format
@@ -167,6 +182,8 @@ jobs:
           cache-to: type=gha,mode=max
 
   autodeploy:
+    permissions:
+      contents: read
     runs-on: ubuntu-latest
     needs: [docker-publish]
     if: github.ref == 'refs/heads/main'
