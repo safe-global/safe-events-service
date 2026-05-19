@@ -30,7 +30,7 @@
     "@adminjs/express": "^6.1.1",
     "@adminjs/nestjs": "7.0.0",
     "@adminjs/typeorm": "^5.0.1",
-    "@nestjs/cache-manager": "^3.0.1",
+    "@nestjs/cache-manager": "^3.1.2",
     "@nestjs/common": "^11.1.9",
     "@nestjs/config": "^4.0.2",
     "@nestjs/core": "^11.1.17",
