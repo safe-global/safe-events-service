@@ -1,6 +1,6 @@
-import { timingSafeEqual } from 'crypto';
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { safeCompare } from '../../../common/utils/safe-compare';
 
 @Injectable()
 export class AuthService {
@@ -21,17 +21,13 @@ export class AuthService {
     const email = this.getAdminEmail();
     const password = this.getAdminPassword();
     const adminCredentials = { email, password };
-    const emailBuf = Buffer.from(providedEmail);
-    const storedEmailBuf = Buffer.from(adminCredentials.email);
-    const emailMatch =
-      emailBuf.byteLength === storedEmailBuf.byteLength &&
-      timingSafeEqual(emailBuf, storedEmailBuf);
-
-    const passwordBuf = Buffer.from(providedPassword);
-    const storedPasswordBuf = Buffer.from(adminCredentials.password);
-    const passwordMatch =
-      passwordBuf.byteLength === storedPasswordBuf.byteLength &&
-      timingSafeEqual(passwordBuf, storedPasswordBuf);
+    // Compute both comparisons before combining them so the check does not
+    // short-circuit and leak (via timing) whether the email was correct.
+    const emailMatch = safeCompare(providedEmail, adminCredentials.email);
+    const passwordMatch = safeCompare(
+      providedPassword,
+      adminCredentials.password,
+    );
     if (emailMatch && passwordMatch) {
       return adminCredentials;
     }
