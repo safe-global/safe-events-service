@@ -24,7 +24,15 @@ function makeHttpAgentResponse(statusCode: number, data = '') {
   return {
     statusCode,
     headers: {},
-    body: { text: jest.fn().mockResolvedValue(data) },
+    // Mimic undici's BodyReadable as a re-iterable async stream of Buffers so
+    // `readBodyWithLimit` can consume it the same way it does in production.
+    body: {
+      async *[Symbol.asyncIterator]() {
+        if (data) {
+          yield Buffer.from(data);
+        }
+      },
+    },
     trailers: {},
     opaque: null,
     context: {},
@@ -99,6 +107,21 @@ describe('Webhook service', () => {
       results = webhookDispatcherService.getCachedActiveWebhooks();
       expect(results).toEqual(expected);
       expect(findAllActiveSpy).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('getCachedActiveWebhooksIterator', () => {
+    it('should iterate over the cached webhooks', async () => {
+      const expected: WebhookWithStats[] = [webhookWithStatsFactory()];
+      jest
+        .spyOn(webhookDispatcherService, 'getAllActive')
+        .mockImplementation(async () => expected);
+      // Refresh webhooks list
+      await webhookDispatcherService.refreshWebhookMap();
+
+      const iterator =
+        webhookDispatcherService.getCachedActiveWebhooksIterator();
+      expect(Array.from(iterator)).toEqual(expected);
     });
   });
 
