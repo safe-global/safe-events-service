@@ -110,6 +110,21 @@ describe('Webhook service', () => {
     });
   });
 
+  describe('getCachedActiveWebhooksIterator', () => {
+    it('should iterate over the cached webhooks', async () => {
+      const expected: WebhookWithStats[] = [webhookWithStatsFactory()];
+      jest
+        .spyOn(webhookDispatcherService, 'getAllActive')
+        .mockImplementation(async () => expected);
+      // Refresh webhooks list
+      await webhookDispatcherService.refreshWebhookMap();
+
+      const iterator =
+        webhookDispatcherService.getCachedActiveWebhooksIterator();
+      expect(Array.from(iterator)).toEqual(expected);
+    });
+  });
+
   describe('postEveryWebhook', () => {
     it('should not post if webhooks are not defined', async () => {
       const webhooks: Webhook[] = [];

@@ -59,9 +59,9 @@ describe('Events handling', () => {
       addresses: ['0x0275FC2adfF11270F3EcC4D2F7Aa0a9784601Ca6'],
       sendSafeCreations: true,
     });
-    const getCachedActiveWebhooksSpy = jest
-      .spyOn(webhookDispatcherService, 'getCachedActiveWebhooks')
-      .mockImplementation(() => [mockedWebhook]);
+    const getCachedActiveWebhooksIteratorSpy = jest
+      .spyOn(webhookDispatcherService, 'getCachedActiveWebhooksIterator')
+      .mockImplementation(() => [mockedWebhook].values());
     const postWebhookResponse: any = {
       data: {},
       status: 200,
@@ -84,7 +84,7 @@ describe('Events handling', () => {
     expect(postEveryWebhookSpy).toHaveBeenCalledTimes(1);
     expect(postEveryWebhookSpy).toHaveBeenCalledWith(msg);
 
-    expect(getCachedActiveWebhooksSpy).toHaveBeenCalledTimes(1);
+    expect(getCachedActiveWebhooksIteratorSpy).toHaveBeenCalledTimes(1);
 
     expect(postWebhookSpy).toHaveBeenCalledTimes(1);
     expect(postWebhookSpy).toHaveBeenCalledWith(msg, mockedWebhook);

@@ -126,13 +126,21 @@ export class WebhookDispatcherService implements OnModuleDestroy {
     return Array.from(this.webhookMap.values());
   }
 
+  /**
+   * @returns an iterator over the in-memory stored webhooks, avoiding the array
+   * allocation of {@link getCachedActiveWebhooks} on the hot dispatch path.
+   */
+  getCachedActiveWebhooksIterator(): IterableIterator<WebhookWithStats> {
+    return this.webhookMap.values();
+  }
+
   async postEveryWebhook(
     parsedMessage: TxServiceEvent,
   ): Promise<(WebhookResponse | undefined)[]> {
-    // Iterate the cached map directly instead of materializing it into an
+    // Iterate the cached webhooks lazily instead of materializing them into an
     // array (and then filtering/mapping it) on every incoming event.
     const responses: Promise<WebhookResponse | undefined>[] = [];
-    for (const webhook of this.webhookMap.values()) {
+    for (const webhook of this.getCachedActiveWebhooksIterator()) {
       if (!webhook.isEventRelevant(parsedMessage)) {
         continue;
       }
