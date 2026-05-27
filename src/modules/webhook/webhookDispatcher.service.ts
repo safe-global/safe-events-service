@@ -14,6 +14,12 @@ export const UNDICI_AGENT = Symbol('UNDICI_AGENT');
 
 const JSON_CONTENT_TYPE = 'application/json';
 
+// Cap how much of a webhook response body we read into memory before logging.
+// A misbehaving or malicious target could otherwise stream an unbounded body.
+const DEFAULT_MAX_RESPONSE_BYTES = 10_000;
+
+type ResponseBody = Dispatcher.ResponseData['body'];
+
 const NO_RESPONSE_CODES = new Set([
   'UND_ERR_CONNECT_TIMEOUT',
   'UND_ERR_HEADERS_TIMEOUT',
@@ -35,6 +41,7 @@ export class WebhookDispatcherService implements OnModuleDestroy {
   private webhookFailureThreshold: number;
   private webhookHealthMinutesWindow: number;
   private autoDisableWebhook: boolean;
+  private webhookMaxResponseBytes: number;
 
   constructor(
     @InjectRepository(Webhook)
@@ -55,6 +62,12 @@ export class WebhookDispatcherService implements OnModuleDestroy {
     // Disabled by default
     this.autoDisableWebhook =
       this.configService.get('WEBHOOK_AUTO_DISABLE') === 'true';
+    this.webhookMaxResponseBytes = Number(
+      this.configService.get(
+        'WEBHOOK_MAX_RESPONSE_BYTES',
+        DEFAULT_MAX_RESPONSE_BYTES,
+      ),
+    );
   }
 
   /**
@@ -116,14 +129,18 @@ export class WebhookDispatcherService implements OnModuleDestroy {
   async postEveryWebhook(
     parsedMessage: TxServiceEvent,
   ): Promise<(WebhookResponse | undefined)[]> {
-    const responses = this.getCachedActiveWebhooks()
-      .filter((webhook) => webhook.isEventRelevant(parsedMessage))
-      .map((webhook) => {
-        this.logger.debug(
-          `Sending ${JSON.stringify(parsedMessage)} to ${webhook.url}`,
-        );
-        return this.postWebhook(parsedMessage, webhook);
-      });
+    // Iterate the cached map directly instead of materializing it into an
+    // array (and then filtering/mapping it) on every incoming event.
+    const responses: Promise<WebhookResponse | undefined>[] = [];
+    for (const webhook of this.webhookMap.values()) {
+      if (!webhook.isEventRelevant(parsedMessage)) {
+        continue;
+      }
+      this.logger.debug(
+        `Sending ${JSON.stringify(parsedMessage)} to ${webhook.url}`,
+      );
+      responses.push(this.postWebhook(parsedMessage, webhook));
+    }
     return Promise.all(responses);
   }
 
@@ -153,6 +170,33 @@ export class WebhookDispatcherService implements OnModuleDestroy {
         ...(httpRequestError ? { httpRequestError } : {}),
       },
     });
+  }
+
+  /**
+   * Reads a webhook response body up to `webhookMaxResponseBytes`, discarding
+   * (and flagging) anything beyond the limit so an oversized response cannot
+   * exhaust memory. The body is only used for logging.
+   */
+  async readBodyWithLimit(body: ResponseBody): Promise<string> {
+    const chunks: Buffer[] = [];
+    let total = 0;
+    let truncated = false;
+
+    for await (const chunk of body) {
+      chunks.push(chunk as Buffer);
+      total += (chunk as Buffer).length;
+      if (total > this.webhookMaxResponseBytes) {
+        truncated = true;
+        // Breaking destroys the underlying stream and stops consuming.
+        break;
+      }
+    }
+
+    const text = Buffer.concat(chunks)
+      .subarray(0, this.webhookMaxResponseBytes)
+      .toString('utf8');
+
+    return truncated ? `${text}… [truncated]` : text;
   }
 
   parseResponseData(responseData: any): string {
@@ -241,7 +285,9 @@ export class WebhookDispatcherService implements OnModuleDestroy {
       );
       const webhookResponse = {
         statusCode: response.statusCode,
-        data: this.parseResponseData(await response.body.text()),
+        data: this.parseResponseData(
+          await this.readBodyWithLimit(response.body),
+        ),
       };
 
       if (

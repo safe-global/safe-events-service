@@ -24,7 +24,15 @@ function makeHttpAgentResponse(statusCode: number, data = '') {
   return {
     statusCode,
     headers: {},
-    body: { text: jest.fn().mockResolvedValue(data) },
+    // Mimic undici's BodyReadable as a re-iterable async stream of Buffers so
+    // `readBodyWithLimit` can consume it the same way it does in production.
+    body: {
+      async *[Symbol.asyncIterator]() {
+        if (data) {
+          yield Buffer.from(data);
+        }
+      },
+    },
     trailers: {},
     opaque: null,
     context: {},
