@@ -1,5 +1,10 @@
 import { Request, Response } from 'express';
-import { rewriteAdminPaths, wrapAdminResponse } from './admin-proxy.middleware';
+import {
+  patchAdminAssetDotfiles,
+  patchAdminResponse,
+  rewriteAdminPaths,
+  wrapAdminResponse,
+} from './admin-proxy.middleware';
 
 function makeRequest(headers: Record<string, string> = {}): Request {
   return { headers } as unknown as Request;
@@ -176,5 +181,94 @@ describe('wrapAdminResponse', () => {
     res.send(Buffer.from('binary'));
 
     expect(res.removeHeader).not.toHaveBeenCalled();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// patchAdminAssetDotfiles (res.sendFile interceptor)
+// ---------------------------------------------------------------------------
+describe('patchAdminAssetDotfiles', () => {
+  function makeSendFileResponse(): {
+    res: Response;
+    calls: unknown[][];
+  } {
+    const calls: unknown[][] = [];
+    const res = {
+      sendFile: jest.fn((...args: unknown[]) => {
+        calls.push(args);
+      }),
+    } as unknown as Response;
+    return { res, calls };
+  }
+
+  const pnpmPath =
+    '/app/node_modules/.pnpm/adminjs@7.8.17/node_modules/adminjs/lib/frontend/assets/scripts/app-bundle.development.js';
+
+  it('injects dotfiles:allow when AdminJS calls sendFile with a path', () => {
+    const { res, calls } = makeSendFileResponse();
+
+    patchAdminAssetDotfiles(res);
+    res.sendFile(pnpmPath);
+
+    expect(calls[0][0]).toBe(pnpmPath);
+    expect(calls[0][1]).toEqual({ dotfiles: 'allow' });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// patchAdminResponse (composes the three response patches)
+// ---------------------------------------------------------------------------
+describe('patchAdminResponse', () => {
+  const pnpmPath =
+    '/app/node_modules/.pnpm/adminjs/node_modules/adminjs/frontend/app.bundle.js';
+
+  function makeFullResponse(): {
+    res: Response;
+    sent: unknown[];
+    sentFiles: unknown[][];
+    headers: Record<string, string | number>;
+  } {
+    const state = {
+      sent: [] as unknown[],
+      sentFiles: [] as unknown[][],
+      headers: {} as Record<string, string | number>,
+    };
+    const res = {
+      setHeader: jest.fn((name: string, value: string | number) => {
+        state.headers[name.toLowerCase()] = value;
+        return res;
+      }),
+      removeHeader: jest.fn(),
+      send: jest.fn((body: unknown) => {
+        state.sent.push(body);
+        return res;
+      }),
+      sendFile: jest.fn((...args: unknown[]) => {
+        state.sentFiles.push(args);
+      }),
+    } as unknown as Response;
+    return { res, ...state };
+  }
+
+  it('patches sendFile dotfiles even without a proxy prefix', () => {
+    const req = makeRequest();
+    const { res, sentFiles } = makeFullResponse();
+
+    patchAdminResponse(req, res);
+    res.sendFile(pnpmPath);
+
+    expect(sentFiles[0]).toEqual([pnpmPath, { dotfiles: 'allow' }]);
+  });
+
+  it('rewrites bodies and Location headers when behind a proxy', () => {
+    const req = makeRequest({ 'x-forwarded-prefix': '/internal/events' });
+    const { res, sent, headers } = makeFullResponse();
+
+    patchAdminResponse(req, res);
+    res.send('{"rootPath":"/admin"}');
+    res.setHeader('Location', '/admin/login');
+
+    expect(sent[0]).toBe('{"rootPath":"/internal/events/admin"}');
+    expect(headers['location']).toContain('/internal/events/admin/login');
   });
 });

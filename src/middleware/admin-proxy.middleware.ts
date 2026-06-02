@@ -1,6 +1,9 @@
 import { Request, Response } from 'express';
 import { ADMIN_BASE_PATH } from '../modules/admin/admin.constants';
-import { getForwardedPrefix } from './reverse-proxy.middleware';
+import {
+  getForwardedPrefix,
+  patchLocationHeader,
+} from './reverse-proxy.middleware';
 
 function escapeRegex(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -47,4 +50,49 @@ export function wrapAdminResponse(req: Request, res: Response): void {
     }
     return origSend(body as Parameters<Response['send']>[0]);
   };
+}
+
+/**
+ * Patches `res.sendFile` so AdminJS's static frontend bundles are served
+ * instead of 404ing.
+ *
+ * `@adminjs/express` serves its assets with `res.sendFile(path.resolve(src))`
+ * and no options. Under pnpm those assets live in `node_modules/.pnpm/...`,
+ * and the `.pnpm` segment is a dotfile. Express 5's `res.sendFile` delegates
+ * to `send`, whose default `dotfiles: 'ignore'` makes any absolute path
+ * containing a dot-segment resolve to `404 Not Found` — so every AdminJS
+ * bundle (JS/CSS/fonts) fails to load and the admin UI renders blank.
+ *
+ * We force `dotfiles: 'allow'` for the asset paths AdminJS serves. These are
+ * fixed, package-internal files (never user-controlled), so allowing dotfiles
+ * here is safe. `@adminjs/express` only ever calls `sendFile(path)` with a
+ * single argument, so that is the only shape we need to handle.
+ */
+export function patchAdminAssetDotfiles(res: Response): void {
+  const origSendFile = res.sendFile.bind(res);
+  (res.sendFile as unknown) = (path: string): void => {
+    origSendFile(path, { dotfiles: 'allow' });
+  };
+}
+
+/**
+ * Single entry point for every response adaptation AdminJS needs. AdminJS
+ * mounts its own Express router ahead of Nest's middleware, so these are
+ * applied by wrapping the admin layer's handler in `main.ts` rather than via
+ * `MiddlewareConsumer`.
+ *
+ *  - {@link patchLocationHeader}: rewrites `res.redirect` Location headers
+ *    (login/logout) to include the proxy prefix.
+ *  - {@link wrapAdminResponse}: rewrites `res.send` HTML/JSON bodies that
+ *    hardcode the internal `rootPath` to include the proxy prefix.
+ *  - {@link patchAdminAssetDotfiles}: makes `res.sendFile` serve AdminJS's
+ *    pnpm-hosted static bundles instead of 404ing on the `.pnpm` dotfile.
+ *
+ * The first two are no-op without `x-forwarded-prefix`; the dotfile patch
+ * always applies.
+ */
+export function patchAdminResponse(req: Request, res: Response): void {
+  patchLocationHeader(req, res);
+  wrapAdminResponse(req, res);
+  patchAdminAssetDotfiles(res);
 }

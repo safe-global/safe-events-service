@@ -9,11 +9,8 @@ import { AppModule } from './app.module';
 import { JsonConsoleLogger } from './logging/json-logger';
 import { INestApplication, LogLevel, ValidationPipe } from '@nestjs/common';
 import { Request, RequestHandler, Response } from 'express';
-import { wrapAdminResponse } from './middleware/admin-proxy.middleware';
-import {
-  getForwardedPrefix,
-  ReverseProxyMiddleware,
-} from './middleware/reverse-proxy.middleware';
+import { patchAdminResponse } from './middleware/admin-proxy.middleware';
+import { getForwardedPrefix } from './middleware/reverse-proxy.middleware';
 
 /**
  * Configure swagger for app
@@ -78,19 +75,12 @@ function getLogLevels(): LogLevel[] {
 /**
  * `@adminjs/nestjs` mounts its Express router in `onModuleInit` and then
  * reorders it to the front of the Express stack, so Nest `MiddlewareConsumer`
- * entries never run for `/admin/*`. We wrap the admin layer's handler after
- * `app.listen()` with two pieces:
- *
- *  - `ReverseProxyMiddleware`: rewrites `Location` headers emitted by
- *    `res.redirect(...)` so post-login/logout redirects point to the
- *    externally-visible proxy URL.
- *  - `wrapAdminResponse`: patches `res.send` so AdminJS's HTML/JSON bodies
- *    (which hardcode the internal `rootPath`) get rewritten to include the
- *    proxy prefix.
- *
- * Both are no-op when `x-forwarded-prefix` is absent.
+ * entries never run for `/admin/*`. We therefore wrap the admin layer's
+ * handler after `app.listen()` and apply `patchAdminResponse`, which adapts
+ * AdminJS's Location headers, HTML/JSON bodies, and static-asset serving (see
+ * its docs). Proxy-prefix rewrites are no-op without `x-forwarded-prefix`.
  */
-function installAdminProxyBodyRewrite(app: INestApplication): void {
+function installAdminResponsePatch(app: INestApplication): void {
   type ExpressLayer = { name?: string; handle: RequestHandler };
   const expressApp = app.getHttpAdapter().getInstance() as {
     router?: { stack: ExpressLayer[] };
@@ -100,18 +90,15 @@ function installAdminProxyBodyRewrite(app: INestApplication): void {
   const adminLayer = stack?.find((layer) => layer.name === 'admin');
   if (!adminLayer) {
     console.warn(
-      '[installAdminProxyBodyRewrite] admin layer not found in Express stack — proxy rewriting will not work',
+      '[installAdminResponsePatch] admin layer not found in Express stack — admin response patching will not work',
     );
     return;
   }
 
   const originalHandle = adminLayer.handle;
-  const reverseProxy = new ReverseProxyMiddleware();
   adminLayer.handle = (req, res, next) => {
-    reverseProxy.use(req, res, () => {
-      wrapAdminResponse(req, res);
-      originalHandle(req, res, next);
-    });
+    patchAdminResponse(req, res);
+    originalHandle(req, res, next);
   };
 }
 
@@ -130,6 +117,6 @@ async function bootstrap() {
   setupSwagger(app, basePath);
   app.useGlobalPipes(new ValidationPipe());
   await app.listen(3000);
-  installAdminProxyBodyRewrite(app);
+  installAdminResponsePatch(app);
 }
 bootstrap();
