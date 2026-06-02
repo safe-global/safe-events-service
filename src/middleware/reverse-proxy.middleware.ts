@@ -44,42 +44,47 @@ export function getProxyAwareBaseUrl(req: Request): string {
 }
 
 /**
- * Middleware that rewrites Location headers in redirect responses to respect
+ * Patches `res.setHeader` so Location headers in redirect responses respect
  * the x-forwarded-prefix sent by an upstream reverse proxy.
  *
  * Without this, a redirect like `302 Location: /docs` would send the client
- * to the internal path instead of the externally-routed path. With the
- * middleware and a prefix of `/my-service`, the header becomes
- * `Location: /my-service/docs`.
+ * to the internal path instead of the externally-routed path. With a prefix
+ * of `/my-service`, the header becomes `Location: /my-service/docs`.
  *
- * When x-forwarded-prefix is absent or empty the middleware is a no-op and
- * existing behaviour is preserved.
+ * No-op when x-forwarded-prefix is absent or empty, preserving existing
+ * behaviour.
+ */
+export function patchLocationHeader(req: Request, res: Response): void {
+  const prefix = getForwardedPrefix(req);
+  if (!prefix) return;
+
+  const originalSetHeader = res.setHeader.bind(res);
+  const baseUrl = getProxyAwareBaseUrl(req);
+
+  (res.setHeader as unknown) = (
+    name: string,
+    value: string | number | readonly string[],
+  ): Response => {
+    if (
+      name.toLowerCase() === 'location' &&
+      typeof value === 'string' &&
+      value.startsWith('/') &&
+      !value.startsWith(`${prefix}/`)
+    ) {
+      value = `${baseUrl}${value}`;
+    }
+    return originalSetHeader(name, value as string | number | string[]);
+  };
+}
+
+/**
+ * Middleware applying {@link patchLocationHeader} to every request, so
+ * redirects emitted anywhere in the app respect the reverse-proxy prefix.
  */
 @Injectable()
 export class ReverseProxyMiddleware implements NestMiddleware {
   use(req: Request, res: Response, next: NextFunction): void {
-    const prefix = getForwardedPrefix(req);
-
-    if (prefix) {
-      const originalSetHeader = res.setHeader.bind(res);
-      const baseUrl = getProxyAwareBaseUrl(req);
-
-      (res.setHeader as unknown) = (
-        name: string,
-        value: string | number | readonly string[],
-      ): Response => {
-        if (
-          name.toLowerCase() === 'location' &&
-          typeof value === 'string' &&
-          value.startsWith('/') &&
-          !value.startsWith(`${prefix}/`)
-        ) {
-          value = `${baseUrl}${value}`;
-        }
-        return originalSetHeader(name, value as string | number | string[]);
-      };
-    }
-
+    patchLocationHeader(req, res);
     next();
   }
 }
