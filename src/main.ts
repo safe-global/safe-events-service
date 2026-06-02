@@ -9,7 +9,10 @@ import { AppModule } from './app.module';
 import { JsonConsoleLogger } from './logging/json-logger';
 import { INestApplication, LogLevel, ValidationPipe } from '@nestjs/common';
 import { Request, RequestHandler, Response } from 'express';
-import { wrapAdminResponse } from './middleware/admin-proxy.middleware';
+import {
+  patchAdminAssetDotfiles,
+  wrapAdminResponse,
+} from './middleware/admin-proxy.middleware';
 import {
   getForwardedPrefix,
   ReverseProxyMiddleware,
@@ -87,8 +90,13 @@ function getLogLevels(): LogLevel[] {
  *  - `wrapAdminResponse`: patches `res.send` so AdminJS's HTML/JSON bodies
  *    (which hardcode the internal `rootPath`) get rewritten to include the
  *    proxy prefix.
+ *  - `patchAdminAssetDotfiles`: patches `res.sendFile` so AdminJS's static
+ *    bundles served from pnpm's `node_modules/.pnpm/...` (a dotfile path) are
+ *    not turned into spurious 404s by `send`'s default `dotfiles: 'ignore'`.
  *
- * Both are no-op when `x-forwarded-prefix` is absent.
+ * The first two are no-op when `x-forwarded-prefix` is absent;
+ * `patchAdminAssetDotfiles` always runs since the asset paths are dotfiles
+ * regardless of any proxy.
  */
 function installAdminProxyBodyRewrite(app: INestApplication): void {
   type ExpressLayer = { name?: string; handle: RequestHandler };
@@ -110,6 +118,7 @@ function installAdminProxyBodyRewrite(app: INestApplication): void {
   adminLayer.handle = (req, res, next) => {
     reverseProxy.use(req, res, () => {
       wrapAdminResponse(req, res);
+      patchAdminAssetDotfiles(res);
       originalHandle(req, res, next);
     });
   };

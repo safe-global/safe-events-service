@@ -1,5 +1,9 @@
 import { Request, Response } from 'express';
-import { rewriteAdminPaths, wrapAdminResponse } from './admin-proxy.middleware';
+import {
+  patchAdminAssetDotfiles,
+  rewriteAdminPaths,
+  wrapAdminResponse,
+} from './admin-proxy.middleware';
 
 function makeRequest(headers: Record<string, string> = {}): Request {
   return { headers } as unknown as Request;
@@ -176,5 +180,66 @@ describe('wrapAdminResponse', () => {
     res.send(Buffer.from('binary'));
 
     expect(res.removeHeader).not.toHaveBeenCalled();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// patchAdminAssetDotfiles (res.sendFile interceptor)
+// ---------------------------------------------------------------------------
+describe('patchAdminAssetDotfiles', () => {
+  function makeSendFileResponse(): {
+    res: Response;
+    calls: unknown[][];
+  } {
+    const calls: unknown[][] = [];
+    const res = {
+      sendFile: jest.fn((...args: unknown[]) => {
+        calls.push(args);
+      }),
+    } as unknown as Response;
+    return { res, calls };
+  }
+
+  const pnpmPath =
+    '/app/node_modules/.pnpm/adminjs@7.8.17/node_modules/adminjs/lib/frontend/assets/scripts/app-bundle.development.js';
+
+  it('injects dotfiles:allow when AdminJS calls sendFile with only a path', () => {
+    const { res, calls } = makeSendFileResponse();
+
+    patchAdminAssetDotfiles(res);
+    res.sendFile(pnpmPath);
+
+    expect(calls[0][0]).toBe(pnpmPath);
+    expect(calls[0][1]).toEqual({ dotfiles: 'allow' });
+  });
+
+  it('preserves a callback while injecting dotfiles:allow', () => {
+    const { res, calls } = makeSendFileResponse();
+    const cb = jest.fn();
+
+    patchAdminAssetDotfiles(res);
+    res.sendFile(pnpmPath, cb);
+
+    expect(calls[0][0]).toBe(pnpmPath);
+    expect(calls[0][1]).toEqual({ dotfiles: 'allow' });
+    expect(calls[0][2]).toBe(cb);
+  });
+
+  it('defaults dotfiles but keeps caller-provided options', () => {
+    const { res, calls } = makeSendFileResponse();
+
+    patchAdminAssetDotfiles(res);
+    res.sendFile(pnpmPath, { maxAge: 1000 });
+
+    expect(calls[0][1]).toEqual({ dotfiles: 'allow', maxAge: 1000 });
+  });
+
+  it('does not override an explicit dotfiles option', () => {
+    const { res, calls } = makeSendFileResponse();
+
+    patchAdminAssetDotfiles(res);
+    res.sendFile(pnpmPath, { dotfiles: 'deny' });
+
+    expect(calls[0][1]).toEqual({ dotfiles: 'deny' });
   });
 });

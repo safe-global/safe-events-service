@@ -48,3 +48,44 @@ export function wrapAdminResponse(req: Request, res: Response): void {
     return origSend(body as Parameters<Response['send']>[0]);
   };
 }
+
+/**
+ * Patches `res.sendFile` so AdminJS's static frontend bundles are served
+ * instead of 404ing.
+ *
+ * `@adminjs/express` serves its assets with `res.sendFile(path.resolve(src))`
+ * and no options. Under pnpm those assets live in `node_modules/.pnpm/...`,
+ * and the `.pnpm` segment is a dotfile. Express 5's `res.sendFile` delegates
+ * to `send`, whose default `dotfiles: 'ignore'` makes any absolute path
+ * containing a dot-segment resolve to `404 Not Found` — so every AdminJS
+ * bundle (JS/CSS/fonts) fails to load and the admin UI renders blank.
+ *
+ * We force `dotfiles: 'allow'` for the asset paths AdminJS serves. These are
+ * fixed, package-internal files (never user-controlled), so allowing dotfiles
+ * here is safe. The patch is idempotent and a no-op for callers that already
+ * pass explicit `dotfiles` handling.
+ */
+export function patchAdminAssetDotfiles(res: Response): void {
+  type SendFile = Response['sendFile'];
+  const origSendFile = res.sendFile.bind(res) as SendFile;
+  (res.sendFile as unknown) = function patchedSendFile(
+    path: string,
+    optionsOrCallback?: unknown,
+    callback?: unknown,
+  ): void {
+    // sendFile(path) / sendFile(path, callback)
+    if (
+      optionsOrCallback === undefined ||
+      typeof optionsOrCallback === 'function'
+    ) {
+      return (origSendFile as (...a: unknown[]) => void)(
+        path,
+        { dotfiles: 'allow' },
+        optionsOrCallback,
+      );
+    }
+    // sendFile(path, options[, callback]) — default dotfiles unless set
+    const options = { dotfiles: 'allow', ...(optionsOrCallback as object) };
+    return (origSendFile as (...a: unknown[]) => void)(path, options, callback);
+  };
+}
