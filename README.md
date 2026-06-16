@@ -116,6 +116,7 @@ Some parameters are common to every event:
   "tokenAddress": "<Ethereum checksummed address>",
   "txHash": "<0x-prefixed-hex-string>",
   "value": "<stringified-int>",
+  "trusted": true | false,
   "chainId": "<stringified-int>"
 }
 ```
@@ -129,6 +130,7 @@ Some parameters are common to every event:
   "tokenAddress": "<Ethereum checksummed address>",
   "txHash": "<0x-prefixed-hex-string>",
   "tokenId": "<stringified-int>",
+  "trusted": true | false,
   "chainId": "<stringified-int>"
 }
 ```
