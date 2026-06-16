@@ -66,10 +66,14 @@ Some parameters are common to every event:
   "to": "<Ethereum checksummed address>",
   "data": "<0x-prefixed-hex-string>" | null,
   "failed": "true" | "false",
+  "isFailed": true | false,
   "txHash": "<0x-prefixed-hex-string>",
   "chainId": "<stringified-int>"
 }
 ```
+
+> **Deprecation:** `failed` is a stringified boolean (`"true"`/`"false"`) kept only for
+> backwards compatibility and will be removed. Use the boolean `isFailed` instead.
 
 ### MultisigTransaction (proposed, not executed)
 
