@@ -4,10 +4,13 @@ import { WebhookModule } from './webhook.module';
 import { DatabaseModule } from '../../datasources/db/database.module';
 import { ConfigModule } from '@nestjs/config';
 import { DataSource, Repository, UpdateResult } from 'typeorm';
-import { WebhookDispatcherService } from './webhookDispatcher.service';
+import {
+  UNDICI_AGENT,
+  WebhookDispatcherService,
+  WebhookResponse,
+} from './webhookDispatcher.service';
 import { TxServiceEventType } from '../events/event.dto';
 import { Dispatcher } from 'undici';
-import { UNDICI_AGENT, WebhookResponse } from './webhookDispatcher.service';
 import { Logger } from '@nestjs/common';
 import { webhookWithStatsFactory } from './repositories/webhook.test.factory';
 
