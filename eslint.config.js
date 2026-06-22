@@ -5,6 +5,7 @@ const {
 
 const tsParser = require("@typescript-eslint/parser");
 const typescriptEslintEslintPlugin = require("@typescript-eslint/eslint-plugin");
+const importPlugin = require("eslint-plugin-import");
 const globals = require("globals");
 const js = require("@eslint/js");
 
@@ -36,6 +37,7 @@ module.exports = defineConfig([{
 
     plugins: {
         "@typescript-eslint": typescriptEslintEslintPlugin,
+        import: importPlugin,
     },
 
     extends: compat.extends("plugin:@typescript-eslint/recommended", "plugin:prettier/recommended"),
@@ -45,5 +47,6 @@ module.exports = defineConfig([{
         "@typescript-eslint/explicit-function-return-type": "off",
         "@typescript-eslint/explicit-module-boundary-types": "off",
         "@typescript-eslint/no-explicit-any": "off",
+        "import/no-duplicates": "error",
     },
 }, globalIgnores(["**/.eslintrc.js"])]);
