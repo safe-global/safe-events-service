@@ -50,12 +50,12 @@
     "class-validator": "^0.15.1",
     "express-formidable": "^1.2.0",
     "express-session": "^1.19.0",
-    "pg": "^8.21.0",
+    "pg": "^8.22.0",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.2",
     "typeorm": "^0.3.28",
-    "undici": "^8.4.1",
-    "viem": "^2.52.2"
+    "undici": "^8.5.0",
+    "viem": "^2.53.1"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.3.5",
