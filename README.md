@@ -44,10 +44,15 @@ Some parameters are common to every event:
 - `type`: Event type.
 - `chainId`: Chain id.
 
+Most events also include a `timestamp` (Unix epoch integer, in seconds). Its meaning depends
+on the event (on-chain block time for on-chain events, creation/modification time for off-chain
+ones) and is documented per event below.
+
 ### Multisig Confirmation
 
 ```json
 {
+  "timestamp": "<int>",
   "address": "<Ethereum checksummed address>",
   "type": "NEW_CONFIRMATION",
   "owner": "<Ethereum checksummed address>",
@@ -79,6 +84,7 @@ Some parameters are common to every event:
 
 ```json
 {
+  "timestamp": "<int>",
   "address": "<Ethereum checksummed address>",
   "type": "PENDING_MULTISIG_TRANSACTION",
   "safeTxHash": "<0x-prefixed-hex-string>",
@@ -92,9 +98,23 @@ Some parameters are common to every event:
 
 ```json
 {
+  "timestamp": "<int>",
   "address": "<Ethereum checksummed address>",
   "type": "DELETED_MULTISIG_TRANSACTION",
   "safeTxHash": "<0x-prefixed-hex-string>",
+  "chainId": "<stringified-int>"
+}
+```
+
+### Module transaction
+
+```json
+{
+  "timestamp": "<int>",
+  "address": "<Ethereum checksummed address>",
+  "type": "MODULE_TRANSACTION",
+  "module": "<Ethereum checksummed address>",
+  "txHash": "<0x-prefixed-hex-string>",
   "chainId": "<stringified-int>"
 }
 ```
@@ -103,6 +123,8 @@ Some parameters are common to every event:
 
 ```json
 {
+  "id": "i<txHash-no-0x><traceAddress>",
+  "timestamp": "<int>",
   "address": "<Ethereum checksummed address>",
   "type": "INCOMING_ETHER" | "OUTGOING_ETHER",
   "txHash": "<0x-prefixed-hex-string>",
@@ -111,10 +133,17 @@ Some parameters are common to every event:
 }
 ```
 
+- `id`: Per-transfer unique identifier. For ether transfers it is `i` + `txHash` (without the
+  `0x` prefix) + `traceAddress`. The same `id` is shared by the `INCOMING_ETHER` and
+  `OUTGOING_ETHER` events of the same on-chain transfer, so it is unique per transfer-within-tx,
+  not per event.
+
 ### Incoming/Outgoing token (ERC20)
 
 ```json
 {
+  "id": "e<txHash-no-0x><logIndex>",
+  "timestamp": "<int>",
   "address": "<Ethereum checksummed address>",
   "type": "INCOMING_TOKEN" | "OUTGOING_TOKEN",
   "tokenAddress": "<Ethereum checksummed address>",
@@ -125,10 +154,16 @@ Some parameters are common to every event:
 }
 ```
 
+- `id`: Per-transfer unique identifier. For token transfers it is `e` + `txHash` (without the
+  `0x` prefix) + `logIndex`. The same `id` is shared by the `INCOMING_TOKEN` and `OUTGOING_TOKEN`
+  events of the same on-chain transfer, so it is unique per transfer-within-tx, not per event.
+
 ### Incoming/Outgoing tokens (ERC721)
 
 ```json
 {
+  "id": "e<txHash-no-0x><logIndex>",
+  "timestamp": "<int>",
   "address": "<Ethereum checksummed address>",
   "type": "INCOMING_TOKEN" | "OUTGOING_TOKEN",
   "tokenAddress": "<Ethereum checksummed address>",
@@ -139,10 +174,15 @@ Some parameters are common to every event:
 }
 ```
 
+- `id`: Per-transfer unique identifier. For token transfers it is `e` + `txHash` (without the
+  `0x` prefix) + `logIndex`. The same `id` is shared by the `INCOMING_TOKEN` and `OUTGOING_TOKEN`
+  events of the same on-chain transfer, so it is unique per transfer-within-tx, not per event.
+
 ### Message created/confirmed
 
 ```json
 {
+  "timestamp": "<int>",
   "address": "<Ethereum checksummed address>",
   "type": "MESSAGE_CREATED" | "MESSAGE_CONFIRMATION",
   "messageHash": "<0x-prefixed-hex-string>",
