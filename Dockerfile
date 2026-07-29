@@ -1,7 +1,7 @@
 #
 # BUILD CONTAINER
 #
-FROM node:24 AS base
+FROM node:26 AS base
 RUN corepack enable
 USER node
 WORKDIR /app
@@ -24,7 +24,7 @@ RUN pnpm prune --prod --ignore-scripts
 #
 # PRODUCTION CONTAINER
 #
-FROM node:24 AS production
+FROM node:26 AS production
 ENV NODE_ENV=production
 USER node
 EXPOSE 3000
