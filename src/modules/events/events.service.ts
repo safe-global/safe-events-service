@@ -74,21 +74,26 @@ export class EventsService implements OnApplicationBootstrap {
     try {
       txServiceEvent = JSON.parse(message);
       this.logger.log({
-        message: `Processing event`,
+        message: 'Processing event',
         messageContext: {
           event: txServiceEvent,
         },
       });
     } catch {
-      this.logger.error(`Cannot parse message as JSON: ${message}`);
+      this.logger.error({
+        message: 'Cannot parse message as JSON',
+        messageContext: { event: message },
+      });
       return Promise.resolve([undefined]);
     }
 
     // Check message is valid
     if (!this.isEventValid(txServiceEvent)) {
-      this.logger.error(
-        `Unsupported message. A valid message should have at least 'chainId' and 'type': ${message}`,
-      );
+      this.logger.error({
+        message:
+          "Unsupported message. A valid message should have at least 'chainId' and 'type'",
+        messageContext: { event: message },
+      });
       return Promise.resolve([undefined]);
     }
 

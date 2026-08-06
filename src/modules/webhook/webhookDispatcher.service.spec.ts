@@ -456,7 +456,8 @@ describe('Webhook service', () => {
         { isActive: false },
       );
       expect(loggerErrorSpy).toHaveBeenCalledWith({
-        message: 'Webhook with ID 123 not found or already inactive.',
+        message: 'Webhook not found or already inactive',
+        messageContext: { webhook: { id: '123' } },
       });
     });
     it('should catch any exception and return False', async () => {
@@ -475,7 +476,11 @@ describe('Webhook service', () => {
         { isActive: false },
       );
       expect(loggerErrorSpy).toHaveBeenCalledWith({
-        message: 'Failed to disable webhook with ID 123: Database failure',
+        message: 'Failed to disable webhook',
+        messageContext: {
+          webhook: { id: '123' },
+          error: 'Database failure',
+        },
       });
     });
   });

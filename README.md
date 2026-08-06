@@ -339,7 +339,7 @@ All configuration is done through environment variables. See `.env.sample` for a
 | `WEBHOOK_AUTO_DISABLE` | No | `false` | Auto-disable webhooks that exceed the failure threshold |
 | `WEBHOOK_FAILURE_THRESHOLD` | No | `90` | Failure rate percentage (0–100) above which a webhook is auto-disabled |
 | `WEBHOOK_HEALTH_MINUTES_WINDOW` | No | `60` | Rolling window in minutes used to compute per-webhook failure rates |
-| `LOG_LEVEL` | No | `log` | Log verbosity: `verbose`, `debug`, `log`, `warn`, `error`, `fatal` |
+| `LOG_LEVEL` | No | `info` | Log verbosity: `trace`, `debug`, `log`, `info`, `warn`, `error`, `fatal` |
 
 ## Creating database migrations
 

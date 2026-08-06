@@ -31,7 +31,10 @@ export class QueueProvider implements OnApplicationShutdown {
    */
   getAmqpUrl(): string {
     const value = this.configService.getOrThrow('AMQP_URL');
-    this.logger.log(`AMQP_URL=${value}`);
+    this.logger.log({
+      message: 'Using AMQP url',
+      messageContext: { amqpUrl: value },
+    });
     return value;
   }
 
@@ -41,7 +44,10 @@ export class QueueProvider implements OnApplicationShutdown {
    */
   getQueueName(): string {
     const value = this.configService.get('AMQP_QUEUE', 'safe-events-service');
-    this.logger.log(`AMQP_QUEUE=${value}`);
+    this.logger.log({
+      message: 'Using AMQP queue',
+      messageContext: { queue: value },
+    });
     return value;
   }
 
@@ -54,7 +60,10 @@ export class QueueProvider implements OnApplicationShutdown {
       'AMQP_EXCHANGE',
       'safe-transaction-service-events',
     );
-    this.logger.log(`AMQP_EXCHANGE=${value}`);
+    this.logger.log({
+      message: 'Using AMQP exchange',
+      messageContext: { exchange: value },
+    });
     return value;
   }
 
@@ -65,7 +74,10 @@ export class QueueProvider implements OnApplicationShutdown {
    */
   getPrefetchMessages(): number {
     const value = Number(this.configService.get('AMQP_PREFETCH_MESSAGES', 100));
-    this.logger.log(`AMQP_PREFETCH_MESSAGES=${value}`);
+    this.logger.log({
+      message: 'Using AMQP prefetch messages',
+      messageContext: { prefetchMessages: value },
+    });
     return value;
   }
 
@@ -93,9 +105,13 @@ export class QueueProvider implements OnApplicationShutdown {
     this.channelWrapper = this.connection.createChannel({
       json: true,
       setup: async (channel: Channel) => {
-        this.logger.debug(
-          `Asserting exchange ${this.getExchangeName()} and queue ${this.getQueueName()} are created`,
-        );
+        this.logger.debug({
+          message: 'Asserting exchange and queue are created',
+          messageContext: {
+            exchange: this.getExchangeName(),
+            queue: this.getQueueName(),
+          },
+        });
         await channel.assertExchange(this.getExchangeName(), 'fanout', {
           durable: true,
         });
@@ -104,9 +120,13 @@ export class QueueProvider implements OnApplicationShutdown {
           durable: true,
         });
 
-        this.logger.debug(
-          `Exchange ${this.getExchangeName()} and queue ${this.getQueueName()} are created`,
-        );
+        this.logger.debug({
+          message: 'Exchange and queue are created',
+          messageContext: {
+            exchange: this.getExchangeName(),
+            queue: this.getQueueName(),
+          },
+        });
 
         await channel.prefetch(this.getPrefetchMessages());
 
@@ -139,14 +159,22 @@ export class QueueProvider implements OnApplicationShutdown {
   ): Promise<string> {
     const { channel } = await this.getConnection();
     if (channel === undefined) {
-      this.logger.error(
-        `Cannot subscribe to RabbitMQ exchange ${this.getExchangeName()} and queue ${this.getQueueName()}, channel is undefined`,
-      );
+      this.logger.error({
+        message: 'Cannot subscribe to RabbitMQ, channel is undefined',
+        messageContext: {
+          exchange: this.getExchangeName(),
+          queue: this.getQueueName(),
+        },
+      });
       return '';
     } else {
-      this.logger.debug(
-        `Subscribing to RabbitMQ exchange ${this.getExchangeName()} and queue ${this.getQueueName()}`,
-      );
+      this.logger.debug({
+        message: 'Subscribing to RabbitMQ',
+        messageContext: {
+          exchange: this.getExchangeName(),
+          queue: this.getQueueName(),
+        },
+      });
       const consumer = await channel.consume(
         this.getQueueName(),
         async (message: ConsumeMessage) => {
@@ -154,7 +182,12 @@ export class QueueProvider implements OnApplicationShutdown {
             try {
               await func(message.content.toString());
             } catch (error) {
-              this.logger.error(`Error processing message: ${error.message}`);
+              this.logger.error({
+                message: 'Error processing message',
+                messageContext: {
+                  error: error instanceof Error ? error.message : String(error),
+                },
+              });
             } finally {
               channel.ack(message);
             }
@@ -164,9 +197,13 @@ export class QueueProvider implements OnApplicationShutdown {
           noAck: false,
         },
       );
-      this.logger.debug(
-        `Subscribed to RabbitMQ exchange ${this.getExchangeName()} and queue ${this.getQueueName()}`,
-      );
+      this.logger.debug({
+        message: 'Subscribed to RabbitMQ',
+        messageContext: {
+          exchange: this.getExchangeName(),
+          queue: this.getQueueName(),
+        },
+      });
       return consumer.consumerTag;
     }
   }
