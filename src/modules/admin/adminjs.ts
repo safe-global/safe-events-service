@@ -1,4 +1,9 @@
-import { Module } from '@nestjs/common';
+import { Logger, Module } from '@nestjs/common';
+import { ConfigModule, ConfigService } from '@nestjs/config';
+import { Pool } from 'pg';
+import * as connectPgSimple from 'connect-pg-simple';
+import * as session from 'express-session';
+import { dataSourceOptions } from '../../datasources/db/database.options';
 import { Webhook } from '../webhook/repositories/webhook.entity';
 import { ADMIN_BASE_PATH } from './admin.constants';
 import { AuthModule } from './auth/auth.module';
@@ -33,27 +38,45 @@ async function buildAdminJsModule() {
     `import('@adminjs/nestjs')`,
   ) as Promise<any>);
   return AdminModule.createAdminAsync({
-    imports: [AuthModule],
-    inject: [AuthService],
-    useFactory: (authService: AuthService) => ({
-      adminJsOptions: {
-        rootPath: ADMIN_BASE_PATH,
-        loginPath: ADMIN_BASE_PATH + '/login',
-        logoutPath: ADMIN_BASE_PATH + '/logout',
-        resources: [Webhook],
-      },
-      auth: {
-        authenticate: (email: string, password: string) =>
-          authService.authenticate(email, password),
-        cookieName: 'adminjs',
-        cookiePassword: process.env.ADMIN_COOKIE_SECRET,
-      },
-      sessionOptions: {
-        resave: true,
-        saveUninitialized: true,
-        secret: process.env.ADMIN_SESSION_SECRET,
-      },
-    }),
+    imports: [AuthModule, ConfigModule],
+    inject: [AuthService, ConfigService],
+    useFactory: (authService: AuthService, configService: ConfigService) => {
+      const logger = new Logger('AdminJsSessionPool');
+      const sessionPool = new Pool({
+        connectionString: configService.get('DATABASE_URL'),
+        max: 2,
+        ...('ssl' in dataSourceOptions ? { ssl: dataSourceOptions.ssl } : {}),
+      });
+      // Without a listener, an idle client error crashes the process
+      sessionPool.on('error', (error) => {
+        logger.error(`Session pool error: ${error.message}`);
+      });
+      return {
+        adminJsOptions: {
+          rootPath: ADMIN_BASE_PATH,
+          loginPath: ADMIN_BASE_PATH + '/login',
+          logoutPath: ADMIN_BASE_PATH + '/logout',
+          resources: [Webhook],
+        },
+        auth: {
+          authenticate: (email: string, password: string) =>
+            authService.authenticate(email, password),
+          cookieName: 'adminjs',
+          cookiePassword: process.env.ADMIN_COOKIE_SECRET,
+        },
+        sessionOptions: {
+          // Sessions must be shared across replicas: the default MemoryStore is
+          // per-pod, so any request routed to another pod loses the session
+          store: new (connectPgSimple(session))({
+            pool: sessionPool,
+            tableName: 'admin_sessions',
+          }),
+          resave: false,
+          saveUninitialized: false,
+          secret: process.env.ADMIN_SESSION_SECRET,
+        },
+      };
+    },
   });
 }
 
