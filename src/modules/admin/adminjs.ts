@@ -1,4 +1,8 @@
 import { Module } from '@nestjs/common';
+import { Pool } from 'pg';
+import * as connectPgSimple from 'connect-pg-simple';
+import * as session from 'express-session';
+import { dataSourceOptions } from '../../datasources/db/database.options';
 import { Webhook } from '../webhook/repositories/webhook.entity';
 import { ADMIN_BASE_PATH } from './admin.constants';
 import { AuthModule } from './auth/auth.module';
@@ -49,8 +53,20 @@ async function buildAdminJsModule() {
         cookiePassword: process.env.ADMIN_COOKIE_SECRET,
       },
       sessionOptions: {
-        resave: true,
-        saveUninitialized: true,
+        // Sessions must be shared across replicas: the default MemoryStore is
+        // per-pod, so any request routed to another pod loses the session
+        store: new (connectPgSimple(session))({
+          pool: new Pool({
+            connectionString: process.env.DATABASE_URL,
+            max: 2,
+            ...('ssl' in dataSourceOptions
+              ? { ssl: dataSourceOptions.ssl }
+              : {}),
+          }),
+          tableName: 'admin_sessions',
+        }),
+        resave: false,
+        saveUninitialized: false,
         secret: process.env.ADMIN_SESSION_SECRET,
       },
     }),
