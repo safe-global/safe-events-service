@@ -3,4 +3,4 @@
 * @safe-global/platform
 
 # Workflows and repo configuration
-/.github/ @safe-global/infrasec
+/.github/ @safe-global/platform @safe-global/infrasec
