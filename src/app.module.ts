@@ -11,8 +11,9 @@ import { ConfigModule } from '@nestjs/config';
 import { DatabaseModule } from './datasources/db/database.module';
 import { EventsModule } from './modules/events/events.module';
 import { HealthModule } from './modules/health/health.module';
+import { LoggerModule } from 'nestjs-pino';
+import { pinoHttpOptions } from './logging/pino-logger.config';
 import { WebhookModule } from './modules/webhook/webhook.module';
-import { RequestLoggerMiddleware } from './middleware/request-logger.middleware';
 import { ReverseProxyMiddleware } from './middleware/reverse-proxy.middleware';
 import { ScheduleModule } from '@nestjs/schedule';
 
@@ -24,6 +25,7 @@ import { ScheduleModule } from '@nestjs/schedule';
     DatabaseModule,
     EventsModule,
     HealthModule,
+    LoggerModule.forRoot({ pinoHttp: pinoHttpOptions }),
     ScheduleModule.forRoot(),
     WebhookModule,
   ],
@@ -31,7 +33,7 @@ import { ScheduleModule } from '@nestjs/schedule';
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
     consumer
-      .apply(ReverseProxyMiddleware, RequestLoggerMiddleware)
+      .apply(ReverseProxyMiddleware)
       .forRoutes({ path: '*', method: RequestMethod.ALL });
   }
 }

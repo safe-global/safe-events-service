@@ -105,14 +105,19 @@ export class WebhookDispatcherService implements OnModuleDestroy {
 
       if (result.affected === 0) {
         this.logger.error({
-          message: `Webhook with ID ${id} not found or already inactive.`,
+          message: 'Webhook not found or already inactive',
+          messageContext: { webhook: { id: id } },
         });
         return false;
       }
       return true;
     } catch (error) {
       this.logger.error({
-        message: `Failed to disable webhook with ID ${id}: ${error.message}`,
+        message: 'Failed to disable webhook',
+        messageContext: {
+          webhook: { id: id },
+          error: error instanceof Error ? error.message : String(error),
+        },
       });
       return false;
     }
@@ -144,9 +149,13 @@ export class WebhookDispatcherService implements OnModuleDestroy {
       if (!webhook.isEventRelevant(parsedMessage)) {
         continue;
       }
-      this.logger.debug(
-        `Sending ${JSON.stringify(parsedMessage)} to ${webhook.url}`,
-      );
+      this.logger.debug({
+        message: 'Sending event to webhook',
+        messageContext: {
+          event: parsedMessage,
+          webhook: { id: webhook.id, url: webhook.url },
+        },
+      });
       responses.push(this.postWebhook(parsedMessage, webhook));
     }
     return Promise.all(responses);

@@ -76,6 +76,28 @@ describe('EventsService', () => {
         messageContext: { event: msg },
       });
     });
+
+    it('should log the parsing error for a message that is not JSON', async () => {
+      const postEveryWebhook = jest.spyOn(
+        webhookDispatcherService,
+        'postEveryWebhook',
+      );
+      const loggerSpy = jest.spyOn(Logger.prototype, 'error');
+      const notJson = 'not-json';
+
+      const result = await eventsService.processEvent(notJson);
+
+      expect(result).toStrictEqual([undefined]);
+      expect(postEveryWebhook).not.toHaveBeenCalled();
+      expect(loggerSpy).toHaveBeenCalledTimes(1);
+      expect(loggerSpy).toHaveBeenCalledWith({
+        message: 'Cannot parse message as JSON',
+        messageContext: {
+          event: notJson,
+          error: expect.stringContaining('JSON'),
+        },
+      });
+    });
   });
 
   describe('processMessageEvents', () => {
