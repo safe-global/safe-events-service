@@ -1,5 +1,6 @@
 import { Observable, Subject, filter } from 'rxjs';
 import { Injectable, Logger, OnApplicationBootstrap } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { QueueProvider } from '../../datasources/queue/queue.provider';
 import { TxServiceEvent } from './event.dto';
 import {
@@ -11,11 +12,20 @@ import {
 export class EventsService implements OnApplicationBootstrap {
   private readonly logger = new Logger(EventsService.name);
   private eventsSubject = new Subject<MessageEvent<TxServiceEvent>>();
+  private readonly eventsLogEnabled: boolean;
 
   constructor(
     private readonly queueProvider: QueueProvider,
     private readonly webhookDispatcherService: WebhookDispatcherService,
-  ) {}
+    private readonly configService: ConfigService,
+  ) {
+    // Only an explicit `true` enables it; normalize so 'True'/'TRUE' count.
+    this.eventsLogEnabled =
+      this.configService
+        .get<string>('EVENTS_LOG_ENABLED', 'true')
+        .trim()
+        .toLowerCase() === 'true';
+  }
 
   onApplicationBootstrap() {
     return this.listenToEvents();
@@ -73,12 +83,14 @@ export class EventsService implements OnApplicationBootstrap {
     let txServiceEvent: TxServiceEvent;
     try {
       txServiceEvent = JSON.parse(message);
-      this.logger.log({
-        message: 'Processing event',
-        messageContext: {
-          event: txServiceEvent,
-        },
-      });
+      if (this.eventsLogEnabled) {
+        this.logger.log({
+          message: 'Processing event',
+          messageContext: {
+            event: txServiceEvent,
+          },
+        });
+      }
     } catch (error) {
       this.logger.error({
         message: 'Cannot parse message as JSON',

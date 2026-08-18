@@ -3,6 +3,7 @@ import { EventsService } from './events.service';
 import { QueueProvider } from '../../datasources/queue/queue.provider';
 import { TxServiceEventType } from './event.dto';
 import { Logger } from '@nestjs/common';
+import { ConfigModule } from '@nestjs/config';
 import { WebhookDispatcherService } from '../webhook/webhookDispatcher.service';
 
 describe('EventsService', () => {
@@ -16,7 +17,7 @@ describe('EventsService', () => {
 
   /* eslint-enable @typescript-eslint/no-unused-vars */
 
-  beforeEach(async () => {
+  async function buildService() {
     const webhookDispatcherServiceMock = {
       postEveryWebhook: async () => ({
         data: {},
@@ -25,6 +26,7 @@ describe('EventsService', () => {
       }),
     };
     const module = await Test.createTestingModule({
+      imports: [ConfigModule.forRoot()],
       providers: [EventsService, QueueProvider, WebhookDispatcherService],
     })
       .overrideProvider(QueueProvider)
@@ -37,6 +39,15 @@ describe('EventsService', () => {
     webhookDispatcherService = module.get<WebhookDispatcherService>(
       WebhookDispatcherService,
     );
+  }
+
+  beforeEach(async () => {
+    await buildService();
+  });
+
+  afterEach(() => {
+    delete process.env.EVENTS_LOG_ENABLED;
+    jest.restoreAllMocks();
   });
 
   describe('listenToEvents', () => {
@@ -96,6 +107,54 @@ describe('EventsService', () => {
           event: notJson,
           error: expect.stringContaining('JSON'),
         },
+      });
+    });
+
+    it('should not log the event when EVENTS_LOG_ENABLED is false', async () => {
+      process.env.EVENTS_LOG_ENABLED = 'false';
+      await buildService();
+      const postEveryWebhook = jest.spyOn(
+        webhookDispatcherService,
+        'postEveryWebhook',
+      );
+      const pushEventToEventsObservable = jest.spyOn(
+        eventsService,
+        'pushEventToEventsObservable',
+      );
+      const loggerSpy = jest.spyOn(Logger.prototype, 'log');
+      const msg = {
+        chainId: '1',
+        type: 'SAFE_CREATED' as TxServiceEventType,
+        address: '0x0275FC2adfF11270F3EcC4D2F7Aa0a9784601Ca6',
+      };
+
+      await eventsService.processEvent(JSON.stringify(msg));
+      expect(loggerSpy).not.toHaveBeenCalled();
+      // Webhook delivery must not be affected by the logging flag
+      expect(postEveryWebhook).toHaveBeenCalledTimes(1);
+      expect(postEveryWebhook).toHaveBeenCalledWith(msg);
+      expect(pushEventToEventsObservable).toHaveBeenCalledTimes(1);
+    });
+
+    it('should always log errors regardless of EVENTS_LOG_ENABLED', async () => {
+      process.env.EVENTS_LOG_ENABLED = 'false';
+      await buildService();
+      const loggerErrorSpy = jest.spyOn(Logger.prototype, 'error');
+
+      await eventsService.processEvent('not-json');
+      expect(loggerErrorSpy).toHaveBeenCalledWith({
+        message: 'Cannot parse message as JSON',
+        messageContext: {
+          event: 'not-json',
+          error: expect.stringContaining('JSON'),
+        },
+      });
+
+      await eventsService.processEvent(JSON.stringify({ chainId: '1' }));
+      expect(loggerErrorSpy).toHaveBeenCalledWith({
+        message:
+          "Unsupported message. A valid message should have at least 'chainId' and 'type'",
+        messageContext: { event: JSON.stringify({ chainId: '1' }) },
       });
     });
   });
