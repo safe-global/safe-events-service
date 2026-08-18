@@ -19,8 +19,12 @@ export class EventsService implements OnApplicationBootstrap {
     private readonly webhookDispatcherService: WebhookDispatcherService,
     private readonly configService: ConfigService,
   ) {
+    // Only an explicit `true` enables it; normalize so 'True'/'TRUE' count.
     this.eventsLogEnabled =
-      this.configService.get('EVENTS_LOG_ENABLED', 'true') !== 'false';
+      this.configService
+        .get<string>('EVENTS_LOG_ENABLED', 'true')
+        .trim()
+        .toLowerCase() === 'true';
   }
 
   onApplicationBootstrap() {
