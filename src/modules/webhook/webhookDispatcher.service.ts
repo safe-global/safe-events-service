@@ -106,7 +106,7 @@ export class WebhookDispatcherService implements OnModuleDestroy {
       if (result.affected === 0) {
         this.logger.error({
           message: 'Webhook not found or already inactive',
-          messageContext: { webhook: { id } },
+          messageContext: { webhook: { id: id } },
         });
         return false;
       }
@@ -115,7 +115,7 @@ export class WebhookDispatcherService implements OnModuleDestroy {
       this.logger.error({
         message: 'Failed to disable webhook',
         messageContext: {
-          webhook: { id },
+          webhook: { id: id },
           error: error instanceof Error ? error.message : String(error),
         },
       });
