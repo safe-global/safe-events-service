@@ -92,7 +92,7 @@ describe('Health endpoints', () => {
   describe.each(['/health/live', '/health/live/'])('GET %s', (url) => {
     it('should return 200', async () => {
       const response = await request(app.getHttpServer()).get(url).expect(200);
-      expect(response.body).toStrictEqual(new Health(HealthStatus.OK));
+      expect(response.body).toStrictEqual({ status: HealthStatus.OK });
     });
 
     it('should not check any dependency', async () => {
