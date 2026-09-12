@@ -36,6 +36,28 @@ describe('QueueProvider', () => {
       expect(connection).toBeDefined();
       expect(channel).toBeDefined();
     });
+
+    it('should reuse the connection manager while it is disconnected', async () => {
+      const { connection } = await queueProvider.getConnection();
+      jest.spyOn(connection, 'isConnected').mockReturnValue(false);
+      const connectSpy = jest.spyOn(queueProvider, 'connect');
+
+      const { connection: reusedConnection } =
+        await queueProvider.getConnection();
+
+      expect(reusedConnection).toBe(connection);
+      expect(connectSpy).not.toHaveBeenCalled();
+    });
+
+    it('should close the previous connection manager when connecting again', async () => {
+      const { connection } = await queueProvider.getConnection();
+      const closeSpy = jest.spyOn(connection, 'close');
+
+      const { connection: newConnection } = await queueProvider.connect();
+
+      expect(closeSpy).toHaveBeenCalled();
+      expect(newConnection).not.toBe(connection);
+    });
   });
   describe('events', () => {
     it('should subscribe to events', async () => {

@@ -48,7 +48,7 @@ Key behaviors worth knowing before changing the dispatch path:
 
 ## Endpoints & admin
 
-- `/health` (Terminus), `/events/sse/{CHECKSUMMED_SAFE_ADDRESS}` (server-sent events, filtered from the RxJS subject; gated by `SSE_AUTH_TOKEN` Basic auth when set), and `/admin` (**AdminJS** panel over the DB models, ESM-only, mounted via `modules/admin/adminjs.ts`).
+- `/health/live` (constant, no dependencies) and `/health/ready` (Terminus: database ping + RabbitMQ connection, `503` when either is down), `/events/sse/{CHECKSUMMED_SAFE_ADDRESS}` (server-sent events, filtered from the RxJS subject; gated by `SSE_AUTH_TOKEN` Basic auth when set), and `/admin` (**AdminJS** panel over the DB models, ESM-only, mounted via `modules/admin/adminjs.ts`).
 - AdminJS sits behind proxy middleware (`middleware/admin-proxy.middleware.ts`, `reverse-proxy.middleware.ts`) that rewrites asset paths so the panel works under `URL_BASE_PATH`. AdminJS assets live under a `.pnpm` dotfile dir, so static serving must allow dotfiles (`dotfiles: 'allow'`) or the assets 404 under pnpm.
 
 ## Conventions

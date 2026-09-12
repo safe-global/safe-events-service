@@ -70,11 +70,10 @@ export class QueueProvider implements OnApplicationShutdown {
   }
 
   async getConnection(): Promise<QueueConnection> {
-    if (
-      !this.connection ||
-      !this.connection.isConnected() ||
-      !this.channelWrapper
-    ) {
+    // `AmqpConnectionManager` retries on its own, so a manager that is currently
+    // disconnected is still reused. Building a new one would orphan the old one,
+    // which keeps retrying forever and is never closed.
+    if (!this.connection || !this.channelWrapper) {
       return this.connect();
     }
 
@@ -85,6 +84,8 @@ export class QueueProvider implements OnApplicationShutdown {
   }
 
   async connect(): Promise<QueueConnection> {
+    // A manager left behind would keep retrying in the background
+    await this.disconnect();
     this.logger.debug(
       'Connecting to RabbitMQ and creating exchange/queue if not created',
     );
