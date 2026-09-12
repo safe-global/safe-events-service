@@ -16,6 +16,7 @@ export class QueueProvider implements OnApplicationShutdown {
   private readonly logger = new Logger(QueueProvider.name);
   private connection: AmqpConnectionManager | undefined;
   private channelWrapper: ChannelWrapper | undefined;
+  private connecting: Promise<QueueConnection> | undefined;
 
   constructor(private readonly configService: ConfigService) {}
 
@@ -84,6 +85,17 @@ export class QueueProvider implements OnApplicationShutdown {
   }
 
   async connect(): Promise<QueueConnection> {
+    // Concurrent callers share a single attempt. Two of them creating a manager
+    // each would leave one orphaned, retrying in the background forever.
+    if (!this.connecting) {
+      this.connecting = this.createConnection().finally(() => {
+        this.connecting = undefined;
+      });
+    }
+    return this.connecting;
+  }
+
+  private async createConnection(): Promise<QueueConnection> {
     // A manager left behind would keep retrying in the background
     await this.disconnect();
     this.logger.debug(

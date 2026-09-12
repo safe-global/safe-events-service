@@ -49,6 +49,18 @@ describe('QueueProvider', () => {
       expect(connectSpy).not.toHaveBeenCalled();
     });
 
+    it('should create a single manager for concurrent first callers', async () => {
+      await queueProvider.disconnect();
+
+      const [first, second] = await Promise.all([
+        queueProvider.getConnection(),
+        queueProvider.getConnection(),
+      ]);
+
+      expect(first.connection).toBe(second.connection);
+      expect(first.channel).toBe(second.channel);
+    });
+
     it('should close the previous connection manager when connecting again', async () => {
       const { connection } = await queueProvider.getConnection();
       const closeSpy = jest.spyOn(connection, 'close');
