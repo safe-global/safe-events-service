@@ -8,9 +8,11 @@ describe('QueueHealthIndicator', () => {
   const queueProvider = { getConnection } as unknown as QueueProvider;
   const queueHealthIndicator = new QueueHealthIndicator(queueProvider);
 
+  let loggerError: jest.SpyInstance;
+
   beforeEach(() => {
     jest.clearAllMocks();
-    jest.spyOn(Logger.prototype, 'error').mockImplementation();
+    loggerError = jest.spyOn(Logger.prototype, 'error').mockImplementation();
   });
 
   it('should be up when the connection is established', async () => {
@@ -40,8 +42,9 @@ describe('QueueHealthIndicator', () => {
     const error = await queueHealthIndicator.isHealthy('queue').catch((e) => e);
 
     expect(error).toBeInstanceOf(HealthCheckError);
-    expect(error.causes).toStrictEqual({
-      queue: { status: 'down', error: message },
-    });
+    expect(error.causes).toStrictEqual({ queue: { status: 'down' } });
+    expect(loggerError).toHaveBeenCalledWith(
+      `Cannot reach the queue provider: ${message}`,
+    );
   });
 });

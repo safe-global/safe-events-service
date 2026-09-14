@@ -16,20 +16,20 @@ export class QueueHealthIndicator extends HealthIndicator {
 
   async isHealthy(key: string): Promise<HealthIndicatorResult> {
     let connected = false;
-    let error: string | undefined;
 
     // Reaching the provider can fail on its own, e.g. a missing `AMQP_URL`.
     // Only a `HealthCheckError` is turned into a `503` by Terminus, any other
-    // rejection would surface as a `500`.
+    // rejection would surface as a `500`. The reason stays in the logs, the
+    // message comes from the libraries and can hold connection details
     try {
       const { connection } = await this.queueProvider.getConnection();
       connected = connection.isConnected();
     } catch (e) {
-      error = e instanceof Error ? e.message : String(e);
+      const error = e instanceof Error ? e.message : String(e);
       this.logger.error(`Cannot reach the queue provider: ${error}`);
     }
 
-    const result = this.getStatus(key, connected, error ? { error } : {});
+    const result = this.getStatus(key, connected);
 
     if (connected) {
       return result;
