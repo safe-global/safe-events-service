@@ -20,7 +20,8 @@ This service should be connected to the [Safe Transaction Service](https://githu
 
 Available endpoints:
 
-- /health/ -> Check health for the service.
+- /health/live -> Liveness probe. Always returns `200` while the process is running, it does not check any dependency.
+- /health/ready -> Readiness probe. Returns `200` when the database and RabbitMQ are reachable, `503` otherwise.
 - /admin/ -> Admin panel to edit database models.
 - /events/sse/{CHECKSUMMED_SAFE_ADDRESS} -> Server side events endpoint. If `SSE_AUTH_TOKEN` is defined then authentication
   will be enabled and header `Authorization: Basic $SSE_AUTH_TOKEN` must be added to the request.
@@ -334,7 +335,7 @@ All configuration is done through environment variables. See `.env.sample` for a
 | `DATABASE_CA_PATH` | No | — | Path to CA certificate file for database SSL |
 | `HTTP_TIMEOUT` | No | `5000` | Webhook HTTP client timeout in milliseconds |
 | `HTTP_MAX_RETRIES` | No | `2` | Max retry attempts for transient network errors and 5xx/429 responses |
-| `DB_HEALTH_CHECK_TIMEOUT` | No | `5000` | Database health check timeout in milliseconds |
+| `DB_HEALTH_CHECK_TIMEOUT` | No | `5000` | Database ping timeout in milliseconds for `/health/ready` |
 | `AMQP_PREFETCH_MESSAGES` | No | `100` | RabbitMQ prefetch message count |
 | `WEBHOOK_AUTO_DISABLE` | No | `false` | Auto-disable webhooks that exceed the failure threshold |
 | `WEBHOOK_FAILURE_THRESHOLD` | No | `90` | Failure rate percentage (0–100) above which a webhook is auto-disabled |

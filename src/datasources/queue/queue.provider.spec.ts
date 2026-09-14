@@ -36,6 +36,60 @@ describe('QueueProvider', () => {
       expect(connection).toBeDefined();
       expect(channel).toBeDefined();
     });
+
+    it('should reuse the connection manager while it is disconnected', async () => {
+      const { connection, channel } = await queueProvider.getConnection();
+      jest.spyOn(connection, 'isConnected').mockReturnValue(false);
+      const closeSpy = jest.spyOn(connection, 'close');
+
+      const { connection: reusedConnection, channel: reusedChannel } =
+        await queueProvider.getConnection();
+
+      expect(reusedConnection).toBe(connection);
+      expect(reusedChannel).toBe(channel);
+      expect(closeSpy).not.toHaveBeenCalled();
+    });
+
+    it('should create a single manager for concurrent first callers', async () => {
+      await queueProvider.disconnect();
+
+      const [first, second] = await Promise.all([
+        queueProvider.getConnection(),
+        queueProvider.getConnection(),
+      ]);
+
+      expect(first.connection).toBe(second.connection);
+      expect(first.channel).toBe(second.channel);
+    });
+
+    it('should drop the connection manager when closing it fails', async () => {
+      const { connection } = await queueProvider.getConnection();
+      const closeSpy = jest
+        .spyOn(connection, 'close')
+        .mockRejectedValueOnce(new Error('Connection closed'));
+
+      await expect(queueProvider.disconnect()).rejects.toThrow(
+        'Connection closed',
+      );
+
+      const { connection: newConnection } = await queueProvider.getConnection();
+      expect(newConnection).not.toBe(connection);
+
+      closeSpy.mockRestore();
+      await connection.close();
+    });
+
+    it('should close a manager created by a concurrent connection attempt', async () => {
+      await queueProvider.disconnect();
+
+      await Promise.all([
+        queueProvider.getConnection(),
+        queueProvider.disconnect(),
+      ]);
+
+      expect(queueProvider['connection']).toBeUndefined();
+      expect(queueProvider['channelWrapper']).toBeUndefined();
+    });
   });
   describe('events', () => {
     it('should subscribe to events', async () => {
