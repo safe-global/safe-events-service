@@ -5,7 +5,6 @@ import {
   HealthCheckError,
   HealthCheckResult,
   HealthCheckStatus,
-  TerminusModule,
   TypeOrmHealthIndicator,
 } from '@nestjs/terminus';
 import { ConfigModule } from '@nestjs/config';
@@ -14,7 +13,7 @@ import * as request from 'supertest';
 import { DatabaseModule } from '../../datasources/db/database.module';
 import { QueueHealthIndicator } from '../../datasources/queue/queue.health';
 import { QueueProvider } from '../../datasources/queue/queue.provider';
-import { Health, HealthStatus } from './health.entities';
+import { HealthStatus } from './health.entities';
 
 describe('HealthController', () => {
   let controller: HealthController;
@@ -37,12 +36,6 @@ describe('HealthController', () => {
     await queueProvider.disconnect();
   });
 
-  it('liveness check should be ok', async () => {
-    const healthResult: Health = await controller.liveness();
-    const expected: Health = new Health(HealthStatus.OK);
-    expect(healthResult).toStrictEqual(expected);
-  });
-
   it('readiness check should be ok', async () => {
     const healthCheckResult: HealthCheckResult = await controller.check();
     const expected: HealthCheckStatus = 'ok';
@@ -59,19 +52,21 @@ describe('Health endpoints', () => {
   const databaseUp = { database: { status: 'up' } };
   const databaseDown = { database: { status: 'down' } };
   const queueUp = { queue: { status: 'up' } };
-  const queueDown = new HealthCheckError('Queue provider not connected', {
-    queue: { status: 'down' },
-  });
+  const queueDown = { queue: { status: 'down' } };
+  const queueDownError = new HealthCheckError(
+    'Queue provider not connected',
+    queueDown,
+  );
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
-      imports: [ConfigModule.forRoot(), TerminusModule],
-      controllers: [HealthController],
-      providers: [
-        { provide: TypeOrmHealthIndicator, useValue: mockDb },
-        { provide: QueueHealthIndicator, useValue: mockQueue },
-      ],
-    }).compile();
+      imports: [ConfigModule.forRoot(), HealthModule],
+    })
+      .overrideProvider(TypeOrmHealthIndicator)
+      .useValue(mockDb)
+      .overrideProvider(QueueHealthIndicator)
+      .useValue(mockQueue)
+      .compile();
 
     app = moduleFixture.createNestApplication();
     await app.init();
@@ -87,31 +82,32 @@ describe('Health endpoints', () => {
     mockQueue.isHealthy.mockResolvedValue(queueUp);
   });
 
-  // Kubernetes probes are configured with a trailing slash, so both forms must
-  // answer. Express is not in strict routing mode, so they map to the same route.
-  describe.each(['/health/live', '/health/live/'])('GET %s', (url) => {
-    it('should return 200', async () => {
-      const response = await request(app.getHttpServer()).get(url).expect(200);
-      expect(response.body).toStrictEqual({ status: HealthStatus.OK });
-    });
+  describe('GET /health/live', () => {
+    it('should return 200 without checking any dependency', async () => {
+      mockDb.pingCheck.mockResolvedValue(databaseDown);
+      mockQueue.isHealthy.mockRejectedValue(queueDownError);
 
-    it('should not check any dependency', async () => {
-      await request(app.getHttpServer()).get(url).expect(200);
+      const response = await request(app.getHttpServer())
+        .get('/health/live')
+        .expect(200);
+
+      expect(response.body).toStrictEqual({ status: HealthStatus.OK });
       expect(mockDb.pingCheck).not.toHaveBeenCalled();
       expect(mockQueue.isHealthy).not.toHaveBeenCalled();
     });
 
-    it('should return 200 when every dependency is down', async () => {
-      mockDb.pingCheck.mockResolvedValue(databaseDown);
-      mockQueue.isHealthy.mockRejectedValue(queueDown);
-
-      await request(app.getHttpServer()).get(url).expect(200);
+    // Kubernetes probes are configured with a trailing slash, so both forms must
+    // answer. Express is not in strict routing mode, so they map to the same route.
+    it('should answer the trailing slash form', async () => {
+      await request(app.getHttpServer()).get('/health/live/').expect(200);
     });
   });
 
-  describe.each(['/health/ready', '/health/ready/'])('GET %s', (url) => {
+  describe('GET /health/ready', () => {
     it('should return 200 when every dependency is up', async () => {
-      const response = await request(app.getHttpServer()).get(url).expect(200);
+      const response = await request(app.getHttpServer())
+        .get('/health/ready')
+        .expect(200);
 
       expect(response.body.status).toBe('ok');
       expect(response.body.details).toStrictEqual({
@@ -127,32 +123,42 @@ describe('Health endpoints', () => {
     it('should return 503 when the database is down', async () => {
       mockDb.pingCheck.mockResolvedValue(databaseDown);
 
-      const response = await request(app.getHttpServer()).get(url).expect(503);
+      const response = await request(app.getHttpServer())
+        .get('/health/ready')
+        .expect(503);
 
       expect(response.body.status).toBe('error');
       expect(response.body.error).toStrictEqual(databaseDown);
     });
 
     it('should return 503 when the queue is down', async () => {
-      mockQueue.isHealthy.mockRejectedValue(queueDown);
+      mockQueue.isHealthy.mockRejectedValue(queueDownError);
 
-      const response = await request(app.getHttpServer()).get(url).expect(503);
+      const response = await request(app.getHttpServer())
+        .get('/health/ready')
+        .expect(503);
 
       expect(response.body.status).toBe('error');
-      expect(response.body.error).toStrictEqual({ queue: { status: 'down' } });
+      expect(response.body.error).toStrictEqual(queueDown);
     });
 
     it('should return 503 when every dependency is down', async () => {
       mockDb.pingCheck.mockResolvedValue(databaseDown);
-      mockQueue.isHealthy.mockRejectedValue(queueDown);
+      mockQueue.isHealthy.mockRejectedValue(queueDownError);
 
-      const response = await request(app.getHttpServer()).get(url).expect(503);
+      const response = await request(app.getHttpServer())
+        .get('/health/ready')
+        .expect(503);
 
       expect(response.body.status).toBe('error');
       expect(response.body.error).toStrictEqual({
         ...databaseDown,
-        queue: { status: 'down' },
+        ...queueDown,
       });
+    });
+
+    it('should answer the trailing slash form', async () => {
+      await request(app.getHttpServer()).get('/health/ready/').expect(200);
     });
   });
 });

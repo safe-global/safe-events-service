@@ -38,15 +38,16 @@ describe('QueueProvider', () => {
     });
 
     it('should reuse the connection manager while it is disconnected', async () => {
-      const { connection } = await queueProvider.getConnection();
+      const { connection, channel } = await queueProvider.getConnection();
       jest.spyOn(connection, 'isConnected').mockReturnValue(false);
-      const connectSpy = jest.spyOn(queueProvider, 'connect');
+      const closeSpy = jest.spyOn(connection, 'close');
 
-      const { connection: reusedConnection } =
+      const { connection: reusedConnection, channel: reusedChannel } =
         await queueProvider.getConnection();
 
       expect(reusedConnection).toBe(connection);
-      expect(connectSpy).not.toHaveBeenCalled();
+      expect(reusedChannel).toBe(channel);
+      expect(closeSpy).not.toHaveBeenCalled();
     });
 
     it('should create a single manager for concurrent first callers', async () => {
@@ -61,14 +62,33 @@ describe('QueueProvider', () => {
       expect(first.channel).toBe(second.channel);
     });
 
-    it('should close the previous connection manager when connecting again', async () => {
+    it('should drop the connection manager when closing it fails', async () => {
       const { connection } = await queueProvider.getConnection();
-      const closeSpy = jest.spyOn(connection, 'close');
+      const closeSpy = jest
+        .spyOn(connection, 'close')
+        .mockRejectedValueOnce(new Error('Connection closed'));
 
-      const { connection: newConnection } = await queueProvider.connect();
+      await expect(queueProvider.disconnect()).rejects.toThrow(
+        'Connection closed',
+      );
 
-      expect(closeSpy).toHaveBeenCalled();
+      const { connection: newConnection } = await queueProvider.getConnection();
       expect(newConnection).not.toBe(connection);
+
+      closeSpy.mockRestore();
+      await connection.close();
+    });
+
+    it('should close a manager created by a concurrent connection attempt', async () => {
+      await queueProvider.disconnect();
+
+      await Promise.all([
+        queueProvider.getConnection(),
+        queueProvider.disconnect(),
+      ]);
+
+      expect(queueProvider['connection']).toBeUndefined();
+      expect(queueProvider['channelWrapper']).toBeUndefined();
     });
   });
   describe('events', () => {

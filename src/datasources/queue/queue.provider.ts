@@ -14,6 +14,9 @@ export type QueueConnection = {
 @Injectable()
 export class QueueProvider implements OnApplicationShutdown {
   private readonly logger = new Logger(QueueProvider.name);
+  // `AmqpConnectionManager` retries on its own and is never closed by itself, so
+  // there must be at most one live manager: any path that builds a new one closes
+  // the previous one first, and concurrent callers share a single attempt.
   private connection: AmqpConnectionManager | undefined;
   private channelWrapper: ChannelWrapper | undefined;
   private connecting: Promise<QueueConnection> | undefined;
@@ -71,9 +74,7 @@ export class QueueProvider implements OnApplicationShutdown {
   }
 
   async getConnection(): Promise<QueueConnection> {
-    // `AmqpConnectionManager` retries on its own, so a manager that is currently
-    // disconnected is still reused. Building a new one would orphan the old one,
-    // which keeps retrying forever and is never closed.
+    // A disconnected manager is still reused, it reconnects on its own
     if (!this.connection || !this.channelWrapper) {
       return this.connect();
     }
@@ -84,20 +85,16 @@ export class QueueProvider implements OnApplicationShutdown {
     };
   }
 
-  async connect(): Promise<QueueConnection> {
-    // Concurrent callers share a single attempt. Two of them creating a manager
-    // each would leave one orphaned, retrying in the background forever.
-    if (!this.connecting) {
-      this.connecting = this.createConnection().finally(() => {
-        this.connecting = undefined;
-      });
-    }
+  private async connect(): Promise<QueueConnection> {
+    this.connecting ??= this.createConnection().finally(() => {
+      this.connecting = undefined;
+    });
     return this.connecting;
   }
 
   private async createConnection(): Promise<QueueConnection> {
-    // A manager left behind would keep retrying in the background
-    await this.disconnect();
+    // A previous attempt can leave a manager without its channel wrapper
+    await this.closeConnection();
     this.logger.debug(
       'Connecting to RabbitMQ and creating exchange/queue if not created',
     );
@@ -130,6 +127,13 @@ export class QueueProvider implements OnApplicationShutdown {
         );
       },
     });
+
+    // `ChannelWrapper` is an `EventEmitter`, an `error` without a listener takes
+    // the process down. The wrapper reconnects on its own, so logging is enough
+    this.channelWrapper.on('error', (error, { name }) => {
+      this.logger.error(`Error on channel ${name}: ${error.message}`);
+    });
+
     return {
       connection: this.connection,
       channel: this.channelWrapper,
@@ -137,11 +141,25 @@ export class QueueProvider implements OnApplicationShutdown {
   }
 
   async disconnect(): Promise<void> {
-    if (this.channelWrapper) await this.channelWrapper.close();
-    if (this.connection) await this.connection.close();
+    // An attempt in flight installs its manager after this call, so wait for it.
+    // Its rejection belongs to the caller that started it.
+    await this.connecting?.catch(() => undefined);
+    return this.closeConnection();
+  }
 
-    this.channelWrapper = undefined;
-    this.connection = undefined;
+  /**
+   * Closes the current manager and its channel wrapper, keeping the fields empty
+   * even when closing fails. A manager that is still referenced after a failed
+   * close is already closed and never reconnects.
+   */
+  private async closeConnection(): Promise<void> {
+    try {
+      if (this.channelWrapper) await this.channelWrapper.close();
+      if (this.connection) await this.connection.close();
+    } finally {
+      this.channelWrapper = undefined;
+      this.connection = undefined;
+    }
   }
 
   /**

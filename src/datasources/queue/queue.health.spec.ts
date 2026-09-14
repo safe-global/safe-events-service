@@ -34,22 +34,14 @@ describe('QueueHealthIndicator', () => {
   });
 
   it('should throw a HealthCheckError when the provider cannot be reached', async () => {
-    getConnection.mockRejectedValue(
-      new Error('Configuration key "AMQP_URL" does not exist'),
-    );
+    const message = 'Configuration key "AMQP_URL" does not exist';
+    getConnection.mockRejectedValue(new Error(message));
 
-    await expect(queueHealthIndicator.isHealthy('queue')).rejects.toThrow(
-      HealthCheckError,
-    );
-    await expect(queueHealthIndicator.isHealthy('queue')).rejects.toMatchObject(
-      {
-        causes: {
-          queue: {
-            status: 'down',
-            error: 'Configuration key "AMQP_URL" does not exist',
-          },
-        },
-      },
-    );
+    const error = await queueHealthIndicator.isHealthy('queue').catch((e) => e);
+
+    expect(error).toBeInstanceOf(HealthCheckError);
+    expect(error.causes).toStrictEqual({
+      queue: { status: 'down', error: message },
+    });
   });
 });
