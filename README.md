@@ -1,6 +1,6 @@
 [![CI](https://github.com/safe-global/safe-events-service/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/safe-global/safe-events-service/actions/workflows/ci.yml)
 [![Coverage Status](https://coveralls.io/repos/github/safe-global/safe-events-service/badge.svg?branch=main)](https://coveralls.io/github/safe-global/safe-events-service?branch=main)
-[![Docker Image Version (latest by date)](https://img.shields.io/docker/v/safeglobal/safe-events-service?sort=date)](https://hub.docker.com/r/safeglobal/safe-events-service)
+[![Container image](https://img.shields.io/badge/ghcr.io-safe--global%2Fsafe--events--service-0b5d52?logo=github&logoColor=white)](https://github.com/safe-global/safe-events-service/pkgs/container/safe-events-service)
 ![Node required Version](https://img.shields.io/badge/node.js-v24-green)
 
 # User documentation
