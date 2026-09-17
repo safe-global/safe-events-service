@@ -335,6 +335,11 @@ All configuration is done through environment variables. See `.env.sample` for a
 | `DATABASE_CA_PATH` | No | — | Path to CA certificate file for database SSL |
 | `HTTP_TIMEOUT` | No | `5000` | Webhook HTTP client timeout in milliseconds |
 | `HTTP_MAX_RETRIES` | No | `2` | Max retry attempts for transient network errors and 5xx/429 responses |
+| `HTTP_KEEP_ALIVE_TIMEOUT` | No | `60000` | How long an idle connection to a webhook host is kept open, in milliseconds. A host answering with `Keep-Alive: timeout=N` lowers it |
+| `HTTP_CONNECTIONS_PER_HOST` | No | unlimited | Max simultaneous connections per webhook host. Unset means one connection per concurrent request, already bounded by `AMQP_PREFETCH_MESSAGES`. Requests over an explicit limit queue instead of opening another connection |
+| `HTTP_CLIENT_TTL` | No | `600000` | Max lifetime of a connection before it is retired, in milliseconds. Bounds how long a host stays pinned to one IP |
+| `HTTP_DNS_CACHE_TTL` | No | `60000` | How long a resolved webhook host is cached, in milliseconds |
+| `HTTP_DNS_CACHE_MAX_ITEMS` | No | unlimited | Max hosts kept in the DNS cache. Once full, new hosts are resolved on every connection and never cached |
 | `DB_HEALTH_CHECK_TIMEOUT` | No | `5000` | Database ping timeout in milliseconds for `/health/ready` |
 | `AMQP_PREFETCH_MESSAGES` | No | `100` | RabbitMQ prefetch message count |
 | `WEBHOOK_AUTO_DISABLE` | No | `false` | Auto-disable webhooks that exceed the failure threshold |
