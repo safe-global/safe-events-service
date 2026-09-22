@@ -40,5 +40,5 @@ lerna-debug.log*
 .env
 
 # Claude Code
-.claude/worktrees/
-.claude/settings.local.json
+/.claude/worktrees/
+/.claude/settings.local.json
