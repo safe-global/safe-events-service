@@ -2,13 +2,12 @@ name: Production
 
 # Builds and publishes release images. There is no deploy job yet: production
 # is still deployed from legacy-safe-argocd-mgmt by a manual digest bump.
+# No workflow_dispatch: a manual trigger lets CodeQL treat the ref as untrusted.
+# Re-run a failed run instead.
 on:
   release:
     # `released` skips pre-releases, as the old pipeline did.
     types: [released]
-  # Run it on a tag, e.g. `gh workflow run production.yml --ref v1.6.0`. Taking the
-  # tag as text instead would check out a ref from outside the default branch.
-  workflow_dispatch:
 
 permissions:
   contents: read
@@ -29,7 +28,7 @@ jobs:
         run: |
           set -euo pipefail
           if [ "$GITHUB_REF_TYPE" != "tag" ]; then
-            echo "::error::Run this on a release tag, not ${GITHUB_REF_TYPE} ${GITHUB_REF_NAME}."
+            echo "::error::Expected a release tag, got ${GITHUB_REF_TYPE} ${GITHUB_REF_NAME}."
             exit 1
           fi
           TAG="$GITHUB_REF_NAME"
@@ -39,7 +38,7 @@ jobs:
           fi
           echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
 
-  # A dispatch can target any tag, so test what is actually shipping.
+  # Test the tagged commit itself, not the last main build.
   ci:
     needs: prepare
     uses: ./.github/workflows/_ci-node.yml
