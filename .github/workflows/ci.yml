@@ -169,6 +169,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       main_tag: ${{ steps.main.outputs.tag }}
+      main_digest: ${{ steps.push-main.outputs.digest }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: docker/setup-qemu-action@1f40c72289eff860ee54a304f1438e3cff362e0a # v4.3.0
@@ -186,6 +187,7 @@ jobs:
         if: github.ref == 'refs/heads/main'
         run: echo "tag=main-${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
       - name: Push main
+        id: push-main
         if: github.ref == 'refs/heads/main'
         uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7.3.0
         with:
@@ -228,20 +230,19 @@ jobs:
         env:
           GH_TOKEN: ${{ steps.app.outputs.token }}
           TAG: ${{ needs.docker-publish.outputs.main_tag }}
+          IMAGE: ${{ needs.docker-publish.outputs.main_tag }}@${{ needs.docker-publish.outputs.main_digest }}
           REPO: safe-global/safe-events-service-infra-tf
           FILE: apps/safe-events-service/values-staging.yaml
         run: |
           set -euo pipefail
-          blob=$(gh api "repos/${REPO}/contents/${FILE}" -q .sha)
-          gh api -H "Accept: application/vnd.github.raw" "repos/${REPO}/contents/${FILE}" > values.yaml
-          # yq exits 0 on an empty or non-YAML body, so prove it is the real file first.
+          gh api "repos/${REPO}/contents/${FILE}" > file.json
+          jq -r .content file.json | base64 -d > values.yaml
+          # yq exits 0 on an empty file and would write back a file with only the tag.
           yq -e '.fullnameOverride == "safe-events-service"' values.yaml > /dev/null
-          yq -i '.image.tag = strenv(TAG)' values.yaml
-          yq -e '.image.tag == strenv(TAG)' values.yaml > /dev/null
+          yq '.image.tag = strenv(IMAGE)' values.yaml | base64 -w0 > content.b64
           gh api -X PUT "repos/${REPO}/contents/${FILE}" \
             -f message="chore: Deploy safe-events-service ${TAG} to devstaging" \
-            -f content="$(base64 -w0 values.yaml)" \
-            -f sha="${blob}" \
+            -F content=@content.b64 \
+            -f sha="$(jq -r .sha file.json)" \
             -f branch=main \
             --silent
-          rm -f values.yaml
