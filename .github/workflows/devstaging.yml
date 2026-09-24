@@ -20,7 +20,7 @@ concurrency:
 
 jobs:
   ci:
-    uses: safe-global/github-reusable-workflows/.github/workflows/_ci-node.yml@fd3a0dfa5c655241ec335fdd2af954ab42e044c0 # unreleased, github-reusable-workflows#70
+    uses: ./.github/workflows/_ci-node.yml
     with:
       package_manager: pnpm
       check_scripts: "format:check typecheck lint:check"
@@ -45,7 +45,7 @@ jobs:
 
   build:
     needs: [ci, db-migrations, prepare]
-    uses: safe-global/github-reusable-workflows/.github/workflows/_build-image.yml@fd3a0dfa5c655241ec335fdd2af954ab42e044c0 # unreleased, github-reusable-workflows#70
+    uses: ./.github/workflows/_build-image.yml
     with:
       image_name: ghcr.io/safe-global/safe-events-service
       image_tag: ${{ needs.prepare.outputs.tag }}
@@ -55,7 +55,7 @@ jobs:
 
   deploy-devstaging:
     needs: [prepare, build]
-    uses: safe-global/github-reusable-workflows/.github/workflows/_deploy.yml@fd3a0dfa5c655241ec335fdd2af954ab42e044c0 # unreleased, github-reusable-workflows#70
+    uses: ./.github/workflows/_deploy.yml
     with:
       environment: devstaging
       image_tag: ${{ needs.prepare.outputs.tag }}
