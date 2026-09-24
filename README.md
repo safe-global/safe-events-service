@@ -1,4 +1,4 @@
-[![Devstaging](https://github.com/safe-global/safe-events-service/actions/workflows/devstaging.yml/badge.svg?branch=main)](https://github.com/safe-global/safe-events-service/actions/workflows/devstaging.yml)
+[![CI](https://github.com/safe-global/safe-events-service/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/safe-global/safe-events-service/actions/workflows/ci.yml)
 [![Coverage Status](https://coveralls.io/repos/github/safe-global/safe-events-service/badge.svg?branch=main)](https://coveralls.io/github/safe-global/safe-events-service?branch=main)
 [![Container image](https://img.shields.io/badge/ghcr.io-safe--global%2Fsafe--events--service-0b5d52?logo=github&logoColor=white)](https://github.com/safe-global/safe-events-service/pkgs/container/safe-events-service)
 ![Node required Version](https://img.shields.io/badge/node.js-v24-green)
@@ -257,10 +257,9 @@ We don't send notifications when a reorg happens. We send the events as soon as 
 
 ## Container images
 
-Images are published to `ghcr.io/safe-global/safe-events-service`: `main-<sha>`
-for every commit on `main`, and `vX.Y.Z` for every release. Releases are also
-copied to Docker Hub as `safeglobal/safe-events-service:vX.Y.Z`. The `latest` and
-`staging` tags are no longer updated, so pin a version.
+Every commit on `main` publishes `ghcr.io/safe-global/safe-events-service:main-<short-sha>`.
+Releases publish `vX.Y.Z` and `latest` there too. Docker Hub
+(`safeglobal/safe-events-service`) and the `staging` tag are no longer updated.
 
 ## Installation
 
