@@ -1,0 +1,72 @@
+# Renaming this silently breaks release-please's workflow_run match.
+name: Devstaging
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - "**.md"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+  id-token: write
+
+# The deploy opens and merges a pull request; do not tear it down midway.
+concurrency:
+  group: devstaging
+  cancel-in-progress: false
+
+jobs:
+  ci:
+    uses: safe-global/github-reusable-workflows/.github/workflows/_ci-node.yml@fd3a0dfa5c655241ec335fdd2af954ab42e044c0 # unreleased, github-reusable-workflows#70
+    with:
+      package_manager: pnpm
+      check_scripts: "format:check typecheck lint:check"
+      test_scripts: "test:cov test:e2e:cov"
+      postgres_image: "postgres:16"
+      postgres_db: test
+      rabbitmq_image: "rabbitmq:alpine"
+      env_file: .env.sample
+      coverage: coveralls
+
+  db-migrations:
+    uses: ./.github/workflows/_db-migrations.yml
+
+  prepare:
+    runs-on: ubuntu-latest
+    permissions: {}
+    outputs:
+      tag: ${{ steps.tag.outputs.tag }}
+    steps:
+      - id: tag
+        run: echo "tag=main-${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
+
+  build:
+    needs: [ci, db-migrations, prepare]
+    uses: safe-global/github-reusable-workflows/.github/workflows/_build-image.yml@fd3a0dfa5c655241ec335fdd2af954ab42e044c0 # unreleased, github-reusable-workflows#70
+    with:
+      image_name: ghcr.io/safe-global/safe-events-service
+      image_tag: ${{ needs.prepare.outputs.tag }}
+      version: ${{ needs.prepare.outputs.tag }}
+      # The pods run on arm64 nodes.
+      platforms: linux/amd64,linux/arm64
+
+  deploy-devstaging:
+    needs: [prepare, build]
+    uses: safe-global/github-reusable-workflows/.github/workflows/_deploy.yml@fd3a0dfa5c655241ec335fdd2af954ab42e044c0 # unreleased, github-reusable-workflows#70
+    with:
+      environment: devstaging
+      image_tag: ${{ needs.prepare.outputs.tag }}
+      infra_repo: safe-global/safe-events-service-infra-tf
+      values_file: apps/safe-events-service/values-staging.yaml
+      image_tag_path: .image.tag
+      deploy_via_pr: true
+      health_gate: false
+      auto_rollback: false
+    secrets:
+      app_id: ${{ secrets.CI_APP_ID }}
+      app_private_key: ${{ secrets.CI_APP_PRIVATE_KEY }}
+      gpg_private_key: ${{ secrets.GPG_PRIVATE_KEY }}
+      gpg_passphrase: ${{ secrets.GPG_PASSPHRASE }}

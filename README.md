@@ -1,4 +1,4 @@
-[![CI](https://github.com/safe-global/safe-events-service/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/safe-global/safe-events-service/actions/workflows/ci.yml)
+[![Devstaging](https://github.com/safe-global/safe-events-service/actions/workflows/devstaging.yml/badge.svg?branch=main)](https://github.com/safe-global/safe-events-service/actions/workflows/devstaging.yml)
 [![Coverage Status](https://coveralls.io/repos/github/safe-global/safe-events-service/badge.svg?branch=main)](https://coveralls.io/github/safe-global/safe-events-service?branch=main)
 [![Container image](https://img.shields.io/badge/ghcr.io-safe--global%2Fsafe--events--service-0b5d52?logo=github&logoColor=white)](https://github.com/safe-global/safe-events-service/pkgs/container/safe-events-service)
 ![Node required Version](https://img.shields.io/badge/node.js-v24-green)
@@ -254,6 +254,13 @@ Every webhook request includes a `X-Delivery-Id` header containing a UUID that i
 We don't send notifications when a reorg happens. We send the events as soon as we detect them, no waiting for confirmations. So you should always come to the API and make sure the data is what you expect. This events feature is something built for notifying so we prevent people http polling our API, but it shouldn't be taking the events as a source of trust, only as a signal to come back to the API (that's why we don't send a lot of informations in the events).
 
 # Developer documentation
+
+## Container images
+
+Images are published to `ghcr.io/safe-global/safe-events-service`: `main-<sha>`
+for every commit on `main`, and `vX.Y.Z` for every release. Releases are also
+copied to Docker Hub as `safeglobal/safe-events-service:vX.Y.Z`. The `latest` and
+`staging` tags are no longer updated, so pin a version.
 
 ## Installation
 

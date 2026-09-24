@@ -1,0 +1,105 @@
+name: Production
+
+# Builds and publishes release images. There is no deploy job yet: production
+# is still deployed from legacy-safe-argocd-mgmt by a manual digest bump.
+on:
+  release:
+    # `released` skips pre-releases, as the old pipeline did.
+    types: [released]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Git tag to build and publish (e.g. v1.6.0).
+        type: string
+        required: true
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  group: production
+  cancel-in-progress: false
+
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    permissions: {}
+    outputs:
+      tag: ${{ steps.tag.outputs.tag }}
+    steps:
+      - id: tag
+        env:
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+          DISPATCH_TAG: ${{ inputs.tag }}
+        run: |
+          set -euo pipefail
+          TAG="${RELEASE_TAG:-$DISPATCH_TAG}"
+          if [ -z "$TAG" ]; then
+            echo "::error::No tag resolved from the release event or the dispatch input."
+            exit 1
+          fi
+          if ! [[ "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+ ]]; then
+            echo "::error::Tag ${TAG} does not look like vX.Y.Z."
+            exit 1
+          fi
+          echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
+
+  # A dispatch accepts any tag, so verify what is actually shipping.
+  ci:
+    needs: prepare
+    uses: safe-global/github-reusable-workflows/.github/workflows/_ci-node.yml@fd3a0dfa5c655241ec335fdd2af954ab42e044c0 # unreleased, github-reusable-workflows#70
+    with:
+      ref: ${{ needs.prepare.outputs.tag }}
+      package_manager: pnpm
+      check_scripts: "format:check typecheck lint:check"
+      test_scripts: "test:cov test:e2e:cov"
+      postgres_image: "postgres:16"
+      postgres_db: test
+      rabbitmq_image: "rabbitmq:alpine"
+      env_file: .env.sample
+
+  db-migrations:
+    needs: prepare
+    uses: ./.github/workflows/_db-migrations.yml
+    with:
+      ref: ${{ needs.prepare.outputs.tag }}
+
+  build:
+    needs: [ci, db-migrations, prepare]
+    uses: safe-global/github-reusable-workflows/.github/workflows/_build-image.yml@fd3a0dfa5c655241ec335fdd2af954ab42e044c0 # unreleased, github-reusable-workflows#70
+    with:
+      image_name: ghcr.io/safe-global/safe-events-service
+      image_tag: ${{ needs.prepare.outputs.tag }}
+      ref: ${{ needs.prepare.outputs.tag }}
+      version: ${{ needs.prepare.outputs.tag }}
+      platforms: linux/amd64,linux/arm64
+
+  # Release versions only; the moving `latest` and `staging` tags are retired.
+  dockerhub:
+    needs: [prepare, build]
+    runs-on: ubuntu-latest
+    permissions:
+      packages: read
+    steps:
+      - uses: docker/setup-buildx-action@37fe631027851001ddb9b187196cc803df7f5f0e # v4.3.0
+      - name: Log in to GHCR
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Log in to Docker Hub
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+        with:
+          username: ${{ secrets.DOCKER_USER }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+      - name: Copy the release image to Docker Hub
+        env:
+          DIGEST: ${{ needs.build.outputs.digest }}
+          TAG: ${{ needs.prepare.outputs.tag }}
+        run: |
+          set -euo pipefail
+          docker buildx imagetools create \
+            --tag "docker.io/safeglobal/safe-events-service:${TAG}" \
+            "ghcr.io/safe-global/safe-events-service@${DIGEST}"
