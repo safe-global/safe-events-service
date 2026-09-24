@@ -255,6 +255,12 @@ We don't send notifications when a reorg happens. We send the events as soon as 
 
 # Developer documentation
 
+## Container images
+
+Every commit on `main` publishes `ghcr.io/safe-global/safe-events-service:main-<short-sha>`.
+Releases publish `vX.Y.Z` and `latest` there too. Docker Hub
+(`safeglobal/safe-events-service`) and the `staging` tag are no longer updated.
+
 ## Installation
 
 Node 24 LTS is required.

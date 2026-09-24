@@ -2,7 +2,7 @@
 
 source ./scripts/db_config.sh
 
-set -ux
+set -eux
 
 npx typeorm-ts-node-commonjs migration:show -d $ORMCONFIG
 echo "Run previous migrations"
