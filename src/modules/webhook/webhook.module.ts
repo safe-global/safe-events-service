@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, Logger } from '@nestjs/common';
 import { CacheModule } from '@nestjs/cache-manager';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Webhook } from './repositories/webhook.entity';
@@ -25,6 +25,34 @@ const WEBHOOK_RETRYABLE_ERROR_CODES = [
   'UND_ERR_BODY_TIMEOUT',
   'UND_ERR_SOCKET',
 ];
+
+const logger = new Logger('WebhookAgent');
+
+/**
+ * Every numeric option must reach undici as a real number. undici reads NaN as
+ * unset and silently applies its own default, and a NaN retry limit is never
+ * reached, so the request retries forever. A value that does not parse, or one
+ * below `min`, falls back to `fallback` and is logged.
+ */
+function parseNumberConfig(
+  key: string,
+  value: string | undefined,
+  fallback: number,
+  min: number,
+): number {
+  if (value == null || value === '') {
+    return fallback;
+  }
+  const parsed = Number(value);
+  if (Number.isFinite(parsed) && parsed >= min) {
+    return parsed;
+  }
+  logger.warn({
+    message: 'Invalid numeric config, falling back to default',
+    messageContext: { key, value, fallback, min },
+  });
+  return fallback;
+}
 
 /**
  * The DNS cache never evicts on a timer: an entry is only refreshed when its
@@ -55,16 +83,42 @@ function parseConnectionsPerHost(value: string | undefined): number | null {
 }
 
 function createWebhookAgent(configService: ConfigService): Dispatcher {
-  const timeout = Number(configService.get('HTTP_TIMEOUT', 5_000));
-  const maxRetries = Number(configService.get('HTTP_MAX_RETRIES', 2));
-  const keepAliveTimeout = Number(
-    configService.get('HTTP_KEEP_ALIVE_TIMEOUT', 60_000),
+  const timeout = parseNumberConfig(
+    'HTTP_TIMEOUT',
+    configService.get('HTTP_TIMEOUT'),
+    5_000,
+    1,
+  );
+  // 0 disables retries.
+  const maxRetries = parseNumberConfig(
+    'HTTP_MAX_RETRIES',
+    configService.get('HTTP_MAX_RETRIES'),
+    2,
+    0,
+  );
+  const keepAliveTimeout = parseNumberConfig(
+    'HTTP_KEEP_ALIVE_TIMEOUT',
+    configService.get('HTTP_KEEP_ALIVE_TIMEOUT'),
+    60_000,
+    1,
   );
   const connectionsPerHost = parseConnectionsPerHost(
     configService.get('HTTP_CONNECTIONS_PER_HOST'),
   );
-  const clientTtl = Number(configService.get('HTTP_CLIENT_TTL', 600_000));
-  const dnsCacheTtl = Number(configService.get('HTTP_DNS_CACHE_TTL', 60_000));
+  // 0 keeps connections until they go idle.
+  const clientTtl = parseNumberConfig(
+    'HTTP_CLIENT_TTL',
+    configService.get('HTTP_CLIENT_TTL'),
+    600_000,
+    0,
+  );
+  // 0 resolves on every connect.
+  const dnsCacheTtl = parseNumberConfig(
+    'HTTP_DNS_CACHE_TTL',
+    configService.get('HTTP_DNS_CACHE_TTL'),
+    60_000,
+    0,
+  );
   const dnsCacheMaxItems = parseDnsCacheMaxItems(
     configService.get('HTTP_DNS_CACHE_MAX_ITEMS'),
   );
