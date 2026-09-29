@@ -1,0 +1,86 @@
+name: Production
+on:
+  # `released`, not `published`: promoting a pre-release fires only `released`,
+  # so under `published` that release would never deploy.
+  release:
+    types: [released]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Release tag to build and deploy again, e.g. v1.6.0
+        type: string
+        required: true
+
+permissions: {}
+
+concurrency:
+  group: production
+  cancel-in-progress: false
+
+jobs:
+  build:
+    if: github.event_name == 'workflow_dispatch' || !github.event.release.prerelease
+    permissions:
+      contents: read
+      packages: write
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.tag.outputs.tag }}
+      digest: ${{ steps.push.outputs.digest }}
+    steps:
+      - name: Check the tag
+        id: tag
+        env:
+          TAG: ${{ github.event.release.tag_name || inputs.tag }}
+        run: |
+          set -euo pipefail
+          [[ "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "::error::'${TAG}' is not a vX.Y.Z tag"; exit 1; }
+          echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ steps.tag.outputs.tag }}
+          fetch-depth: 0
+      - name: Check the tag is on main
+        env:
+          TAG: ${{ steps.tag.outputs.tag }}
+        run: |
+          set -euo pipefail
+          git merge-base --is-ancestor "refs/tags/${TAG}" origin/main \
+            || { echo "::error::${TAG} is not on main"; exit 1; }
+      - uses: docker/setup-qemu-action@1f40c72289eff860ee54a304f1438e3cff362e0a # v4.3.0
+        with:
+          platforms: arm64
+      - uses: docker/setup-buildx-action@37fe631027851001ddb9b187196cc803df7f5f0e # v4.3.0
+      - name: GHCR login
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Push release
+        id: push
+        uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7.3.0
+        with:
+          # The checked-out tag. Without this the action builds the event's commit,
+          # which on a dispatch is main, not the tag being redeployed.
+          context: .
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: |
+            ghcr.io/safe-global/safe-events-service:${{ steps.tag.outputs.tag }}
+            ghcr.io/safe-global/safe-events-service:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  deploy:
+    needs: [build]
+    permissions: {}
+    uses: ./.github/workflows/_deploy.yml
+    with:
+      environment: production
+      image: ${{ needs.build.outputs.tag }}@${{ needs.build.outputs.digest }}
+      values_file: apps/safe-events-service/values-production.yaml
+      base_url: https://api.safe.global/internal/events
+    secrets:
+      app_id: ${{ secrets.CI_APP_ID }}
+      app_private_key: ${{ secrets.CI_APP_PRIVATE_KEY }}

@@ -1,0 +1,48 @@
+name: Release Please
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+
+permissions: {}
+
+jobs:
+  release:
+    # Runs only after CI, devstaging deploy included, passed on a push to main.
+    # The Release PR is never merged automatically: merging it releases to production.
+    if: github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push'
+    permissions: {}
+    runs-on: ubuntu-latest
+    steps:
+      # An App token, not GITHUB_TOKEN: a release created with GITHUB_TOKEN fires no
+      # `release` event, so production.yml would never run.
+      - uses: actions/create-github-app-token@fee1f7d63c2ff003460e3d139729b119787bc349 # v2.2.2
+        id: app
+        with:
+          app-id: ${{ secrets.CI_APP_ID }}
+          private-key: ${{ secrets.CI_APP_PRIVATE_KEY }}
+          owner: safe-global
+          repositories: safe-events-service
+          permission-contents: write
+          permission-pull-requests: write
+          permission-issues: write
+      - uses: googleapis/release-please-action@45996ed1f6d02564a971a2fa1b5860e934307cf7 # v5.0.0
+        with:
+          release-type: node
+          token: ${{ steps.app.outputs.token }}
+      # Merged PRs are locked, so release-please cannot comment on the Release PR and
+      # leaves it labelled pending; the next run then fails re-creating the release.
+      - name: Mark released Release PRs as tagged
+        if: ${{ !cancelled() && steps.app.outcome == 'success' }}
+        env:
+          GH_TOKEN: ${{ steps.app.outputs.token }}
+        run: |
+          set -euo pipefail
+          gh pr list --repo "$GITHUB_REPOSITORY" --state merged --label "autorelease: pending" \
+            --json number,title --jq '.[] | "\(.number)\t\(.title)"' | while IFS=$'\t' read -r pr title; do
+            version="${title##*release }"
+            if gh release view "v${version}" --repo "$GITHUB_REPOSITORY" > /dev/null 2>&1; then
+              gh pr edit "$pr" --repo "$GITHUB_REPOSITORY" --remove-label "autorelease: pending" --add-label "autorelease: tagged"
+            fi
+          done
