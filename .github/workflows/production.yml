@@ -18,15 +18,13 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  build:
+  prepare:
     if: github.event_name == 'workflow_dispatch' || !github.event.release.prerelease
     permissions:
       contents: read
-      packages: write
     runs-on: ubuntu-latest
     outputs:
       tag: ${{ steps.tag.outputs.tag }}
-      digest: ${{ steps.push.outputs.digest }}
     steps:
       - name: Check the tag
         id: tag
@@ -47,6 +45,31 @@ jobs:
           set -euo pipefail
           git merge-base --is-ancestor "refs/tags/${TAG}" origin/main \
             || { echo "::error::${TAG} is not on main"; exit 1; }
+
+  ci:
+    needs: [prepare]
+    # ci.yml's image job asks for packages: write. It is skipped here, but a
+    # caller must still grant every permission a called job asks for.
+    permissions:
+      contents: read
+      packages: write
+    uses: ./.github/workflows/ci.yml
+    with:
+      ref: ${{ needs.prepare.outputs.tag }}
+    secrets: inherit
+
+  build:
+    needs: [prepare, ci]
+    permissions:
+      contents: read
+      packages: write
+    runs-on: ubuntu-latest
+    outputs:
+      digest: ${{ steps.push.outputs.digest }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.prepare.outputs.tag }}
       - uses: docker/setup-qemu-action@1f40c72289eff860ee54a304f1438e3cff362e0a # v4.3.0
         with:
           platforms: arm64
@@ -67,18 +90,18 @@ jobs:
           platforms: linux/amd64,linux/arm64
           push: true
           tags: |
-            ghcr.io/safe-global/safe-events-service:${{ steps.tag.outputs.tag }}
+            ghcr.io/safe-global/safe-events-service:${{ needs.prepare.outputs.tag }}
             ghcr.io/safe-global/safe-events-service:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
   deploy:
-    needs: [build]
+    needs: [prepare, build]
     permissions: {}
     uses: ./.github/workflows/_deploy.yml
     with:
       environment: production
-      image: ${{ needs.build.outputs.tag }}@${{ needs.build.outputs.digest }}
+      image: ${{ needs.prepare.outputs.tag }}@${{ needs.build.outputs.digest }}
       values_file: apps/safe-events-service/values-production.yaml
       base_url: https://api.safe.global/internal/events
     secrets:
