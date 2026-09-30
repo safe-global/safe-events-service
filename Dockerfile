@@ -37,5 +37,10 @@ COPY --chown=node:node --from=base /app/dist ./dist
 COPY --chown=node:node --from=base /app/scripts ./scripts
 COPY --chown=node:node --from=base /app/package.json ./
 
+# Declared after the build steps so a new commit does not invalidate the
+# cached layers above
+ARG BUILD_COMMIT
+ENV BUILD_COMMIT=${BUILD_COMMIT}
+
 # Start the application
 CMD [ "/bin/bash", "./scripts/docker_run.sh" ]

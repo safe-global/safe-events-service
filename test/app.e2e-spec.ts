@@ -35,7 +35,11 @@ describe('AppController (e2e)', () => {
   });
 
   it('/about (GET)', () => {
-    const expected = { name: 'Safe Events Service', version: version };
+    const expected = {
+      name: 'Safe Events Service',
+      version: version,
+      buildCommit: null,
+    };
     return request(app.getHttpServer())
       .get('/about')
       .expect(200)

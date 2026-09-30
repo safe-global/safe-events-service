@@ -5,4 +5,10 @@ export class About {
   name: string;
   @ApiProperty()
   version: string;
+  @ApiProperty({
+    type: String,
+    nullable: true,
+    description: 'Commit the image was built from',
+  })
+  buildCommit: string | null;
 }
