@@ -46,6 +46,8 @@ jobs:
           git merge-base --is-ancestor "refs/tags/${TAG}" origin/main \
             || { echo "::error::${TAG} is not on main"; exit 1; }
 
+  # Tests the release commit. A manual run tests main instead: passing the tag as a
+  # checkout ref is flagged by CodeQL as cache poisoning, and the tag passed this at release.
   ci:
     needs: [prepare]
     # ci.yml's image job asks for packages: write. It is skipped here, but a
@@ -54,8 +56,6 @@ jobs:
       contents: read
       packages: write
     uses: ./.github/workflows/ci.yml
-    with:
-      ref: ${{ needs.prepare.outputs.tag }}
     secrets: inherit
 
   build:
