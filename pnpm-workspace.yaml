@@ -10,3 +10,9 @@ onlyBuiltDependencies: []
 # Prevent packages from sub-dependencies using exotic specifiers
 # (git://, file://, link://) without explicit approval.
 blockExoticSubdeps: true
+# AdminJS pins @tiptap/core and @tiptap/pm to 2.1.13, but its @tiptap/*
+# extensions float to newer 2.x releases that import symbols missing in
+# 2.1.13. One 2.x version for all of them keeps the admin panel loading.
+overrides:
+  '@tiptap/core': ^2.27.3
+  '@tiptap/pm': ^2.27.3
