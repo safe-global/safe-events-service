@@ -334,6 +334,7 @@ All configuration is done through environment variables. See `.env.sample` for a
 | `ADMIN_COOKIE_SECRET` | Yes | — | Secret used to sign admin session cookies |
 | `ADMIN_SESSION_SECRET` | Yes | — | Secret used to encrypt admin sessions |
 | `ADMIN_WEBHOOK_AUTH` | Yes | — | Bearer token for webhook management endpoints |
+| `BUILD_COMMIT` | No | `""` | Commit shown in `/about`. CI passes it as a Docker build argument; local builds leave it unset |
 | `SSE_AUTH_TOKEN` | No | `""` (disabled) | Base64 token for SSE endpoint (`Authorization: Basic <token>`). Auth is disabled when empty. |
 | `NODE_ENV` | No | — | Set to `production` to disable schema auto-sync and enable production mode |
 | `URL_BASE_PATH` | No | `""` | Global URL prefix (e.g. `/v1`) |

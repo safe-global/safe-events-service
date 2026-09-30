@@ -68,6 +68,7 @@ jobs:
       digest: ${{ steps.push.outputs.digest }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        id: checkout
         with:
           ref: ${{ needs.prepare.outputs.tag }}
       - uses: docker/setup-qemu-action@1f40c72289eff860ee54a304f1438e3cff362e0a # v4.3.0
@@ -89,6 +90,9 @@ jobs:
           context: .
           platforms: linux/amd64,linux/arm64
           push: true
+          # The tag commit, not github.sha: a manual run is triggered from main
+          build-args: |
+            BUILD_COMMIT=${{ steps.checkout.outputs.commit }}
           tags: |
             ghcr.io/safe-global/safe-events-service:${{ needs.prepare.outputs.tag }}
             ghcr.io/safe-global/safe-events-service:latest
