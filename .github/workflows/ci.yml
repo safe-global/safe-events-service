@@ -206,9 +206,9 @@ jobs:
     permissions: {}
     uses: ./.github/workflows/_deploy.yml
     with:
-      environment: staging
+      environment: devstaging
       image: ${{ needs.docker-publish.outputs.main_tag }}@${{ needs.docker-publish.outputs.main_digest }}
-      values_file: apps/safe-events-service/values-staging.yaml
+      values_file: apps/safe-events-service/values-devstaging.yaml
       base_url: https://api.5afe.dev/internal/events
     secrets:
       app_id: ${{ secrets.CI_APP_ID }}

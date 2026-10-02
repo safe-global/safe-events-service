@@ -3,7 +3,7 @@ on:
   workflow_call:
     inputs:
       environment:
-        description: staging or production
+        description: devstaging or production
         type: string
         required: true
       image:
