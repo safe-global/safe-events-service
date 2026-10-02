@@ -77,7 +77,9 @@ jobs:
           write_branch() {
             gh api -X POST "repos/${REPO}/git/refs" -f ref="refs/heads/${BRANCH}" -f sha="$1" --silent 2>/dev/null \
               || gh api -X PATCH "repos/${REPO}/git/refs/heads/${BRANCH}" -f sha="$1" -F force=true --silent
-            yq '.image.tag = strenv(IMAGE)' values.yaml | base64 -w0 > content.b64
+            # apm.version is Datadog's version tag; without this it keeps naming the previous release.
+            TAG="$TAG" yq '.image.tag = strenv(IMAGE) | with(select(has("apm")); .apm.version = strenv(TAG))' values.yaml \
+              | base64 -w0 > content.b64
             gh api -X PUT "repos/${REPO}/contents/${FILE}" \
               -f message="$TITLE" \
               -F content=@content.b64 \
