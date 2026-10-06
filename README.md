@@ -10,7 +10,7 @@
 Handle Safe indexing events from Transaction Service and deliver as HTTP webhooks.
 This service should be connected to the [Safe Transaction Service](https://github.com/safe-global/safe-transaction-service):
 
-- Transaction service sends events to RabbitMQ.
+- Transaction service sends events to a RabbitMQ topic exchange.
 - Events service holds a database with services to send webhooks to, and some filters like `chainId` or `eventType` can be configured.
 - Events service connects to RabbitMQ and subscribes to the events. When an event matches filters for a service, a webhook is posted.
 
@@ -327,7 +327,7 @@ All configuration is done through environment variables. See `.env.sample` for a
 |---|---|---|---|
 | `DATABASE_URL` | Yes | — | PostgreSQL connection URL |
 | `AMQP_URL` | Yes | — | RabbitMQ connection URL |
-| `AMQP_EXCHANGE` | Yes | — | RabbitMQ exchange name |
+| `AMQP_EXCHANGE` | No | `safe-transaction-service-events-with-topics` | RabbitMQ topic exchange the Transaction Service publishes to. The queue is bound with routing key `#` |
 | `AMQP_QUEUE` | Yes | `safe-events-service` | RabbitMQ queue name |
 | `ADMIN_EMAIL` | Yes | — | Admin panel login email |
 | `ADMIN_PASSWORD` | Yes | — | Admin panel login password |
