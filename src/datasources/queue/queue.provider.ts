@@ -9,6 +9,9 @@ import amqp, {
 
 const SERVICE_NAME = 'safe-events-service';
 
+// The queue gets every event, filtering is done per webhook
+const TOPIC_ROUTING_KEY = '#';
+
 export type QueueConnection = {
   connection: AmqpConnectionManager;
   channel: ChannelWrapper;
@@ -69,12 +72,12 @@ export class QueueProvider implements OnApplicationShutdown {
 
   /**
    *
-   * @returns AMQP Exchange Name to bind the queue to
+   * @returns AMQP topic exchange name to bind the queue to
    */
   getExchangeName(): string {
     const value = this.configService.get(
       'AMQP_EXCHANGE',
-      'safe-transaction-service-events',
+      'safe-transaction-service-events-with-topics',
     );
     this.logger.log({
       message: 'Using AMQP exchange',
@@ -138,7 +141,9 @@ export class QueueProvider implements OnApplicationShutdown {
             queue: this.getQueueName(),
           },
         });
-        await channel.assertExchange(this.getExchangeName(), 'fanout', {
+        // Must match the Transaction Service declaration, RabbitMQ refuses a
+        // redeclare with other arguments
+        await channel.assertExchange(this.getExchangeName(), 'topic', {
           durable: true,
         });
 
@@ -159,7 +164,7 @@ export class QueueProvider implements OnApplicationShutdown {
         return channel.bindQueue(
           this.getQueueName(),
           this.getExchangeName(),
-          '',
+          TOPIC_ROUTING_KEY,
         );
       },
     });
