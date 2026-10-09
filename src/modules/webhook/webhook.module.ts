@@ -9,7 +9,7 @@ import {
 } from './webhookDispatcher.service';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { WebhooksController } from './webhook.controller';
-import { Agent, Dispatcher, RetryAgent, interceptors } from 'undici';
+import { Agent, Dispatcher, RetryAgent } from 'undici';
 
 const WEBHOOK_RETRYABLE_STATUS_CODES = [500, 502, 503, 504];
 const WEBHOOK_RETRYABLE_ERROR_CODES = [
@@ -52,20 +52,6 @@ function parseNumberConfig(
     messageContext: { key, value, fallback, min },
   });
   return fallback;
-}
-
-/**
- * The DNS cache never evicts on a timer: an entry is only refreshed when its
- * host is looked up again. Once the cache is full new hosts are resolved on
- * every connect and never stored, so an unbounded cache is the default and a
- * limit is only worth setting to bound memory.
- */
-function parseDnsCacheMaxItems(value: string | undefined): number {
-  if (value == null || value === '') {
-    return Infinity;
-  }
-  const parsed = Number(value);
-  return Number.isFinite(parsed) && parsed >= 1 ? parsed : Infinity;
 }
 
 /**
@@ -112,17 +98,11 @@ function createWebhookAgent(configService: ConfigService): Dispatcher {
     600_000,
     0,
   );
-  // 0 resolves on every connect.
-  const dnsCacheTtl = parseNumberConfig(
-    'HTTP_DNS_CACHE_TTL',
-    configService.get('HTTP_DNS_CACHE_TTL'),
-    60_000,
-    0,
-  );
-  const dnsCacheMaxItems = parseDnsCacheMaxItems(
-    configService.get('HTTP_DNS_CACHE_MAX_ITEMS'),
-  );
 
+  // Requests target the webhook hostname, so each host has its own pool and
+  // TLS servername, and Node picks the address family on connect, falling back
+  // to IPv4 when IPv6 is unreachable. Rewriting the origin to a resolved IP, as
+  // undici's DNS interceptor does, loses both.
   const agent = new Agent({
     connectTimeout: timeout,
     headersTimeout: timeout,
@@ -135,15 +115,10 @@ function createWebhookAgent(configService: ConfigService): Dispatcher {
     // host on top of the retry chain awaited inline before the ack, so it is
     // only worth setting under file descriptor pressure.
     connections: connectionsPerHost,
-    // Retire sockets periodically. Long-lived sockets combined with the DNS
-    // cache pin a busy host to a single IP, so a load balancer rotating
-    // instances is never noticed.
+    // Retire sockets periodically. A long-lived socket pins a busy host to a
+    // single IP, so a load balancer rotating instances is never noticed.
     clientTtl,
-  }).compose(
-    // undici resolves the hostname on every new socket and caches nothing, so
-    // each connect runs getaddrinfo on the libuv threadpool.
-    interceptors.dns({ maxTTL: dnsCacheTtl, maxItems: dnsCacheMaxItems }),
-  );
+  });
 
   return new RetryAgent(agent, {
     maxRetries,

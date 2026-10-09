@@ -29,6 +29,20 @@ const NO_RESPONSE_CODES = new Set([
   'ETIMEDOUT',
 ]);
 
+/**
+ * `net.connect` with `autoSelectFamily` raises an `AggregateError` with an
+ * empty message when every address of a host fails. The detail is in the
+ * per-address errors.
+ */
+function getErrorMessage(error: Error): string {
+  if (error instanceof AggregateError && !error.message) {
+    return error.errors
+      .map((e: unknown) => (e instanceof Error ? e.message : String(e)))
+      .join('; ');
+  }
+  return error.message;
+}
+
 export interface WebhookResponse {
   statusCode: number;
   data: string;
@@ -173,8 +187,8 @@ export class WebhookDispatcherService implements OnModuleDestroy {
       ? {
           message:
             error.code != null && NO_RESPONSE_CODES.has(error.code)
-              ? `Response not received. Error: ${error.message}`
-              : error.message,
+              ? `Response not received. Error: ${getErrorMessage(error)}`
+              : getErrorMessage(error),
         }
       : undefined;
 
