@@ -386,6 +386,39 @@ describe('Webhook service', () => {
       });
     });
 
+    it('should log every address error when all addresses of a host fail', async () => {
+      const webhook = webhookWithStatsFactory({
+        url: 'http://localhost:4815',
+        authorization: '',
+      });
+      const event = makeEvent();
+
+      const connectError = Object.assign(
+        new AggregateError([
+          new Error('connect ENETUNREACH 2606:4700::1:443'),
+          new Error('connect ECONNREFUSED 104.16.0.1:443'),
+        ]),
+        { code: 'ENETUNREACH' },
+      );
+      jest.spyOn(agent, 'request').mockRejectedValue(connectError);
+      const loggerErrorSpy = jest
+        .spyOn(Logger.prototype, 'error')
+        .mockImplementation();
+
+      await webhookDispatcherService.postWebhook(event, webhook);
+
+      expect(loggerErrorSpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          messageContext: expect.objectContaining({
+            httpRequestError: {
+              message:
+                'connect ENETUNREACH 2606:4700::1:443; connect ECONNREFUSED 104.16.0.1:443',
+            },
+          }),
+        }),
+      );
+    });
+
     it('should log a debug message if request is successful.', async () => {
       const webhook = webhookWithStatsFactory({
         url: 'http://localhost:4815',
