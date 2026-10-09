@@ -53,10 +53,10 @@ importers:
         version: 7.8.17(@types/babel__core@7.20.5)(@types/react@18.3.27)
       amqp-connection-manager:
         specifier: ^5.0.0
-        version: 5.0.0(amqplib@2.0.1)
+        version: 5.0.0(amqplib@2.2.0)
       amqplib:
-        specifier: ^2.0.1
-        version: 2.0.1
+        specifier: ^2.2.0
+        version: 2.2.0
       cache-manager:
         specifier: ^7.2.9
         version: 7.2.9
@@ -94,11 +94,11 @@ importers:
         specifier: ^0.3.31
         version: 0.3.31(babel-plugin-macros@3.1.0)(pg@8.23.0)(ts-node@10.9.2(@types/node@24.10.1)(typescript@5.9.3))
       undici:
-        specifier: ^8.11.0
-        version: 8.11.0
+        specifier: ^8.11.2
+        version: 8.11.2
       viem:
-        specifier: ^2.56.8
-        version: 2.56.8(typescript@5.9.3)
+        specifier: ^2.56.9
+        version: 2.56.9(typescript@5.9.3)
     devDependencies:
       '@eslint/eslintrc':
         specifier: ^3.3.7
@@ -2763,8 +2763,8 @@ packages:
     peerDependencies:
       amqplib: '*'
 
-  amqplib@2.0.1:
-    resolution: {integrity: sha512-a3P2MgfCf9nzVis12VxWEn0dS6hcqve7dlEAhXDtIWR27BlhtMkILOc+H9aeHjDi6i6r94dYKc2Kx2OFe3avvg==}
+  amqplib@2.2.0:
+    resolution: {integrity: sha512-VifzN9aHs/Q3zTruVHXh2yCisQyXexBN91CQ2E5iSyUKyNjH6ilYhJGte5AXZH/Bj1PaH7SwPhyuSf6Msd2udw==}
     engines: {node: '>=18'}
 
   ansi-align@3.0.1:
@@ -5893,8 +5893,8 @@ packages:
   undici-types@7.16.0:
     resolution: {integrity: sha512-Zz+aZWSj8LE6zoxD+xrjh4VfkIG8Ya6LvYkZqtUQGJPZjYl53ypCaUwWqo7eI0x66KBGeRo+mlBEkMSeSZ38Nw==}
 
-  undici@8.11.0:
-    resolution: {integrity: sha512-AdzuGcAkzhbha3GgCSoUBx2P0quwym6qdFNCQz/fDGZc8w9XJ741wHUbt2kTmfPz+ZIOMkySFkiY7RXmiDDC8w==}
+  undici@8.11.2:
+    resolution: {integrity: sha512-u4UB2/IrKdU6lFxumHmmo1a3fCQO5tzQllRorfoRS63txhrB7xTpSn1PftwC4qEHkOaqP95fCWW4lJzwErwzhQ==}
     engines: {node: '>=22.19.0'}
 
   unicode-canonical-property-names-ecmascript@2.0.1:
@@ -5983,8 +5983,8 @@ packages:
     resolution: {integrity: sha512-BNGbWLfd0eUPabhkXUVm0j8uuvREyTh5ovRa/dyow/BqAbZJyC+5fU+IzQOzmAKzYqYRAISoRhdQr3eIZ/PXqg==}
     engines: {node: '>= 0.8'}
 
-  viem@2.56.8:
-    resolution: {integrity: sha512-vD1DsnYxySMml5/02m/+boWQYfZtWug2VYzm6+hdVT+VDmULBZfpoh9gPDAENdMMBmQKW/2QJ/1DuZaslBJDAg==}
+  viem@2.56.9:
+    resolution: {integrity: sha512-UC1G0Qz+RbPKqwl6yRrp3dH6ltrOmUcFJMTcOyE1Mg0nO5lxrEBTONh/8OFWPnALGuN/O7LkNcz/IsSj83Svqw==}
     peerDependencies:
       typescript: '>=5.0.4'
     peerDependenciesMeta:
@@ -8960,12 +8960,12 @@ snapshots:
       json-schema-traverse: 1.0.0
       require-from-string: 2.0.2
 
-  amqp-connection-manager@5.0.0(amqplib@2.0.1):
+  amqp-connection-manager@5.0.0(amqplib@2.2.0):
     dependencies:
-      amqplib: 2.0.1
+      amqplib: 2.2.0
       promise-breaker: 6.0.0
 
-  amqplib@2.0.1: {}
+  amqplib@2.2.0: {}
 
   ansi-align@3.0.1:
     dependencies:
@@ -12531,7 +12531,7 @@ snapshots:
 
   undici-types@7.16.0: {}
 
-  undici@8.11.0: {}
+  undici@8.11.2: {}
 
   unicode-canonical-property-names-ecmascript@2.0.1: {}
 
@@ -12620,7 +12620,7 @@ snapshots:
 
   vary@1.1.2: {}
 
-  viem@2.56.8(typescript@5.9.3):
+  viem@2.56.9(typescript@5.9.3):
     dependencies:
       '@noble/curves': 1.9.1
       '@noble/hashes': 1.8.0
