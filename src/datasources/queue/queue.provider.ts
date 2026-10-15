@@ -1,13 +1,17 @@
 import { hostname } from 'node:os';
-import { Injectable, Logger, OnApplicationShutdown } from '@nestjs/common';
+import { BeforeApplicationShutdown, Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Channel, ConsumeMessage } from 'amqplib';
+import { parseNumberConfig } from '../../common/utils/parse-number-config';
 import amqp, {
   ChannelWrapper,
   AmqpConnectionManager,
 } from 'amqp-connection-manager';
 
 const SERVICE_NAME = 'safe-events-service';
+// Bounds every broker call during shutdown, as a broker that does not answer
+// must not hold the pod until it is killed
+const BROKER_SHUTDOWN_TIMEOUT_MS = 5_000;
 
 export type QueueConnection = {
   connection: AmqpConnectionManager;
@@ -15,7 +19,7 @@ export type QueueConnection = {
 };
 
 @Injectable()
-export class QueueProvider implements OnApplicationShutdown {
+export class QueueProvider implements BeforeApplicationShutdown {
   private readonly logger = new Logger(QueueProvider.name);
   // `AmqpConnectionManager` retries on its own and is never closed by itself, so
   // there must be at most one live manager: any path that builds a new one closes
@@ -23,13 +27,31 @@ export class QueueProvider implements OnApplicationShutdown {
   private connection: AmqpConnectionManager | undefined;
   private channelWrapper: ChannelWrapper | undefined;
   private connecting: Promise<QueueConnection> | undefined;
+  private readonly inFlightMessages = new Set<Promise<void>>();
+  // Set on shutdown: readiness fails while messages are drained, and a late
+  // caller does not open a new connection that nothing would close
+  private shuttingDown = false;
 
   constructor(private readonly configService: ConfigService) {}
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  onApplicationShutdown(signal?: string) {
-    // Not enabled by default https://docs.nestjs.com/fundamentals/lifecycle-events#application-shutdown
-    return this.disconnect();
+  /**
+   * Runs before the `onApplicationShutdown` hooks, which close what the message
+   * handlers use (webhook agent, database).
+   * Unacked messages are requeued by the broker when the channel closes, so a
+   * message still in flight after the timeout is delivered again, not lost.
+   */
+  async beforeApplicationShutdown(): Promise<void> {
+    this.shuttingDown = true;
+    await this.withTimeout(
+      this.stopConsuming(),
+      this.getShutdownTimeout(),
+      'Timeout waiting for in-flight messages, unacked messages will be requeued',
+    );
+    await this.withTimeout(
+      this.disconnect(),
+      BROKER_SHUTDOWN_TIMEOUT_MS,
+      'Timeout closing the AMQP connection',
+    );
   }
 
   /**
@@ -97,7 +119,27 @@ export class QueueProvider implements OnApplicationShutdown {
     return value;
   }
 
+  /**
+   * @returns Milliseconds to wait on shutdown for the consumers to be cancelled
+   *          and the messages being processed to be acked
+   */
+  getShutdownTimeout(): number {
+    return parseNumberConfig(
+      'AMQP_SHUTDOWN_TIMEOUT',
+      this.configService.get('AMQP_SHUTDOWN_TIMEOUT'),
+      15_000,
+      0,
+    );
+  }
+
+  isShuttingDown(): boolean {
+    return this.shuttingDown;
+  }
+
   async getConnection(): Promise<QueueConnection> {
+    if (this.shuttingDown) {
+      throw new Error('Queue provider is shutting down');
+    }
     // A disconnected manager is still reused, it reconnects on its own
     if (!this.connection || !this.channelWrapper) {
       return this.connect();
@@ -199,6 +241,48 @@ export class QueueProvider implements OnApplicationShutdown {
   }
 
   /**
+   * Cancels the consumers, so the broker stops delivering, and waits for the
+   * messages already delivered to be processed and acked.
+   */
+  private async stopConsuming(): Promise<void> {
+    try {
+      await this.channelWrapper?.cancelAll();
+    } finally {
+      await Promise.all(this.inFlightMessages);
+    }
+  }
+
+  /**
+   * Waits for `promise` at most `timeoutMs`. A timeout or an error is logged and
+   * not thrown, so the remaining shutdown steps still run.
+   */
+  private async withTimeout(
+    promise: Promise<void>,
+    timeoutMs: number,
+    timeoutMessage: string,
+  ): Promise<void> {
+    let timer: NodeJS.Timeout | undefined;
+    const timeout = new Promise<void>((resolve) => {
+      timer = setTimeout(() => {
+        this.logger.warn(timeoutMessage);
+        resolve();
+      }, timeoutMs);
+    });
+    try {
+      await Promise.race([promise, timeout]);
+    } catch (error) {
+      this.logger.error({
+        message: 'Error on AMQP shutdown',
+        messageContext: {
+          error: error instanceof Error ? error.message : String(error),
+        },
+      });
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+
+  /**
    * @returns consumerTag for the event
    */
   async subscribeToEvents(
@@ -226,17 +310,12 @@ export class QueueProvider implements OnApplicationShutdown {
         this.getQueueName(),
         async (message: ConsumeMessage) => {
           if (message.content) {
+            const processing = this.processMessage(channel, message, func);
+            this.inFlightMessages.add(processing);
             try {
-              await func(message.content.toString());
-            } catch (error) {
-              this.logger.error({
-                message: 'Error processing message',
-                messageContext: {
-                  error: error instanceof Error ? error.message : String(error),
-                },
-              });
+              await processing;
             } finally {
-              channel.ack(message);
+              this.inFlightMessages.delete(processing);
             }
           }
         },
@@ -252,6 +331,25 @@ export class QueueProvider implements OnApplicationShutdown {
         },
       });
       return consumer.consumerTag;
+    }
+  }
+
+  private async processMessage(
+    channel: ChannelWrapper,
+    message: ConsumeMessage,
+    func: (arg: string) => Promise<any>,
+  ): Promise<void> {
+    try {
+      await func(message.content.toString());
+    } catch (error) {
+      this.logger.error({
+        message: 'Error processing message',
+        messageContext: {
+          error: error instanceof Error ? error.message : String(error),
+        },
+      });
+    } finally {
+      channel.ack(message);
     }
   }
 }
