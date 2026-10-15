@@ -1,3 +1,4 @@
+import { hostname } from 'node:os';
 import { Injectable, Logger, OnApplicationShutdown } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Channel, ConsumeMessage } from 'amqplib';
@@ -5,6 +6,8 @@ import amqp, {
   ChannelWrapper,
   AmqpConnectionManager,
 } from 'amqp-connection-manager';
+
+const SERVICE_NAME = 'safe-events-service';
 
 export type QueueConnection = {
   connection: AmqpConnectionManager;
@@ -40,6 +43,15 @@ export class QueueProvider implements OnApplicationShutdown {
       messageContext: { amqpUrl: value },
     });
     return value;
+  }
+
+  /**
+   *
+   * @returns AMQP connection name shown by the broker (management UI, logs), using
+   *          the hostname (the pod name in k8s) to tell instances apart
+   */
+  getConnectionName(): string {
+    return `${SERVICE_NAME}@${hostname()}`;
   }
 
   /**
@@ -111,7 +123,11 @@ export class QueueProvider implements OnApplicationShutdown {
       'Connecting to RabbitMQ and creating exchange/queue if not created',
     );
     // Connection will be succesful even if RabbitMQ is down, connection will be retried until it's up
-    this.connection = amqp.connect(this.getAmqpUrl());
+    this.connection = amqp.connect(this.getAmqpUrl(), {
+      connectionOptions: {
+        clientProperties: { connection_name: this.getConnectionName() },
+      },
+    });
     this.channelWrapper = this.connection.createChannel({
       json: true,
       setup: async (channel: Channel) => {
