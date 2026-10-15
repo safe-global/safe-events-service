@@ -1,4 +1,9 @@
 import { Test } from '@nestjs/testing';
+import {
+  connect as amqplibConnect,
+  ChannelModel,
+  ConfirmChannel,
+} from 'amqplib';
 import { QueueProvider } from './queue.provider';
 import { ConfigModule } from '@nestjs/config';
 import { QueueModule } from './queue.module';
@@ -16,6 +21,7 @@ describe('QueueProvider', () => {
 
   afterEach(async () => {
     await queueProvider.disconnect();
+    jest.restoreAllMocks();
   });
 
   describe('get configuration', () => {
@@ -27,6 +33,17 @@ describe('QueueProvider', () => {
     });
     it('getExchangeName should return a value', async () => {
       expect(queueProvider.getExchangeName()).toBeDefined();
+    });
+    it('getExchangeName should default to the topic exchange', () => {
+      const configService = queueProvider['configService'];
+      jest
+        .spyOn(configService, 'get')
+        .mockImplementation((_key: string, defaultValue: unknown) => {
+          return defaultValue;
+        });
+      expect(queueProvider.getExchangeName()).toBe(
+        'safe-transaction-service-events-with-topics',
+      );
     });
   });
 
@@ -91,6 +108,55 @@ describe('QueueProvider', () => {
       expect(queueProvider['channelWrapper']).toBeUndefined();
     });
   });
+  describe('bindings', () => {
+    // Own queue and exchange, so the tests do not touch the ones of a running
+    // service on the same broker
+    const queue = `safe-events-service-test-${process.pid}`;
+    const exchange = `safe-events-service-test-topic-${process.pid}`;
+    let adminConnection: ChannelModel;
+    let adminChannel: ConfirmChannel;
+
+    /**
+     * @returns routing key of the message, `undefined` if it was not routed to
+     *          the queue
+     */
+    async function publishAndGet(
+      routingKey: string,
+    ): Promise<string | undefined> {
+      adminChannel.publish(exchange, routingKey, Buffer.from('{}'));
+      // The broker confirms a transient message once it is routed
+      await adminChannel.waitForConfirms();
+      const received = await adminChannel.get(queue, { noAck: true });
+      return received ? received.fields.routingKey : undefined;
+    }
+
+    beforeEach(async () => {
+      adminConnection = await amqplibConnect(queueProvider.getAmqpUrl());
+      adminChannel = await adminConnection.createConfirmChannel();
+      await adminChannel.deleteQueue(queue);
+      jest.spyOn(queueProvider, 'getQueueName').mockReturnValue(queue);
+      jest.spyOn(queueProvider, 'getExchangeName').mockReturnValue(exchange);
+    });
+
+    afterEach(async () => {
+      await adminChannel.deleteQueue(queue);
+      await adminChannel.deleteExchange(exchange);
+      await adminConnection.close();
+    });
+
+    it('should declare a topic exchange and bind the queue with #', async () => {
+      const { channel } = await queueProvider.getConnection();
+      await channel.waitForConnect();
+
+      // Throws if the exchange was declared with another type
+      await adminChannel.assertExchange(exchange, 'topic', { durable: true });
+      expect(await publishAndGet('1.SAFE_CREATED.0x1')).toBe(
+        '1.SAFE_CREATED.0x1',
+      );
+      expect(await publishAndGet('any.other.key')).toBe('any.other.key');
+    });
+  });
+
   describe('events', () => {
     it('should subscribe to events', async () => {
       const func = async (arg: string) => arg;

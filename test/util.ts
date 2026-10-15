@@ -16,12 +16,14 @@ export async function publishMessage(
 ): Promise<boolean> {
   const conn: ChannelModel = await amqplibConnect(amqpUrl);
   const channel = await conn.createChannel();
-  await channel.assertExchange(exchange, 'fanout', { durable: true });
-  // Make sure queue is binded to the exchange, as this function can be called before subscribing
+  await channel.assertExchange(exchange, 'topic', { durable: true });
+  // Make sure queue exists, as this function can be called before subscribing. It
+  // must be bound to the exchange already, or the message is dropped
   await channel.assertQueue(queue, { durable: true });
   const isMessagePublished = channel.publish(
     exchange,
-    '',
+    // Same format as the Transaction Service, `{chainId}.{type}.{address}`
+    '1.TEST.0x0',
     Buffer.from(JSON.stringify(msg)),
   );
   await channel.close();
