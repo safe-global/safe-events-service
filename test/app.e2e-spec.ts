@@ -2,7 +2,6 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
 import * as request from 'supertest';
 import { AppModule } from './../src/app.module';
-import { QueueProvider } from '../src/datasources/queue/queue.provider';
 import { EventsService } from '../src/modules/events/events.service';
 import { Server } from 'tls';
 import { TxServiceEventType } from '../src/modules/events/event.dto';
@@ -14,7 +13,6 @@ const { version } = require('../package.json');
 
 describe('AppController (e2e)', () => {
   let app: INestApplication;
-  let queueProvider: QueueProvider;
   let eventsService: EventsService;
 
   beforeEach(async () => {
@@ -23,14 +21,11 @@ describe('AppController (e2e)', () => {
     }).compile();
 
     eventsService = moduleFixture.get<EventsService>(EventsService);
-    queueProvider = moduleFixture.get<QueueProvider>(QueueProvider);
     app = moduleFixture.createNestApplication();
     await app.init();
   }, 10000);
 
   afterEach(async () => {
-    // Nest.js Shutdown hooks are not triggered
-    await queueProvider.disconnect();
     await app.close();
   });
 

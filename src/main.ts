@@ -80,8 +80,15 @@ function installAdminResponsePatch(app: INestApplication): void {
 }
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule, { bufferLogs: true });
+  const app = await NestFactory.create(AppModule, {
+    bufferLogs: true,
+    // Open SSE streams would keep the HTTP server, and so the shutdown, from
+    // finishing
+    forceCloseConnections: true,
+  });
   app.useLogger(app.get(Logger));
+  // Shutdown hooks close the RabbitMQ connection on SIGTERM
+  app.enableShutdownHooks();
   const basePath = process.env.URL_BASE_PATH || '';
   app.setGlobalPrefix(basePath);
   setupSwagger(app, basePath);

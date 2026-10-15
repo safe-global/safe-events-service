@@ -34,8 +34,6 @@ describe('Events handling', () => {
   }, 10000);
 
   afterEach(async () => {
-    // Nest.js Shutdown hooks are not triggered
-    await queueProvider.disconnect();
     await app.close();
   });
 
