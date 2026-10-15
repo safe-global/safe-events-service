@@ -1,4 +1,6 @@
+import { hostname } from 'node:os';
 import { Test } from '@nestjs/testing';
+import amqp from 'amqp-connection-manager';
 import { QueueProvider } from './queue.provider';
 import { ConfigModule } from '@nestjs/config';
 import { QueueModule } from './queue.module';
@@ -28,6 +30,11 @@ describe('QueueProvider', () => {
     it('getExchangeName should return a value', async () => {
       expect(queueProvider.getExchangeName()).toBeDefined();
     });
+    it('getConnectionName should use the service name and hostname', () => {
+      expect(queueProvider.getConnectionName()).toEqual(
+        `safe-events-service@${hostname()}`,
+      );
+    });
   });
 
   describe('connection', () => {
@@ -35,6 +42,22 @@ describe('QueueProvider', () => {
       const { connection, channel } = await queueProvider.getConnection();
       expect(connection).toBeDefined();
       expect(channel).toBeDefined();
+    });
+
+    it('should set the connection name in the client properties', async () => {
+      const connectSpy = jest.spyOn(amqp, 'connect');
+      await queueProvider.disconnect();
+
+      await queueProvider.getConnection();
+
+      expect(connectSpy).toHaveBeenCalledWith(queueProvider.getAmqpUrl(), {
+        connectionOptions: {
+          clientProperties: {
+            connection_name: `safe-events-service@${hostname()}`,
+          },
+        },
+      });
+      connectSpy.mockRestore();
     });
 
     it('should reuse the connection manager while it is disconnected', async () => {
