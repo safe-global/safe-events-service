@@ -1,4 +1,4 @@
-import { Module, Logger } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { CacheModule } from '@nestjs/cache-manager';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Webhook } from './repositories/webhook.entity';
@@ -10,6 +10,7 @@ import {
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { WebhooksController } from './webhook.controller';
 import { Agent, Dispatcher, RetryAgent } from 'undici';
+import { parseNumberConfig } from '../../common/utils/parse-number-config';
 
 const WEBHOOK_RETRYABLE_STATUS_CODES = [500, 502, 503, 504];
 const WEBHOOK_RETRYABLE_ERROR_CODES = [
@@ -26,34 +27,6 @@ const WEBHOOK_RETRYABLE_ERROR_CODES = [
   'UND_ERR_SOCKET',
 ];
 
-const logger = new Logger('WebhookAgent');
-
-/**
- * Every numeric option must reach undici as a real number. undici reads NaN as
- * unset and silently applies its own default, and a NaN retry limit is never
- * reached, so the request retries forever. A value that does not parse, or one
- * below `min`, falls back to `fallback` and is logged.
- */
-function parseNumberConfig(
-  key: string,
-  value: string | undefined,
-  fallback: number,
-  min: number,
-): number {
-  if (value == null || value === '') {
-    return fallback;
-  }
-  const parsed = Number(value);
-  if (Number.isFinite(parsed) && parsed >= min) {
-    return parsed;
-  }
-  logger.warn({
-    message: 'Invalid numeric config, falling back to default',
-    messageContext: { key, value, fallback, min },
-  });
-  return fallback;
-}
-
 /**
  * `null` leaves the pool uncapped, which undici reads as one connection per
  * concurrent request. Concurrency per host is already bounded by
@@ -68,6 +41,11 @@ function parseConnectionsPerHost(value: string | undefined): number | null {
   return Number.isFinite(parsed) && parsed >= 1 ? parsed : null;
 }
 
+/**
+ * Every numeric option must reach undici as a real number. undici reads NaN as
+ * unset and silently applies its own default, and a NaN retry limit is never
+ * reached, so the request retries forever.
+ */
 function createWebhookAgent(configService: ConfigService): Dispatcher {
   const timeout = parseNumberConfig(
     'HTTP_TIMEOUT',
