@@ -35,7 +35,7 @@ bash ./scripts/db_generate_migrations.sh MIGRATION_NAME
 
 The whole service is one NestJS app (`src/app.module.ts`). The core data flow lives in three modules:
 
-- **`datasources/queue`** — `QueueProvider` connects to RabbitMQ via `amqp-connection-manager`, asserts a **fanout** exchange + durable queue, sets `prefetch` (`AMQP_PREFETCH_MESSAGES`), and exposes `subscribeToEvents(handler)`. The consumer awaits the handler, then `ack`s (manual ack, in a `finally`).
+- **`datasources/queue`** — `QueueProvider` connects to RabbitMQ via `amqp-connection-manager`, asserts the **topic** exchange (`AMQP_EXCHANGE`, same `durable` declaration as the Transaction Service) + durable queue bound with `#`, sets `prefetch` (`AMQP_PREFETCH_MESSAGES`), and exposes `subscribeToEvents(handler)`. The consumer awaits the handler, then `ack`s (manual ack, in a `finally`).
 - **`modules/events`** — `EventsService.processEvent()` is the handler: it parses/validates the JSON `TxServiceEvent`, pushes it into an in-memory RxJS `Subject` (for the SSE endpoint), and returns `webhookDispatcher.postEveryWebhook(event)`. Because the consumer awaits this, **a message is only acked after every matching webhook for that event has settled.**
 - **`modules/webhook`** — `WebhookDispatcherService` holds an in-memory `Map` of active webhooks, refreshed every minute (`@Cron`). `postEveryWebhook` iterates the cached webhooks, filters by `Webhook.isEventRelevant` (per-`chainId` + per-event-type flags like `sendMultisigTxs`, `sendEtherTransfers`, … stored on the entity), and fires the matches in parallel via `Promise.all`. HTTP is done with **undici** `RetryAgent` (the agent is provided via the `UNDICI_AGENT` DI token in `webhook.module.ts`).
 
