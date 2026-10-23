@@ -73,6 +73,7 @@ ones) and is documented per event below.
   "data": "<0x-prefixed-hex-string>" | null,
   "isFailed": true | false,
   "txHash": "<0x-prefixed-hex-string>",
+  "executor": "<Ethereum checksummed address>",
   "chainId": "<stringified-int>"
 }
 ```
