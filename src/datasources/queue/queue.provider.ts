@@ -309,6 +309,12 @@ export class QueueProvider implements BeforeApplicationShutdown {
       const consumer = await channel.consume(
         this.getQueueName(),
         async (message: ConsumeMessage) => {
+          // A message delivered once shutdown started is not waited for, so it
+          // is requeued instead of processed
+          if (this.shuttingDown) {
+            channel.nack(message, false, true);
+            return;
+          }
           if (message.content) {
             const processing = this.processMessage(channel, message, func);
             this.inFlightMessages.add(processing);
@@ -323,6 +329,12 @@ export class QueueProvider implements BeforeApplicationShutdown {
           noAck: false,
         },
       );
+      // Shutdown can start while `consume()` is still registering the consumer
+      // (Nest does not wait for bootstrap to finish), so `cancelAll()` missed it
+      if (this.shuttingDown) {
+        await channel.cancel(consumer.consumerTag);
+        return consumer.consumerTag;
+      }
       this.logger.debug({
         message: 'Subscribed to RabbitMQ',
         messageContext: {
