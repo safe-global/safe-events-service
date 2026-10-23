@@ -1,5 +1,4 @@
 import { Request, Response } from 'express';
-import { ADMIN_BASE_PATH } from '../modules/admin/admin.constants';
 import {
   getForwardedPrefix,
   patchLocationHeader,
@@ -39,13 +38,17 @@ export function rewriteAdminPaths(
  * AdminJS JS bundles do not contain hardcoded `/admin` strings — they
  * read `rootPath` at runtime from the state injected in the HTML shell.
  */
-export function wrapAdminResponse(req: Request, res: Response): void {
+export function wrapAdminResponse(
+  req: Request,
+  res: Response,
+  adminRoot: string,
+): void {
   const prefix = getForwardedPrefix(req);
   if (!prefix) return;
   const origSend = res.send.bind(res);
   (res.send as unknown) = function patchedSend(body: unknown): Response {
     if (typeof body === 'string') {
-      body = rewriteAdminPaths(body, ADMIN_BASE_PATH, prefix);
+      body = rewriteAdminPaths(body, adminRoot, prefix);
       res.removeHeader('content-length');
     }
     return origSend(body as Parameters<Response['send']>[0]);
@@ -91,8 +94,12 @@ export function patchAdminAssetDotfiles(res: Response): void {
  * The first two are no-op without `x-forwarded-prefix`; the dotfile patch
  * always applies.
  */
-export function patchAdminResponse(req: Request, res: Response): void {
+export function patchAdminResponse(
+  req: Request,
+  res: Response,
+  adminRoot: string,
+): void {
   patchLocationHeader(req, res);
-  wrapAdminResponse(req, res);
+  wrapAdminResponse(req, res, adminRoot);
   patchAdminAssetDotfiles(res);
 }

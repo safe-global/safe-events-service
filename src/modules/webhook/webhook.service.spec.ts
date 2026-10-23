@@ -4,6 +4,7 @@ import { Webhook } from './repositories/webhook.entity';
 import { WebhookModule } from './webhook.module';
 import { DatabaseModule } from '../../datasources/db/database.module';
 import { ConfigModule } from '@nestjs/config';
+import { configModuleOptions } from '../../config/environment';
 import { WebhookRequestDto } from './dtos/webhook.dto';
 import { DataSource, Repository } from 'typeorm';
 import {
@@ -34,7 +35,11 @@ describe('Webhook service', () => {
 
   beforeEach(async () => {
     const moduleRef = await Test.createTestingModule({
-      imports: [ConfigModule.forRoot(), WebhookModule, DatabaseModule],
+      imports: [
+        ConfigModule.forRoot(configModuleOptions),
+        WebhookModule,
+        DatabaseModule,
+      ],
     }).compile();
 
     webhookService = moduleRef.get<WebhookService>(WebhookService);

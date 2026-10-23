@@ -1,14 +1,35 @@
-import { ConfigModule, ConfigService } from '@nestjs/config';
+import { ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { dataSourceOptions } from './database.options';
+import { Environment, EnvironmentVariables } from '../../config/environment';
+import {
+  baseDataSourceOptions,
+  sslOptionsFromConfig,
+} from './database.options';
+
+/**
+ * Environments where TypeORM syncs the schema from the entities on startup.
+ * Sync can drop columns and data, so it is an allow-list: any other
+ * environment, production included, relies on migrations.
+ */
+const SCHEMA_SYNC_ENVIRONMENTS: ReadonlySet<Environment> = new Set([
+  Environment.Dev,
+  Environment.Development,
+  Environment.Test,
+]);
+
+export function isSchemaSyncEnabled(nodeEnv: Environment): boolean {
+  return SCHEMA_SYNC_ENVIRONMENTS.has(nodeEnv);
+}
 
 export const databaseProvider = TypeOrmModule.forRootAsync({
-  imports: [ConfigModule],
-  useFactory: async (configService: ConfigService) => ({
-    ...dataSourceOptions,
-    url: configService.get('DATABASE_URL'),
-    autoLoadEntities: true,
-    synchronize: configService.get('NODE_ENV') !== 'production', // Use migrations on production
-  }),
   inject: [ConfigService],
+  useFactory: (configService: ConfigService<EnvironmentVariables, true>) => ({
+    ...baseDataSourceOptions,
+    url: configService.get('DATABASE_URL', { infer: true }),
+    ssl: sslOptionsFromConfig(configService),
+    autoLoadEntities: true,
+    synchronize: isSchemaSyncEnabled(
+      configService.get('NODE_ENV', { infer: true }),
+    ),
+  }),
 });

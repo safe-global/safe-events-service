@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { EnvironmentVariables } from '../../config/environment';
 import { About } from './entities/about.entity';
 /* eslint-disable */
 const { version } = require('../../../package.json');
@@ -7,14 +8,17 @@ const { version } = require('../../../package.json');
 
 @Injectable()
 export class AboutService {
-  constructor(private readonly configService: ConfigService) {}
+  constructor(
+    private readonly configService: ConfigService<EnvironmentVariables, true>,
+  ) {}
 
   getAbout(): About {
     return {
       name: 'Safe Events Service',
       version: version,
       // A Docker build without the argument still sets the variable, empty
-      buildCommit: this.configService.get('BUILD_COMMIT', '') || null,
+      buildCommit:
+        this.configService.get('BUILD_COMMIT', { infer: true }) || null,
     };
   }
 }

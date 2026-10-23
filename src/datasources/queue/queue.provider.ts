@@ -1,6 +1,7 @@
 import { hostname } from 'node:os';
 import { Injectable, Logger, OnApplicationShutdown } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { EnvironmentVariables } from '../../config/environment';
 import { Channel, ConsumeMessage } from 'amqplib';
 import amqp, {
   ChannelWrapper,
@@ -27,7 +28,9 @@ export class QueueProvider implements OnApplicationShutdown {
   private channelWrapper: ChannelWrapper | undefined;
   private connecting: Promise<QueueConnection> | undefined;
 
-  constructor(private readonly configService: ConfigService) {}
+  constructor(
+    private readonly configService: ConfigService<EnvironmentVariables, true>,
+  ) {}
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   onApplicationShutdown(signal?: string) {
@@ -40,7 +43,7 @@ export class QueueProvider implements OnApplicationShutdown {
    * @returns AMQP Url
    */
   getAmqpUrl(): string {
-    const value = this.configService.getOrThrow('AMQP_URL');
+    const value = this.configService.get('AMQP_URL', { infer: true });
     this.logger.log({
       message: 'Using AMQP url',
       messageContext: { amqpUrl: value },
@@ -62,7 +65,7 @@ export class QueueProvider implements OnApplicationShutdown {
    * @returns AMQP Queue Name to consum from, if it doesn't exist it will be created
    */
   getQueueName(): string {
-    const value = this.configService.get('AMQP_QUEUE', 'safe-events-service');
+    const value = this.configService.get('AMQP_QUEUE', { infer: true });
     this.logger.log({
       message: 'Using AMQP queue',
       messageContext: { queue: value },
@@ -75,10 +78,7 @@ export class QueueProvider implements OnApplicationShutdown {
    * @returns AMQP topic exchange name to bind the queue to
    */
   getExchangeName(): string {
-    const value = this.configService.get(
-      'AMQP_EXCHANGE',
-      'safe-transaction-service-events-with-topics',
-    );
+    const value = this.configService.get('AMQP_EXCHANGE', { infer: true });
     this.logger.log({
       message: 'Using AMQP exchange',
       messageContext: { exchange: value },
@@ -92,7 +92,9 @@ export class QueueProvider implements OnApplicationShutdown {
    *          at the same time
    */
   getPrefetchMessages(): number {
-    const value = Number(this.configService.get('AMQP_PREFETCH_MESSAGES', 100));
+    const value = this.configService.get('AMQP_PREFETCH_MESSAGES', {
+      infer: true,
+    });
     this.logger.log({
       message: 'Using AMQP prefetch messages',
       messageContext: { prefetchMessages: value },
