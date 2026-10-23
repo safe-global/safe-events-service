@@ -1,4 +1,9 @@
-import { Inject, Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
+import {
+  Inject,
+  Injectable,
+  Logger,
+  OnApplicationShutdown,
+} from '@nestjs/common';
 import { Cache } from 'cache-manager';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -49,7 +54,7 @@ export interface WebhookResponse {
 }
 
 @Injectable()
-export class WebhookDispatcherService implements OnModuleDestroy {
+export class WebhookDispatcherService implements OnApplicationShutdown {
   private readonly logger = new Logger(WebhookDispatcherService.name);
   private webhookMap: Map<string, WebhookWithStats> = new Map();
   private webhookFailureThreshold: number;
@@ -94,8 +99,14 @@ export class WebhookDispatcherService implements OnModuleDestroy {
     await this.refreshWebhookMap();
   }
 
-  async onModuleDestroy() {
-    await this.agent.close();
+  /**
+   * Runs after `QueueProvider` waits for the messages being processed, as they
+   * still need the agent to deliver their webhooks. Requests still open at this
+   * point belong to messages the broker requeued, so they are aborted instead
+   * of waited for.
+   */
+  async onApplicationShutdown() {
+    await this.agent.destroy();
   }
 
   /**

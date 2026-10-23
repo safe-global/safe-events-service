@@ -80,8 +80,18 @@ function installAdminResponsePatch(app: INestApplication): void {
 }
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule, { bufferLogs: true });
+  const app = await NestFactory.create(AppModule, {
+    bufferLogs: true,
+    // Open SSE streams would keep the HTTP server, and so the shutdown, from
+    // finishing
+    forceCloseConnections: true,
+  });
   app.useLogger(app.get(Logger));
+  // Shutdown hooks close the RabbitMQ connection on SIGTERM. Node runs as PID 1
+  // in the container, and Linux ignores a signal without a handler for PID 1,
+  // so the signal Nest sends again after the hooks would not stop the process:
+  // exit explicitly instead
+  app.enableShutdownHooks([], { useProcessExit: true });
   const basePath = process.env.URL_BASE_PATH || '';
   app.setGlobalPrefix(basePath);
   setupSwagger(app, basePath);
