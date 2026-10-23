@@ -5,17 +5,17 @@ const logger = new Logger('Config');
 /**
  * Parses a numeric config value. `Number()` alone turns a typo into `NaN`,
  * which timers and libraries read as 0 or as unset without any error. A value
- * that does not parse, or one below `min`, falls back to `fallback` and is
+ * that does not parse, or one below `min`, falls back to `defaultValue` and is
  * logged.
  */
 export function parseNumberConfig(
   key: string,
   value: string | undefined,
-  fallback: number,
+  defaultValue: number,
   min: number,
 ): number {
   if (value == null || value === '') {
-    return fallback;
+    return defaultValue;
   }
   const parsed = Number(value);
   if (Number.isFinite(parsed) && parsed >= min) {
@@ -23,7 +23,7 @@ export function parseNumberConfig(
   }
   logger.warn({
     message: 'Invalid numeric config, falling back to default',
-    messageContext: { key, value, fallback, min },
+    messageContext: { key, value, defaultValue, min },
   });
-  return fallback;
+  return defaultValue;
 }
