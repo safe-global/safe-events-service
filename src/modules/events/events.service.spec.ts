@@ -4,6 +4,7 @@ import { QueueProvider } from '../../datasources/queue/queue.provider';
 import { TxServiceEventType } from './event.dto';
 import { Logger } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { configModuleOptions } from '../../config/environment';
 import { WebhookDispatcherService } from '../webhook/webhookDispatcher.service';
 
 describe('EventsService', () => {
@@ -26,7 +27,7 @@ describe('EventsService', () => {
       }),
     };
     const module = await Test.createTestingModule({
-      imports: [ConfigModule.forRoot()],
+      imports: [ConfigModule.forRoot(configModuleOptions)],
       providers: [EventsService, QueueProvider, WebhookDispatcherService],
     })
       .overrideProvider(QueueProvider)

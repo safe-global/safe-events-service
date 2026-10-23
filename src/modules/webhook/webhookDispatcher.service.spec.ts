@@ -3,6 +3,7 @@ import { Webhook, WebhookWithStats } from './repositories/webhook.entity';
 import { WebhookModule } from './webhook.module';
 import { DatabaseModule } from '../../datasources/db/database.module';
 import { ConfigModule } from '@nestjs/config';
+import { configModuleOptions } from '../../config/environment';
 import { DataSource, Repository, UpdateResult } from 'typeorm';
 import {
   UNDICI_AGENT,
@@ -58,7 +59,11 @@ describe('Webhook service', () => {
     // Environment overrides
 
     const moduleRef = await Test.createTestingModule({
-      imports: [ConfigModule.forRoot(), WebhookModule, DatabaseModule],
+      imports: [
+        ConfigModule.forRoot(configModuleOptions),
+        WebhookModule,
+        DatabaseModule,
+      ],
     }).compile();
 
     const agent = moduleRef.get<Dispatcher>(UNDICI_AGENT);

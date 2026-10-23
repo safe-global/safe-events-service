@@ -1,6 +1,7 @@
 import { Test } from '@nestjs/testing';
 import { AuthService } from './auth.service';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { configModuleOptions } from '../../../config/environment';
 
 describe('Test auth service', () => {
   let authService: AuthService;
@@ -8,7 +9,7 @@ describe('Test auth service', () => {
 
   beforeEach(async () => {
     const module = await Test.createTestingModule({
-      imports: [ConfigModule.forRoot()],
+      imports: [ConfigModule.forRoot(configModuleOptions)],
       providers: [AuthService],
     }).compile();
 

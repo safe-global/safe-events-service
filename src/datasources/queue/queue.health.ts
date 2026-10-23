@@ -19,7 +19,7 @@ export class QueueHealthIndicator {
 
     // During shutdown the queue is expected to be down while messages are
     // drained, so it is reported as not ready without logging an error.
-    // Reaching the provider can fail on its own, e.g. a missing `AMQP_URL`.
+    // Reaching the provider can fail on its own.
     // The reason stays in the logs, the message comes from the libraries and
     // can hold connection details
     if (this.queueProvider.isShuttingDown()) {

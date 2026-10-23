@@ -2,6 +2,7 @@ import { Observable, Subject, filter } from 'rxjs';
 import { Injectable, Logger, OnApplicationBootstrap } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { QueueProvider } from '../../datasources/queue/queue.provider';
+import { EnvironmentVariables } from '../../config/environment';
 import { TxServiceEvent } from './event.dto';
 import {
   WebhookDispatcherService,
@@ -17,14 +18,11 @@ export class EventsService implements OnApplicationBootstrap {
   constructor(
     private readonly queueProvider: QueueProvider,
     private readonly webhookDispatcherService: WebhookDispatcherService,
-    private readonly configService: ConfigService,
+    private readonly configService: ConfigService<EnvironmentVariables, true>,
   ) {
-    // Only an explicit `true` enables it; normalize so 'True'/'TRUE' count.
-    this.eventsLogEnabled =
-      this.configService
-        .get<string>('EVENTS_LOG_ENABLED', 'true')
-        .trim()
-        .toLowerCase() === 'true';
+    this.eventsLogEnabled = this.configService.get('EVENTS_LOG_ENABLED', {
+      infer: true,
+    });
   }
 
   onApplicationBootstrap() {

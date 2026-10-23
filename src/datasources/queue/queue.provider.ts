@@ -1,8 +1,8 @@
 import { hostname } from 'node:os';
 import { BeforeApplicationShutdown, Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { EnvironmentVariables } from '../../config/environment';
 import { Channel, ConsumeMessage } from 'amqplib';
-import { parseNumberConfig } from '../../common/utils/parse-number-config';
 import amqp, {
   ChannelWrapper,
   AmqpConnectionManager,
@@ -35,7 +35,9 @@ export class QueueProvider implements BeforeApplicationShutdown {
   // caller does not open a new connection that nothing would close
   private shuttingDown = false;
 
-  constructor(private readonly configService: ConfigService) {}
+  constructor(
+    private readonly configService: ConfigService<EnvironmentVariables, true>,
+  ) {}
 
   /**
    * Runs before the `onApplicationShutdown` hooks, which close what the message
@@ -62,7 +64,7 @@ export class QueueProvider implements BeforeApplicationShutdown {
    * @returns AMQP Url
    */
   getAmqpUrl(): string {
-    const value = this.configService.getOrThrow('AMQP_URL');
+    const value = this.configService.get('AMQP_URL', { infer: true });
     this.logger.log({
       message: 'Using AMQP url',
       messageContext: { amqpUrl: value },
@@ -84,7 +86,7 @@ export class QueueProvider implements BeforeApplicationShutdown {
    * @returns AMQP Queue Name to consum from, if it doesn't exist it will be created
    */
   getQueueName(): string {
-    const value = this.configService.get('AMQP_QUEUE', 'safe-events-service');
+    const value = this.configService.get('AMQP_QUEUE', { infer: true });
     this.logger.log({
       message: 'Using AMQP queue',
       messageContext: { queue: value },
@@ -97,10 +99,7 @@ export class QueueProvider implements BeforeApplicationShutdown {
    * @returns AMQP topic exchange name to bind the queue to
    */
   getExchangeName(): string {
-    const value = this.configService.get(
-      'AMQP_EXCHANGE',
-      'safe-transaction-service-events-with-topics',
-    );
+    const value = this.configService.get('AMQP_EXCHANGE', { infer: true });
     this.logger.log({
       message: 'Using AMQP exchange',
       messageContext: { exchange: value },
@@ -114,7 +113,9 @@ export class QueueProvider implements BeforeApplicationShutdown {
    *          at the same time
    */
   getPrefetchMessages(): number {
-    const value = Number(this.configService.get('AMQP_PREFETCH_MESSAGES', 100));
+    const value = this.configService.get('AMQP_PREFETCH_MESSAGES', {
+      infer: true,
+    });
     this.logger.log({
       message: 'Using AMQP prefetch messages',
       messageContext: { prefetchMessages: value },
@@ -127,12 +128,7 @@ export class QueueProvider implements BeforeApplicationShutdown {
    *          and the messages being processed to be acked
    */
   getShutdownTimeout(): number {
-    return parseNumberConfig(
-      'AMQP_SHUTDOWN_TIMEOUT',
-      this.configService.get('AMQP_SHUTDOWN_TIMEOUT'),
-      15_000,
-      0,
-    );
+    return this.configService.get('AMQP_SHUTDOWN_TIMEOUT', { infer: true });
   }
 
   isShuttingDown(): boolean {

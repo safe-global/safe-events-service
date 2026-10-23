@@ -7,10 +7,10 @@ import {
   WebhookDispatcherService,
   UNDICI_AGENT,
 } from './webhookDispatcher.service';
-import { ConfigModule, ConfigService } from '@nestjs/config';
+import { ConfigService } from '@nestjs/config';
+import { EnvironmentVariables } from '../../config/environment';
 import { WebhooksController } from './webhook.controller';
 import { Agent, Dispatcher, RetryAgent } from 'undici';
-import { parseNumberConfig } from '../../common/utils/parse-number-config';
 
 const WEBHOOK_RETRYABLE_STATUS_CODES = [500, 502, 503, 504];
 const WEBHOOK_RETRYABLE_ERROR_CODES = [
@@ -28,54 +28,22 @@ const WEBHOOK_RETRYABLE_ERROR_CODES = [
 ];
 
 /**
- * `null` leaves the pool uncapped, which undici reads as one connection per
- * concurrent request. Concurrency per host is already bounded by
+ * Without `HTTP_CONNECTIONS_PER_HOST` the pool is uncapped, and undici opens one
+ * connection per concurrent request. Concurrency per host is already bounded by
  * `AMQP_PREFETCH_MESSAGES`: the consumer acks a message only after its fan-out
  * settles, so a host sees at most one request per in-flight event.
  */
-function parseConnectionsPerHost(value: string | undefined): number | null {
-  if (value == null || value === '') {
-    return null;
-  }
-  const parsed = Number(value);
-  return Number.isFinite(parsed) && parsed >= 1 ? parsed : null;
-}
-
-/**
- * Every numeric option must reach undici as a real number. undici reads NaN as
- * unset and silently applies its own default, and a NaN retry limit is never
- * reached, so the request retries forever.
- */
-function createWebhookAgent(configService: ConfigService): Dispatcher {
-  const timeout = parseNumberConfig(
-    'HTTP_TIMEOUT',
-    configService.get('HTTP_TIMEOUT'),
-    5_000,
-    1,
-  );
-  // 0 disables retries.
-  const maxRetries = parseNumberConfig(
-    'HTTP_MAX_RETRIES',
-    configService.get('HTTP_MAX_RETRIES'),
-    2,
-    0,
-  );
-  const keepAliveTimeout = parseNumberConfig(
-    'HTTP_KEEP_ALIVE_TIMEOUT',
-    configService.get('HTTP_KEEP_ALIVE_TIMEOUT'),
-    60_000,
-    1,
-  );
-  const connectionsPerHost = parseConnectionsPerHost(
-    configService.get('HTTP_CONNECTIONS_PER_HOST'),
-  );
-  // 0 keeps connections until they go idle.
-  const clientTtl = parseNumberConfig(
-    'HTTP_CLIENT_TTL',
-    configService.get('HTTP_CLIENT_TTL'),
-    600_000,
-    0,
-  );
+function createWebhookAgent(
+  configService: ConfigService<EnvironmentVariables, true>,
+): Dispatcher {
+  const timeout = configService.get('HTTP_TIMEOUT', { infer: true });
+  const maxRetries = configService.get('HTTP_MAX_RETRIES', { infer: true });
+  const keepAliveTimeout = configService.get('HTTP_KEEP_ALIVE_TIMEOUT', {
+    infer: true,
+  });
+  const connectionsPerHost =
+    configService.get('HTTP_CONNECTIONS_PER_HOST', { infer: true }) ?? null;
+  const clientTtl = configService.get('HTTP_CLIENT_TTL', { infer: true });
 
   // Requests target the webhook hostname, so each host has its own pool and
   // TLS servername, and Node picks the address family on connect, falling back
@@ -110,11 +78,7 @@ function createWebhookAgent(configService: ConfigService): Dispatcher {
 }
 
 @Module({
-  imports: [
-    TypeOrmModule.forFeature([Webhook]),
-    CacheModule.register(),
-    ConfigModule,
-  ],
+  imports: [TypeOrmModule.forFeature([Webhook]), CacheModule.register()],
   controllers: [WebhooksController],
   providers: [
     WebhookService,

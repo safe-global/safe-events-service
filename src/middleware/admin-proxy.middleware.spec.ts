@@ -125,7 +125,7 @@ describe('wrapAdminResponse', () => {
     const { res } = makeResponse();
     const origSend = res.send;
 
-    wrapAdminResponse(req, res);
+    wrapAdminResponse(req, res, '/admin');
 
     expect(res.send).toBe(origSend);
   });
@@ -134,7 +134,7 @@ describe('wrapAdminResponse', () => {
     const req = makeRequest({ 'x-forwarded-prefix': '/internal/events' });
     const { res, sent } = makeResponse();
 
-    wrapAdminResponse(req, res);
+    wrapAdminResponse(req, res, '/admin');
     res.send('<script src="/admin/app.js"></script>');
 
     expect(sent[0]).toBe(
@@ -146,7 +146,7 @@ describe('wrapAdminResponse', () => {
     const req = makeRequest({ 'x-forwarded-prefix': '/internal/events' });
     const { res, sent } = makeResponse();
 
-    wrapAdminResponse(req, res);
+    wrapAdminResponse(req, res, '/admin');
     res.send('{"rootPath":"/admin"}');
 
     expect(sent[0]).toBe('{"rootPath":"/internal/events/admin"}');
@@ -156,7 +156,7 @@ describe('wrapAdminResponse', () => {
     const req = makeRequest({ 'x-forwarded-prefix': '/internal/events' });
     const { res, sent } = makeResponse();
 
-    wrapAdminResponse(req, res);
+    wrapAdminResponse(req, res, '/admin');
     const buffer = Buffer.from([0x89, 0x50, 0x4e, 0x47]);
     res.send(buffer);
 
@@ -167,7 +167,7 @@ describe('wrapAdminResponse', () => {
     const req = makeRequest({ 'x-forwarded-prefix': '/internal/events' });
     const { res } = makeResponse();
 
-    wrapAdminResponse(req, res);
+    wrapAdminResponse(req, res, '/admin');
     res.send('/admin/x');
 
     expect(res.removeHeader).toHaveBeenCalledWith('content-length');
@@ -177,7 +177,7 @@ describe('wrapAdminResponse', () => {
     const req = makeRequest({ 'x-forwarded-prefix': '/internal/events' });
     const { res } = makeResponse();
 
-    wrapAdminResponse(req, res);
+    wrapAdminResponse(req, res, '/admin');
     res.send(Buffer.from('binary'));
 
     expect(res.removeHeader).not.toHaveBeenCalled();
@@ -254,7 +254,7 @@ describe('patchAdminResponse', () => {
     const req = makeRequest();
     const { res, sentFiles } = makeFullResponse();
 
-    patchAdminResponse(req, res);
+    patchAdminResponse(req, res, '/admin');
     res.sendFile(pnpmPath);
 
     expect(sentFiles[0]).toEqual([pnpmPath, { dotfiles: 'allow' }]);
@@ -264,7 +264,7 @@ describe('patchAdminResponse', () => {
     const req = makeRequest({ 'x-forwarded-prefix': '/internal/events' });
     const { res, sent, headers } = makeFullResponse();
 
-    patchAdminResponse(req, res);
+    patchAdminResponse(req, res, '/admin');
     res.send('{"rootPath":"/admin"}');
     res.setHeader('Location', '/admin/login');
 
