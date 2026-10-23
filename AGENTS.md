@@ -55,6 +55,6 @@ Key behaviors worth knowing before changing the dispatch path:
 
 ## Conventions
 
-- Config is **env-only** via `@nestjs/config`; the full list with defaults is the table in `README.md`. Read config through `ConfigService.get(KEY, default)` rather than hard-coding.
+- Config is **env-only** via `@nestjs/config`, validated at startup by the `EnvironmentVariables` class in `src/config/environment.ts` (class-validator). Every variable, its type and its default live there; the README table documents the same list. To add a variable, add it to the class and the README table, then read it with `ConfigService<EnvironmentVariables, true>` and `get(KEY, { infer: true })`, which returns the converted type. Don't pass defaults to `get` and don't read `process.env` directly; the only exception is `database.options.ts`, used by the TypeORM CLI outside Nest. `ConfigModule` is global, so feature modules don't import it. Specs that need real config import `ConfigModule.forRoot(configModuleOptions)`.
 - Event payloads are deliberately **minimal** (a signal to re-query the Transaction Service, not a source of truth) and events are sent **without waiting for block confirmation** (no reorg-revert notifications). Don't add fields to event DTOs to "save a query" — that's an explicit product decision.
 - Licensing cut-over: code up to 2026-02-16 is MIT (`sef-mit-final` tag); newer code is FSL-1.1. See `LICENSE`/`NOTICE`.

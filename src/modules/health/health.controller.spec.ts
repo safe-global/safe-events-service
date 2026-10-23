@@ -8,6 +8,7 @@ import {
   TypeOrmHealthIndicator,
 } from '@nestjs/terminus';
 import { ConfigModule } from '@nestjs/config';
+import { configModuleOptions } from '../../config/environment';
 import { INestApplication } from '@nestjs/common';
 import * as request from 'supertest';
 import { DatabaseModule } from '../../datasources/db/database.module';
@@ -21,7 +22,11 @@ describe('HealthController', () => {
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      imports: [ConfigModule.forRoot(), HealthModule, DatabaseModule],
+      imports: [
+        ConfigModule.forRoot(configModuleOptions),
+        HealthModule,
+        DatabaseModule,
+      ],
     }).compile();
 
     controller = module.get<HealthController>(HealthController);
@@ -60,7 +65,7 @@ describe('Health endpoints', () => {
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
-      imports: [ConfigModule.forRoot(), HealthModule],
+      imports: [ConfigModule.forRoot(configModuleOptions), HealthModule],
     })
       .overrideProvider(TypeOrmHealthIndicator)
       .useValue(mockDb)

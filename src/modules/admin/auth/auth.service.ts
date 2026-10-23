@@ -1,17 +1,20 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { EnvironmentVariables } from '../../../config/environment';
 import { safeCompare } from '../../../common/utils/safe-compare';
 
 @Injectable()
 export class AuthService {
-  constructor(private readonly configService: ConfigService) {}
+  constructor(
+    private readonly configService: ConfigService<EnvironmentVariables, true>,
+  ) {}
 
   getAdminEmail(): string {
-    return this.configService.getOrThrow('ADMIN_EMAIL');
+    return this.configService.get('ADMIN_EMAIL', { infer: true });
   }
 
   getAdminPassword(): string {
-    return this.configService.getOrThrow('ADMIN_PASSWORD');
+    return this.configService.get('ADMIN_PASSWORD', { infer: true });
   }
 
   async authenticate(

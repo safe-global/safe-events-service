@@ -8,15 +8,12 @@ import { ConfigService } from '@nestjs/config';
 import { Dispatcher } from 'undici';
 import { TxServiceEvent } from '../events/event.dto';
 import { WebhookService } from './webhook.service';
+import { EnvironmentVariables } from '../../config/environment';
 import { Cron } from '@nestjs/schedule';
 
 export const UNDICI_AGENT = Symbol('UNDICI_AGENT');
 
 const JSON_CONTENT_TYPE = 'application/json';
-
-// Cap how much of a webhook response body we read into memory before logging.
-// A misbehaving or malicious target could otherwise stream an unbounded body.
-const DEFAULT_MAX_RESPONSE_BYTES = 10_000;
 
 type ResponseBody = Dispatcher.ResponseData['body'];
 
@@ -61,26 +58,26 @@ export class WebhookDispatcherService implements OnModuleDestroy {
     @InjectRepository(Webhook)
     private readonly webhooksRepository: Repository<Webhook>,
     @Inject(CACHE_MANAGER) private readonly cacheManager: Cache,
-    private readonly configService: ConfigService,
+    private readonly configService: ConfigService<EnvironmentVariables, true>,
     @Inject(UNDICI_AGENT) private readonly agent: Dispatcher,
     private readonly webhookService: WebhookService,
   ) {
-    this.webhookFailureThreshold = this.configService.get<number>(
+    this.webhookFailureThreshold = this.configService.get(
       'WEBHOOK_FAILURE_THRESHOLD',
-      90,
+      { infer: true },
     );
-    this.webhookHealthMinutesWindow = this.configService.get<number>(
+    this.webhookHealthMinutesWindow = this.configService.get(
       'WEBHOOK_HEALTH_MINUTES_WINDOW',
-      60,
+      { infer: true },
     );
-    // Disabled by default
-    this.autoDisableWebhook =
-      this.configService.get('WEBHOOK_AUTO_DISABLE') === 'true';
-    this.webhookMaxResponseBytes = Number(
-      this.configService.get(
-        'WEBHOOK_MAX_RESPONSE_BYTES',
-        DEFAULT_MAX_RESPONSE_BYTES,
-      ),
+    this.autoDisableWebhook = this.configService.get('WEBHOOK_AUTO_DISABLE', {
+      infer: true,
+    });
+    // Caps how much of a response body is read into memory for logging, as a
+    // misbehaving target could stream an unbounded body.
+    this.webhookMaxResponseBytes = this.configService.get(
+      'WEBHOOK_MAX_RESPONSE_BYTES',
+      { infer: true },
     );
   }
 
