@@ -41,7 +41,7 @@
     "@nestjs/schedule": "^12.0.2",
     "@nestjs/swagger": "^11.4.7",
     "@nestjs/terminus": "^11.1.1",
-    "@nestjs/typeorm": "^11.0.3",
+    "@nestjs/typeorm": "^12.0.1",
     "adminjs": "^7.8.17",
     "amqp-connection-manager": "^5.0.0",
     "amqplib": "^2.2.0",
