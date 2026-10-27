@@ -8,6 +8,7 @@ import {
 } from 'amqplib';
 import { QueueProvider } from './queue.provider';
 import { ConfigModule } from '@nestjs/config';
+import { configModuleOptions } from '../../config/environment';
 import { QueueModule } from './queue.module';
 
 describe('QueueProvider', () => {
@@ -15,7 +16,7 @@ describe('QueueProvider', () => {
 
   beforeEach(async () => {
     const module = await Test.createTestingModule({
-      imports: [QueueModule, ConfigModule.forRoot()],
+      imports: [QueueModule, ConfigModule.forRoot(configModuleOptions)],
     }).compile();
 
     queueProvider = module.get<QueueProvider>(QueueProvider);
@@ -41,16 +42,11 @@ describe('QueueProvider', () => {
         `safe-events-service@${hostname()}`,
       );
     });
-    it('getExchangeName should default to the topic exchange', () => {
+    // The default exchange is defined and tested in the environment schema
+    it('getExchangeName should return the configured exchange', () => {
       const configService = queueProvider['configService'];
-      jest
-        .spyOn(configService, 'get')
-        .mockImplementation((_key: string, defaultValue: unknown) => {
-          return defaultValue;
-        });
-      expect(queueProvider.getExchangeName()).toBe(
-        'safe-transaction-service-events-with-topics',
-      );
+      jest.spyOn(configService, 'get').mockReturnValue('custom-exchange');
+      expect(queueProvider.getExchangeName()).toBe('custom-exchange');
     });
   });
 

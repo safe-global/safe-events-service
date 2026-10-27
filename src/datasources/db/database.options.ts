@@ -1,25 +1,47 @@
 import { Webhook } from '../../modules/webhook/repositories/webhook.entity';
-import { DataSourceOptions } from 'typeorm';
+import type { ConfigService } from '@nestjs/config';
+import { PostgresConnectionOptions } from 'typeorm/driver/postgres/PostgresConnectionOptions';
 import { readFileSync } from 'fs';
+import type { EnvironmentVariables } from '../../config/environment';
+
+export interface SslOptions {
+  ca?: Buffer;
+  rejectUnauthorized: boolean;
+}
+
 /**
- * Use process.env for configuration instead of Nest.js ConfigService
- * as it cannot be used by TypeORM CLI to generate and run migrations
+ * TLS options for the Postgres connection, or `undefined` when SSL is off.
+ * With a CA file the server certificate is verified; without one any
+ * certificate is accepted.
  */
-export const dataSourceOptions: DataSourceOptions = {
+export function buildSslOptions(
+  enabled: boolean,
+  caPath: string | undefined,
+): SslOptions | undefined {
+  if (!enabled) {
+    return undefined;
+  }
+  return caPath
+    ? { ca: readFileSync(caPath), rejectUnauthorized: true }
+    : { rejectUnauthorized: false };
+}
+
+export function sslOptionsFromConfig(
+  configService: ConfigService<EnvironmentVariables, true>,
+): SslOptions | undefined {
+  return buildSslOptions(
+    configService.get('DATABASE_SSL_ENABLED', { infer: true }),
+    configService.get('DATABASE_CA_PATH', { infer: true }),
+  );
+}
+
+/**
+ * Options shared by the app and the TypeORM CLI. Connection settings are added
+ * by each one: the app reads them through ConfigService, the CLI from
+ * `process.env` in `ormconfig.ts`.
+ */
+export const baseDataSourceOptions: PostgresConnectionOptions = {
   type: 'postgres',
-  url: process.env.MIGRATIONS_DATABASE_URL,
   entities: [Webhook],
   migrations: [__dirname + '/migrations/**/*{.ts,.js}'],
-  ...(process.env.DATABASE_SSL_ENABLED == 'true'
-    ? {
-        ssl: process.env.DATABASE_CA_PATH
-          ? {
-              ca: readFileSync(process.env.DATABASE_CA_PATH),
-              rejectUnauthorized: true,
-            }
-          : {
-              rejectUnauthorized: false,
-            },
-      }
-    : {}),
 };

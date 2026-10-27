@@ -8,7 +8,11 @@ import { Test } from '@nestjs/testing';
 import { LoggerModule } from 'nestjs-pino';
 import * as request from 'supertest';
 import { Writable } from 'stream';
-import { isIgnoredRequest, pinoHttpOptions } from './pino-logger.config';
+import { Environment, LogLevel } from '../config/environment';
+import {
+  buildPinoHttpOptions,
+  createIgnoredRequestMatcher,
+} from './pino-logger.config';
 /* eslint-disable */
 const { version: packageVersion } = require('../../package.json');
 /* eslint-enable */
@@ -51,7 +55,17 @@ describe('pinoHttp request logging', () => {
         LoggerModule.forRoot({
           // The transport spawns a worker thread, which would swallow the
           // stream we assert on, so log straight into it.
-          pinoHttp: [{ ...pinoHttpOptions, transport: undefined }, stream],
+          pinoHttp: [
+            {
+              ...buildPinoHttpOptions({
+                urlBasePath: '',
+                logLevel: LogLevel.Info,
+                nodeEnv: Environment.Test,
+              }),
+              transport: undefined,
+            },
+            stream,
+          ],
         }),
       ],
       controllers: [LogShapeTestController],
@@ -167,7 +181,7 @@ describe('pinoHttp request logging', () => {
     expect(lines[0].httpRequest).not.toHaveProperty('origin');
   });
 
-  describe('isIgnoredRequest', () => {
+  describe('createIgnoredRequestMatcher', () => {
     it.each([
       ['/health', true],
       ['/health/', true],
@@ -180,7 +194,19 @@ describe('pinoHttp request logging', () => {
       ['/v1/events', false],
       [undefined, false],
     ])('%s -> %s', (url, expected) => {
-      expect(isIgnoredRequest(url as string | undefined)).toBe(expected);
+      expect(createIgnoredRequestMatcher('')(url as string | undefined)).toBe(
+        expected,
+      );
+    });
+
+    it.each([
+      ['/v1/health', true],
+      ['/v1/admin/login', true],
+      ['/health', false],
+      ['/admin', false],
+      ['/v1/events', false],
+    ])('%s -> %s with URL_BASE_PATH=/v1', (url, expected) => {
+      expect(createIgnoredRequestMatcher('/v1')(url)).toBe(expected);
     });
   });
 });

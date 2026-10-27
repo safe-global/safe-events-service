@@ -324,12 +324,14 @@ pnpm run test:cov
 
 All configuration is done through environment variables. See `.env.sample` for a full template.
 
+The environment is validated at startup (`src/config/environment.ts`). The service does not start when a required variable is missing or a value is invalid, and the error lists every problem. An empty or whitespace-only value is the same as an unset one. Booleans accept `true` or `false` in any case.
+
 | Variable | Required | Default | Description |
 |---|---|---|---|
 | `DATABASE_URL` | Yes | — | PostgreSQL connection URL |
 | `AMQP_URL` | Yes | — | RabbitMQ connection URL |
 | `AMQP_EXCHANGE` | No | `safe-transaction-service-events-with-topics` | RabbitMQ topic exchange the Transaction Service publishes to. The queue is bound with routing key `#` |
-| `AMQP_QUEUE` | Yes | `safe-events-service` | RabbitMQ queue name |
+| `AMQP_QUEUE` | No | `safe-events-service` | RabbitMQ queue name |
 | `ADMIN_EMAIL` | Yes | — | Admin panel login email |
 | `ADMIN_PASSWORD` | Yes | — | Admin panel login password |
 | `ADMIN_COOKIE_SECRET` | Yes | — | Secret used to sign admin session cookies |
@@ -337,8 +339,8 @@ All configuration is done through environment variables. See `.env.sample` for a
 | `ADMIN_WEBHOOK_AUTH` | Yes | — | Bearer token for webhook management endpoints |
 | `BUILD_COMMIT` | No | `""` | Commit shown in `/about`. CI passes it as a Docker build argument; local builds leave it unset |
 | `SSE_AUTH_TOKEN` | No | `""` (disabled) | Base64 token for SSE endpoint (`Authorization: Basic <token>`). Auth is disabled when empty. |
-| `NODE_ENV` | No | — | Set to `production` to disable schema auto-sync and enable production mode |
-| `URL_BASE_PATH` | No | `""` | Global URL prefix (e.g. `/v1`) |
+| `NODE_ENV` | Yes | — | One of `production`, `development`, `dev` or `test`. TypeORM syncs the schema on startup only for `development`, `dev` and `test`; `production` relies on migrations |
+| `URL_BASE_PATH` | No | `""` | Global URL prefix (e.g. `/v1`). Must start with `/` and have no trailing `/` |
 | `DATABASE_SSL_ENABLED` | No | `false` | Enable SSL for database connection |
 | `DATABASE_CA_PATH` | No | — | Path to CA certificate file for database SSL |
 | `HTTP_TIMEOUT` | No | `5000` | Webhook HTTP client timeout in milliseconds |
@@ -347,11 +349,13 @@ All configuration is done through environment variables. See `.env.sample` for a
 | `HTTP_CONNECTIONS_PER_HOST` | No | unlimited | Max simultaneous connections per webhook host. Unset means one connection per concurrent request, already bounded by `AMQP_PREFETCH_MESSAGES`. Requests over an explicit limit queue instead of opening another connection |
 | `HTTP_CLIENT_TTL` | No | `600000` | Max lifetime of a connection before it is retired, in milliseconds. Bounds how long a host stays pinned to one IP |
 | `DB_HEALTH_CHECK_TIMEOUT` | No | `5000` | Database ping timeout in milliseconds for `/health/ready` |
-| `AMQP_PREFETCH_MESSAGES` | No | `100` | RabbitMQ prefetch message count |
+| `AMQP_PREFETCH_MESSAGES` | No | `100` | RabbitMQ prefetch message count, at least `1` |
 | `WEBHOOK_AUTO_DISABLE` | No | `false` | Auto-disable webhooks that exceed the failure threshold |
 | `WEBHOOK_FAILURE_THRESHOLD` | No | `90` | Failure rate percentage (0–100) above which a webhook is auto-disabled |
 | `WEBHOOK_HEALTH_MINUTES_WINDOW` | No | `60` | Rolling window in minutes used to compute per-webhook failure rates |
-| `LOG_LEVEL` | No | `info` | Log verbosity: `trace`, `debug`, `log`, `info`, `warn`, `error`, `fatal` |
+| `LOG_LEVEL` | No | `info` | Log verbosity, case-insensitive: `trace`, `debug`, `log`, `info`, `warn`, `error`, `fatal` |
+| `EVENTS_LOG_ENABLED` | No | `true` | Log one line per incoming event. Set to `false` to cut log volume |
+| `WEBHOOK_MAX_RESPONSE_BYTES` | No | `10000` | Max bytes of a webhook response body read for logging |
 
 ## Creating database migrations
 

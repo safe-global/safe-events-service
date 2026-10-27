@@ -1,11 +1,12 @@
 import { Logger, Module } from '@nestjs/common';
-import { ConfigModule, ConfigService } from '@nestjs/config';
+import { ConfigService } from '@nestjs/config';
 import { Pool } from 'pg';
 import * as connectPgSimple from 'connect-pg-simple';
 import * as session from 'express-session';
-import { dataSourceOptions } from '../../datasources/db/database.options';
+import { EnvironmentVariables } from '../../config/environment';
+import { sslOptionsFromConfig } from '../../datasources/db/database.options';
 import { Webhook } from '../webhook/repositories/webhook.entity';
-import { ADMIN_BASE_PATH } from './admin.constants';
+import { getAdminBasePath } from './admin.constants';
 import { AuthModule } from './auth/auth.module';
 import { AuthService } from './auth/auth.service';
 
@@ -38,14 +39,20 @@ async function buildAdminJsModule() {
     `import('@adminjs/nestjs')`,
   ) as Promise<any>);
   return AdminModule.createAdminAsync({
-    imports: [AuthModule, ConfigModule],
+    imports: [AuthModule],
     inject: [AuthService, ConfigService],
-    useFactory: (authService: AuthService, configService: ConfigService) => {
+    useFactory: (
+      authService: AuthService,
+      configService: ConfigService<EnvironmentVariables, true>,
+    ) => {
       const logger = new Logger('AdminJsSessionPool');
+      const adminBasePath = getAdminBasePath(
+        configService.get('URL_BASE_PATH', { infer: true }),
+      );
       const sessionPool = new Pool({
-        connectionString: configService.get('DATABASE_URL'),
+        connectionString: configService.get('DATABASE_URL', { infer: true }),
         max: 2,
-        ...('ssl' in dataSourceOptions ? { ssl: dataSourceOptions.ssl } : {}),
+        ssl: sslOptionsFromConfig(configService),
       });
       // Without a listener, an idle client error crashes the process
       sessionPool.on('error', (error) => {
@@ -53,16 +60,18 @@ async function buildAdminJsModule() {
       });
       return {
         adminJsOptions: {
-          rootPath: ADMIN_BASE_PATH,
-          loginPath: ADMIN_BASE_PATH + '/login',
-          logoutPath: ADMIN_BASE_PATH + '/logout',
+          rootPath: adminBasePath,
+          loginPath: adminBasePath + '/login',
+          logoutPath: adminBasePath + '/logout',
           resources: [Webhook],
         },
         auth: {
           authenticate: (email: string, password: string) =>
             authService.authenticate(email, password),
           cookieName: 'adminjs',
-          cookiePassword: process.env.ADMIN_COOKIE_SECRET,
+          cookiePassword: configService.get('ADMIN_COOKIE_SECRET', {
+            infer: true,
+          }),
         },
         sessionOptions: {
           // Sessions must be shared across replicas: the default MemoryStore is
@@ -73,7 +82,7 @@ async function buildAdminJsModule() {
           }),
           resave: false,
           saveUninitialized: false,
-          secret: process.env.ADMIN_SESSION_SECRET,
+          secret: configService.get('ADMIN_SESSION_SECRET', { infer: true }),
         },
       };
     },

@@ -5,7 +5,10 @@ import {
   OpenAPIObject,
   SwaggerCustomOptions,
 } from '@nestjs/swagger';
+import { ConfigService } from '@nestjs/config';
 import { AppModule } from './app.module';
+import { EnvironmentVariables } from './config/environment';
+import { getAdminBasePath } from './modules/admin/admin.constants';
 import { Logger } from 'nestjs-pino';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { Request, RequestHandler, Response } from 'express';
@@ -57,7 +60,10 @@ function setupSwagger(app: INestApplication, basePath: string) {
  * AdminJS's Location headers, HTML/JSON bodies, and static-asset serving (see
  * its docs). Proxy-prefix rewrites are no-op without `x-forwarded-prefix`.
  */
-function installAdminResponsePatch(app: INestApplication): void {
+function installAdminResponsePatch(
+  app: INestApplication,
+  adminBasePath: string,
+): void {
   type ExpressLayer = { name?: string; handle: RequestHandler };
   const expressApp = app.getHttpAdapter().getInstance() as {
     router?: { stack: ExpressLayer[] };
@@ -74,7 +80,7 @@ function installAdminResponsePatch(app: INestApplication): void {
 
   const originalHandle = adminLayer.handle;
   adminLayer.handle = (req, res, next) => {
-    patchAdminResponse(req, res);
+    patchAdminResponse(req, res, adminBasePath);
     originalHandle(req, res, next);
   };
 }
@@ -82,11 +88,13 @@ function installAdminResponsePatch(app: INestApplication): void {
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, { bufferLogs: true });
   app.useLogger(app.get(Logger));
-  const basePath = process.env.URL_BASE_PATH || '';
+  const configService =
+    app.get<ConfigService<EnvironmentVariables, true>>(ConfigService);
+  const basePath = configService.get('URL_BASE_PATH', { infer: true });
   app.setGlobalPrefix(basePath);
   setupSwagger(app, basePath);
   app.useGlobalPipes(new ValidationPipe());
   await app.listen(3000);
-  installAdminResponsePatch(app);
+  installAdminResponsePatch(app, getAdminBasePath(basePath));
 }
 bootstrap();
