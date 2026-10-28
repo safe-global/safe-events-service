@@ -5,13 +5,18 @@ import { QueueProvider } from './queue.provider';
 
 describe('QueueHealthIndicator', () => {
   const getConnection = jest.fn();
-  const queueProvider = { getConnection } as unknown as QueueProvider;
+  const isShuttingDown = jest.fn();
+  const queueProvider = {
+    getConnection,
+    isShuttingDown,
+  } as unknown as QueueProvider;
   const queueHealthIndicator = new QueueHealthIndicator(queueProvider);
 
   let loggerError: jest.SpyInstance;
 
   beforeEach(() => {
     jest.clearAllMocks();
+    isShuttingDown.mockReturnValue(false);
     loggerError = jest.spyOn(Logger.prototype, 'error').mockImplementation();
   });
 
@@ -46,5 +51,16 @@ describe('QueueHealthIndicator', () => {
     expect(loggerError).toHaveBeenCalledWith(
       `Cannot reach the queue provider: ${message}`,
     );
+  });
+
+  it('should throw a HealthCheckError without logging an error when shutting down', async () => {
+    isShuttingDown.mockReturnValue(true);
+
+    const error = await queueHealthIndicator.isHealthy('queue').catch((e) => e);
+
+    expect(error).toBeInstanceOf(HealthCheckError);
+    expect(error.causes).toStrictEqual({ queue: { status: 'down' } });
+    expect(getConnection).not.toHaveBeenCalled();
+    expect(loggerError).not.toHaveBeenCalled();
   });
 });

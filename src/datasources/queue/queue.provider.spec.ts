@@ -1,4 +1,6 @@
 import { hostname } from 'node:os';
+import { setTimeout as sleep } from 'node:timers/promises';
+import { Logger } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import amqp from 'amqp-connection-manager';
 import {
@@ -186,6 +188,161 @@ describe('QueueProvider', () => {
       const result = await queueProvider.subscribeToEvents(func);
       expect(typeof result).toEqual('string');
       expect(result.length).toBeGreaterThanOrEqual(1);
+    });
+  });
+
+  describe('shutdown', () => {
+    let closeSpy: jest.SpyInstance;
+    let warnSpy: jest.SpyInstance;
+
+    beforeEach(async () => {
+      const { connection, channel } = await queueProvider.getConnection();
+      // A message left by a previous test would reach the handler under test
+      await channel.waitForConnect();
+      await channel.purgeQueue(queueProvider.getQueueName());
+      closeSpy = jest.spyOn(connection, 'close');
+      warnSpy = jest.spyOn(Logger.prototype, 'warn').mockImplementation();
+    });
+
+    afterEach(() => {
+      jest.restoreAllMocks();
+    });
+
+    /**
+     * Subscribes a handler that blocks until `finish` is called, publishes one
+     * message and resolves once the handler is processing it
+     */
+    const processBlockingMessage = async () => {
+      let finish = () => {};
+      const started = new Promise<void>((resolveStarted) => {
+        void queueProvider.subscribeToEvents(() => {
+          resolveStarted();
+          return new Promise<void>((resolve) => {
+            finish = resolve;
+          });
+        });
+      });
+      const { channel } = await queueProvider.getConnection();
+      await channel.publish(queueProvider.getExchangeName(), '', {
+        type: 'SHUTDOWN_TEST',
+      });
+      await started;
+      return { finish };
+    };
+
+    it('should cancel the consumer, close the connection and not connect again', async () => {
+      await queueProvider.subscribeToEvents(async () => {});
+      const { channel } = await queueProvider.getConnection();
+      const cancelAllSpy = jest.spyOn(channel, 'cancelAll');
+
+      await queueProvider.beforeApplicationShutdown();
+
+      expect(cancelAllSpy).toHaveBeenCalled();
+      expect(closeSpy).toHaveBeenCalled();
+      expect(queueProvider['connection']).toBeUndefined();
+      await expect(queueProvider.getConnection()).rejects.toThrow(
+        'Queue provider is shutting down',
+      );
+    });
+
+    it('should ack the messages being processed before closing', async () => {
+      const { channel } = await queueProvider.getConnection();
+      const ackSpy = jest.spyOn(channel, 'ack');
+      const { finish } = await processBlockingMessage();
+
+      const shutdown = queueProvider.beforeApplicationShutdown();
+      await sleep(100);
+      expect(ackSpy).not.toHaveBeenCalled();
+      expect(closeSpy).not.toHaveBeenCalled();
+
+      finish();
+      await shutdown;
+
+      expect(ackSpy).toHaveBeenCalledTimes(1);
+      expect(closeSpy).toHaveBeenCalled();
+    });
+
+    it('should close the connection when processing takes longer than the timeout', async () => {
+      jest.spyOn(queueProvider, 'getShutdownTimeout').mockReturnValue(100);
+      const { finish } = await processBlockingMessage();
+
+      try {
+        await queueProvider.beforeApplicationShutdown();
+
+        expect(warnSpy).toHaveBeenCalledWith(
+          'Timeout waiting for in-flight messages, unacked messages will be requeued',
+        );
+        expect(closeSpy).toHaveBeenCalled();
+      } finally {
+        finish();
+      }
+    });
+
+    it('should requeue a message delivered after shutdown started', async () => {
+      const handler = jest.fn();
+      await queueProvider.subscribeToEvents(handler);
+      const { channel } = await queueProvider.getConnection();
+      const nack = channel.nack.bind(channel);
+      let requeued = () => {};
+      const nacked = new Promise<void>((resolve) => (requeued = resolve));
+      const nackSpy = jest
+        .spyOn(channel, 'nack')
+        .mockImplementation((...args) => {
+          nack(...args);
+          requeued();
+        });
+      queueProvider['shuttingDown'] = true;
+
+      await channel.publish(queueProvider.getExchangeName(), '', {
+        type: 'SHUTDOWN_TEST',
+      });
+      await nacked;
+
+      expect(nackSpy).toHaveBeenCalledWith(expect.anything(), false, true);
+      expect(handler).not.toHaveBeenCalled();
+      await channel.cancelAll();
+    });
+
+    it('should cancel a consumer registered after shutdown started', async () => {
+      const { channel } = await queueProvider.getConnection();
+      const consume = channel.consume.bind(channel);
+      let register = () => {};
+      const registering = new Promise<void>((resolve) => (register = resolve));
+      let consumeCalled = () => {};
+      const called = new Promise<void>((resolve) => (consumeCalled = resolve));
+      jest.spyOn(channel, 'consume').mockImplementationOnce(async (...args) => {
+        consumeCalled();
+        await registering;
+        return consume(...args);
+      });
+      const cancelSpy = jest.spyOn(channel, 'cancel');
+
+      const subscribing = queueProvider.subscribeToEvents(async () => {});
+      await called;
+      await queueProvider.beforeApplicationShutdown();
+      register();
+      const consumerTag = await subscribing;
+
+      expect(cancelSpy).toHaveBeenCalledWith(consumerTag);
+    });
+
+    it('should not wait for a broker that does not answer', async () => {
+      jest.useFakeTimers();
+      try {
+        jest
+          .spyOn(queueProvider, 'disconnect')
+          .mockReturnValueOnce(new Promise<void>(() => {}));
+
+        const shutdown = queueProvider.beforeApplicationShutdown();
+        await jest.advanceTimersByTimeAsync(5_000);
+        await shutdown;
+
+        expect(warnSpy).toHaveBeenCalledWith(
+          'Timeout closing the AMQP connection',
+        );
+      } finally {
+        jest.useRealTimers();
+      }
     });
   });
 });

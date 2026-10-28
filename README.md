@@ -348,6 +348,7 @@ All configuration is done through environment variables. See `.env.sample` for a
 | `HTTP_CLIENT_TTL` | No | `600000` | Max lifetime of a connection before it is retired, in milliseconds. Bounds how long a host stays pinned to one IP |
 | `DB_HEALTH_CHECK_TIMEOUT` | No | `5000` | Database ping timeout in milliseconds for `/health/ready` |
 | `AMQP_PREFETCH_MESSAGES` | No | `100` | RabbitMQ prefetch message count |
+| `AMQP_SHUTDOWN_TIMEOUT` | No | `15000` | On shutdown, max time in milliseconds to wait for the messages being processed. Messages not acked by then are requeued by RabbitMQ. This value plus 5 s (AMQP close) must stay under the pod termination grace period |
 | `WEBHOOK_AUTO_DISABLE` | No | `false` | Auto-disable webhooks that exceed the failure threshold |
 | `WEBHOOK_FAILURE_THRESHOLD` | No | `90` | Failure rate percentage (0–100) above which a webhook is auto-disabled |
 | `WEBHOOK_HEALTH_MINUTES_WINDOW` | No | `60` | Rolling window in minutes used to compute per-webhook failure rates |
