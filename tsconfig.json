@@ -1,6 +1,7 @@
 {
   "compilerOptions": {
     "module": "nodenext",
+    "isolatedModules": true,
     "declaration": true,
     "strict": true,
     "strictPropertyInitialization": false,
@@ -9,6 +10,7 @@
     "experimentalDecorators": true,
     "target": "ES2023",
     "sourceMap": true,
+    "rootDir": "./",
     "outDir": "./dist",
     "types": ["node", "jest"],
     "incremental": true,
