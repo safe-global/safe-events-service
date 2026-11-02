@@ -1,10 +1,6 @@
 import { Controller, Get } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import {
-  HealthCheckService,
-  HealthCheck,
-  TypeOrmHealthIndicator,
-} from '@nestjs/terminus';
+import { HealthCheckService, HealthCheck } from '@nestjs/terminus';
+import { DatabaseHealthIndicator } from '../../datasources/db/database.health';
 import { QueueHealthIndicator } from '../../datasources/queue/queue.health';
 import { ApiTags, ApiOkResponse } from '@nestjs/swagger';
 import { Health, HealthStatus } from './health.entities';
@@ -13,9 +9,8 @@ import { Health, HealthStatus } from './health.entities';
 @ApiTags('health')
 export class HealthController {
   constructor(
-    private readonly configService: ConfigService,
     private readonly health: HealthCheckService,
-    private readonly db: TypeOrmHealthIndicator,
+    private readonly db: DatabaseHealthIndicator,
     private readonly queue: QueueHealthIndicator,
   ) {}
 
@@ -29,12 +24,7 @@ export class HealthController {
   @HealthCheck()
   check() {
     return this.health.check([
-      () =>
-        this.db.pingCheck('database', {
-          timeout: Number(
-            this.configService.get('DB_HEALTH_CHECK_TIMEOUT', 5_000),
-          ),
-        }),
+      () => this.db.isHealthy('database'),
       () => this.queue.isHealthy('queue'),
     ]);
   }

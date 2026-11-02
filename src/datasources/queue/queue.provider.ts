@@ -214,7 +214,8 @@ export class QueueProvider implements BeforeApplicationShutdown {
     // `ChannelWrapper` is an `EventEmitter`, an `error` without a listener takes
     // the process down. The wrapper reconnects on its own, so logging is enough
     this.channelWrapper.on('error', (error, { name }) => {
-      this.logger.error(`Error on channel ${name}: ${error.message}`);
+      const message = error instanceof Error ? error.message : String(error);
+      this.logger.error(`Error on channel ${name}: ${message}`);
     });
 
     return {

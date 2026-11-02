@@ -4,7 +4,7 @@ import { WebhooksController } from './webhook.controller';
 import { WebhookPublicDto, WebhookRequestDto } from './dtos/webhook.dto';
 import { INestApplication } from '@nestjs/common';
 import { AppModule } from '../../app.module';
-import * as request from 'supertest';
+import request from 'supertest';
 import { DataSource, Repository } from 'typeorm';
 import { Webhook } from './repositories/webhook.entity';
 import { ConfigService } from '@nestjs/config';

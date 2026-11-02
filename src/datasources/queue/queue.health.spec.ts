@@ -1,5 +1,5 @@
 import { Logger } from '@nestjs/common';
-import { HealthCheckError } from '@nestjs/terminus';
+import { HealthIndicatorService } from '@nestjs/terminus';
 import { QueueHealthIndicator } from './queue.health';
 import { QueueProvider } from './queue.provider';
 
@@ -10,7 +10,12 @@ describe('QueueHealthIndicator', () => {
     getConnection,
     isShuttingDown,
   } as unknown as QueueProvider;
-  const queueHealthIndicator = new QueueHealthIndicator(queueProvider);
+  const queueHealthIndicator = new QueueHealthIndicator(
+    queueProvider,
+    new HealthIndicatorService(),
+  );
+
+  const queueDown = { queue: { status: 'down' } };
 
   let loggerError: jest.SpyInstance;
 
@@ -30,36 +35,34 @@ describe('QueueHealthIndicator', () => {
     ).resolves.toStrictEqual({ queue: { status: 'up' } });
   });
 
-  it('should throw a HealthCheckError when the connection is down', async () => {
+  it('should be down when the connection is not established', async () => {
     getConnection.mockResolvedValue({
       connection: { isConnected: () => false },
     });
 
-    await expect(queueHealthIndicator.isHealthy('queue')).rejects.toThrow(
-      HealthCheckError,
-    );
+    await expect(
+      queueHealthIndicator.isHealthy('queue'),
+    ).resolves.toStrictEqual(queueDown);
   });
 
-  it('should throw a HealthCheckError when the provider cannot be reached', async () => {
+  it('should be down when the provider cannot be reached', async () => {
     const message = 'Configuration key "AMQP_URL" does not exist';
     getConnection.mockRejectedValue(new Error(message));
 
-    const error = await queueHealthIndicator.isHealthy('queue').catch((e) => e);
-
-    expect(error).toBeInstanceOf(HealthCheckError);
-    expect(error.causes).toStrictEqual({ queue: { status: 'down' } });
+    await expect(
+      queueHealthIndicator.isHealthy('queue'),
+    ).resolves.toStrictEqual(queueDown);
     expect(loggerError).toHaveBeenCalledWith(
       `Cannot reach the queue provider: ${message}`,
     );
   });
 
-  it('should throw a HealthCheckError without logging an error when shutting down', async () => {
+  it('should be down without logging an error when shutting down', async () => {
     isShuttingDown.mockReturnValue(true);
 
-    const error = await queueHealthIndicator.isHealthy('queue').catch((e) => e);
-
-    expect(error).toBeInstanceOf(HealthCheckError);
-    expect(error.causes).toStrictEqual({ queue: { status: 'down' } });
+    await expect(
+      queueHealthIndicator.isHealthy('queue'),
+    ).resolves.toStrictEqual(queueDown);
     expect(getConnection).not.toHaveBeenCalled();
     expect(loggerError).not.toHaveBeenCalled();
   });

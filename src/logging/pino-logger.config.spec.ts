@@ -6,7 +6,7 @@ import {
 } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { LoggerModule } from 'nestjs-pino';
-import * as request from 'supertest';
+import request from 'supertest';
 import { Writable } from 'stream';
 import { isIgnoredRequest, pinoHttpOptions } from './pino-logger.config';
 /* eslint-disable */

@@ -4,7 +4,7 @@ import {
   Logger,
   OnApplicationShutdown,
 } from '@nestjs/common';
-import { Cache } from 'cache-manager';
+import type { Cache } from 'cache-manager';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Webhook, WebhookWithStats } from './repositories/webhook.entity';
