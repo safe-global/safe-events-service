@@ -2,14 +2,13 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { HealthController } from './health.controller';
 import { HealthModule } from './health.module';
 import {
-  HealthCheckError,
   HealthCheckResult,
   HealthCheckStatus,
   TypeOrmHealthIndicator,
 } from '@nestjs/terminus';
 import { ConfigModule } from '@nestjs/config';
 import { INestApplication } from '@nestjs/common';
-import * as request from 'supertest';
+import request from 'supertest';
 import { DatabaseModule } from '../../datasources/db/database.module';
 import { QueueHealthIndicator } from '../../datasources/queue/queue.health';
 import { QueueProvider } from '../../datasources/queue/queue.provider';
@@ -46,17 +45,16 @@ describe('HealthController', () => {
 describe('Health endpoints', () => {
   let app: INestApplication;
 
-  const mockDb = { pingCheck: jest.fn() };
+  const mockPingWithTimeout = jest.fn();
+  const mockDb = {
+    pingCheck: jest.fn(() => ({ withTimeout: mockPingWithTimeout })),
+  };
   const mockQueue = { isHealthy: jest.fn() };
 
   const databaseUp = { database: { status: 'up' } };
   const databaseDown = { database: { status: 'down' } };
   const queueUp = { queue: { status: 'up' } };
   const queueDown = { queue: { status: 'down' } };
-  const queueDownError = new HealthCheckError(
-    'Queue provider not connected',
-    queueDown,
-  );
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
@@ -78,14 +76,14 @@ describe('Health endpoints', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    mockDb.pingCheck.mockResolvedValue(databaseUp);
+    mockPingWithTimeout.mockResolvedValue(databaseUp);
     mockQueue.isHealthy.mockResolvedValue(queueUp);
   });
 
   describe('GET /health/live', () => {
     it('should return 200 without checking any dependency', async () => {
-      mockDb.pingCheck.mockResolvedValue(databaseDown);
-      mockQueue.isHealthy.mockRejectedValue(queueDownError);
+      mockPingWithTimeout.mockResolvedValue(databaseDown);
+      mockQueue.isHealthy.mockResolvedValue(queueDown);
 
       const response = await request(app.getHttpServer())
         .get('/health/live')
@@ -114,14 +112,13 @@ describe('Health endpoints', () => {
         ...databaseUp,
         ...queueUp,
       });
-      expect(mockDb.pingCheck).toHaveBeenCalledWith('database', {
-        timeout: expect.any(Number),
-      });
+      expect(mockDb.pingCheck).toHaveBeenCalledWith('database');
+      expect(mockPingWithTimeout).toHaveBeenCalledWith(expect.any(Number));
       expect(mockQueue.isHealthy).toHaveBeenCalledWith('queue');
     });
 
     it('should return 503 when the database is down', async () => {
-      mockDb.pingCheck.mockResolvedValue(databaseDown);
+      mockPingWithTimeout.mockResolvedValue(databaseDown);
 
       const response = await request(app.getHttpServer())
         .get('/health/ready')
@@ -132,7 +129,7 @@ describe('Health endpoints', () => {
     });
 
     it('should return 503 when the queue is down', async () => {
-      mockQueue.isHealthy.mockRejectedValue(queueDownError);
+      mockQueue.isHealthy.mockResolvedValue(queueDown);
 
       const response = await request(app.getHttpServer())
         .get('/health/ready')
@@ -143,8 +140,8 @@ describe('Health endpoints', () => {
     });
 
     it('should return 503 when every dependency is down', async () => {
-      mockDb.pingCheck.mockResolvedValue(databaseDown);
-      mockQueue.isHealthy.mockRejectedValue(queueDownError);
+      mockPingWithTimeout.mockResolvedValue(databaseDown);
+      mockQueue.isHealthy.mockResolvedValue(queueDown);
 
       const response = await request(app.getHttpServer())
         .get('/health/ready')

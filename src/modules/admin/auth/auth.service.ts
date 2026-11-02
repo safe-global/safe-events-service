@@ -17,20 +17,20 @@ export class AuthService {
   async authenticate(
     providedEmail: string,
     providedPassword: string,
-  ): Promise<{ email: string; password: string } | undefined> {
+  ): Promise<{ email: string } | null> {
     const email = this.getAdminEmail();
-    const password = this.getAdminPassword();
-    const adminCredentials = { email, password };
     // Compute both comparisons before combining them so the check does not
     // short-circuit and leak (via timing) whether the email was correct.
-    const emailMatch = safeCompare(providedEmail, adminCredentials.email);
+    const emailMatch = safeCompare(providedEmail, email);
     const passwordMatch = safeCompare(
       providedPassword,
-      adminCredentials.password,
+      this.getAdminPassword(),
     );
+    // AdminJS stores the returned admin in the session and sends it to the
+    // browser, so it must not hold the password
     if (emailMatch && passwordMatch) {
-      return adminCredentials;
+      return { email };
     }
-    return undefined;
+    return null;
   }
 }

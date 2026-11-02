@@ -8,16 +8,26 @@ import {
 import { QueueHealthIndicator } from '../../datasources/queue/queue.health';
 import { ApiTags, ApiOkResponse } from '@nestjs/swagger';
 import { Health, HealthStatus } from './health.entities';
+import { parseNumberConfig } from '../../common/utils/parse-number-config';
 
 @Controller('health')
 @ApiTags('health')
 export class HealthController {
+  private readonly dbTimeoutMs: number;
+
   constructor(
-    private readonly configService: ConfigService,
+    configService: ConfigService,
     private readonly health: HealthCheckService,
     private readonly db: TypeOrmHealthIndicator,
     private readonly queue: QueueHealthIndicator,
-  ) {}
+  ) {
+    this.dbTimeoutMs = parseNumberConfig(
+      'DB_HEALTH_CHECK_TIMEOUT',
+      configService.get('DB_HEALTH_CHECK_TIMEOUT'),
+      5_000,
+      1,
+    );
+  }
 
   @Get('live')
   @ApiOkResponse({ type: Health })
@@ -29,12 +39,7 @@ export class HealthController {
   @HealthCheck()
   check() {
     return this.health.check([
-      () =>
-        this.db.pingCheck('database', {
-          timeout: Number(
-            this.configService.get('DB_HEALTH_CHECK_TIMEOUT', 5_000),
-          ),
-        }),
+      () => this.db.pingCheck('database').withTimeout(this.dbTimeoutMs),
       () => this.queue.isHealthy('queue'),
     ]);
   }

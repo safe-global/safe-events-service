@@ -1,8 +1,8 @@
 import { Logger, Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { Pool } from 'pg';
-import * as connectPgSimple from 'connect-pg-simple';
-import * as session from 'express-session';
+import connectPgSimple from 'connect-pg-simple';
+import session from 'express-session';
 import { dataSourceOptions } from '../../datasources/db/database.options';
 import { Webhook } from '../webhook/repositories/webhook.entity';
 import { ADMIN_BASE_PATH } from './admin.constants';
@@ -18,25 +18,13 @@ async function buildAdminJsModule() {
   // which keeps Jest from exiting cleanly
   if (process.env.JEST_WORKER_ID !== undefined) {
     console.log('Skipping AdminJS in test environment');
-    return AdminJsTestModule;
+    return { module: AdminJsTestModule };
   }
 
-  // Nest.js does not support ESM modules
-  // This workaround is better than modifying tsconfig.json module resolution as
-  // it brings issues with another libraries
-  // https://stackoverflow.com/a/75287028/724991
-
-  const { AdminJS } = await (eval(`import('adminjs')`) as Promise<any>);
-  const AdminJSTypeorm = await (eval(
-    `import('@adminjs/typeorm')`,
-  ) as Promise<any>);
-  AdminJS.registerAdapter({
-    Resource: AdminJSTypeorm.Resource,
-    Database: AdminJSTypeorm.Database,
-  });
-  const { AdminModule } = await (eval(
-    `import('@adminjs/nestjs')`,
-  ) as Promise<any>);
+  const { default: AdminJS } = await import('adminjs');
+  const { Resource, Database } = await import('@adminjs/typeorm');
+  AdminJS.registerAdapter({ Resource, Database });
+  const { AdminModule } = await import('@adminjs/nestjs');
   return AdminModule.createAdminAsync({
     imports: [AuthModule, ConfigModule],
     inject: [AuthService, ConfigService],
@@ -62,7 +50,7 @@ async function buildAdminJsModule() {
           authenticate: (email: string, password: string) =>
             authService.authenticate(email, password),
           cookieName: 'adminjs',
-          cookiePassword: process.env.ADMIN_COOKIE_SECRET,
+          cookiePassword: configService.getOrThrow('ADMIN_COOKIE_SECRET'),
         },
         sessionOptions: {
           // Sessions must be shared across replicas: the default MemoryStore is
@@ -73,7 +61,7 @@ async function buildAdminJsModule() {
           }),
           resave: false,
           saveUninitialized: false,
-          secret: process.env.ADMIN_SESSION_SECRET,
+          secret: configService.getOrThrow('ADMIN_SESSION_SECRET'),
         },
       };
     },

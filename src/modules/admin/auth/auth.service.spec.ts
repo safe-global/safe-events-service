@@ -19,7 +19,7 @@ describe('Test auth service', () => {
   it('should authenticate with correct parameters', async () => {
     const email = configService.getOrThrow('ADMIN_EMAIL');
     const password = configService.getOrThrow('ADMIN_PASSWORD');
-    const expected = { email, password };
+    const expected = { email };
     const result = await authService.authenticate(email, password);
     expect(result).toEqual(expected);
   });
@@ -27,7 +27,7 @@ describe('Test auth service', () => {
   it('should not authenticate with wrong parameters', async () => {
     const email = configService.getOrThrow('ADMIN_EMAIL');
     const password = configService.getOrThrow('ADMIN_PASSWORD') + 'b';
-    const expected = undefined;
+    const expected = null;
     const result = await authService.authenticate(email, password);
     expect(result).toEqual(expected);
   });

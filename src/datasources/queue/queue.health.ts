@@ -1,43 +1,37 @@
 import { Injectable, Logger } from '@nestjs/common';
 import {
-  HealthIndicator,
   HealthIndicatorResult,
-  HealthCheckError,
+  HealthIndicatorService,
 } from '@nestjs/terminus';
 import { QueueProvider } from './queue.provider';
 
 @Injectable()
-export class QueueHealthIndicator extends HealthIndicator {
+export class QueueHealthIndicator {
   private readonly logger = new Logger(QueueHealthIndicator.name);
 
-  constructor(private readonly queueProvider: QueueProvider) {
-    super();
-  }
+  constructor(
+    private readonly queueProvider: QueueProvider,
+    private readonly healthIndicatorService: HealthIndicatorService,
+  ) {}
 
   async isHealthy(key: string): Promise<HealthIndicatorResult> {
-    let connected = false;
+    const indicator = this.healthIndicatorService.check(key);
 
     // During shutdown the queue is expected to be down while messages are
     // drained, so it is reported as not ready without logging an error.
     // Reaching the provider can fail on its own, e.g. a missing `AMQP_URL`.
-    // Only a `HealthCheckError` is turned into a `503` by Terminus, any other
-    // rejection would surface as a `500`. The reason stays in the logs, the
-    // message comes from the libraries and can hold connection details
-    if (!this.queueProvider.isShuttingDown()) {
-      try {
-        const { connection } = await this.queueProvider.getConnection();
-        connected = connection.isConnected();
-      } catch (e) {
-        const error = e instanceof Error ? e.message : String(e);
-        this.logger.error(`Cannot reach the queue provider: ${error}`);
-      }
+    // The reason stays in the logs, the message comes from the libraries and
+    // can hold connection details
+    if (this.queueProvider.isShuttingDown()) {
+      return indicator.down();
     }
-
-    const result = this.getStatus(key, connected);
-
-    if (connected) {
-      return result;
+    try {
+      const { connection } = await this.queueProvider.getConnection();
+      return connection.isConnected() ? indicator.up() : indicator.down();
+    } catch (e) {
+      const error = e instanceof Error ? e.message : String(e);
+      this.logger.error(`Cannot reach the queue provider: ${error}`);
+      return indicator.down();
     }
-    throw new HealthCheckError('Queue provider not connected', result);
   }
 }
