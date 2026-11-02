@@ -1,37 +1,18 @@
-import { Controller, Get, Logger } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import {
-  HealthCheckService,
-  HealthCheck,
-  HealthIndicatorResult,
-  HealthIndicatorService,
-  TypeOrmHealthIndicator,
-} from '@nestjs/terminus';
+import { Controller, Get } from '@nestjs/common';
+import { HealthCheckService, HealthCheck } from '@nestjs/terminus';
+import { DatabaseHealthIndicator } from '../../datasources/db/database.health';
 import { QueueHealthIndicator } from '../../datasources/queue/queue.health';
 import { ApiTags, ApiOkResponse } from '@nestjs/swagger';
 import { Health, HealthStatus } from './health.entities';
-import { parseNumberConfig } from '../../common/utils/parse-number-config';
 
 @Controller('health')
 @ApiTags('health')
 export class HealthController {
-  private readonly logger = new Logger(HealthController.name);
-  private readonly dbTimeoutMs: number;
-
   constructor(
-    configService: ConfigService,
     private readonly health: HealthCheckService,
-    private readonly db: TypeOrmHealthIndicator,
+    private readonly db: DatabaseHealthIndicator,
     private readonly queue: QueueHealthIndicator,
-    private readonly healthIndicatorService: HealthIndicatorService,
-  ) {
-    this.dbTimeoutMs = parseNumberConfig(
-      'DB_HEALTH_CHECK_TIMEOUT',
-      configService.get('DB_HEALTH_CHECK_TIMEOUT'),
-      5_000,
-      1,
-    );
-  }
+  ) {}
 
   @Get('live')
   @ApiOkResponse({ type: Health })
@@ -43,20 +24,8 @@ export class HealthController {
   @HealthCheck()
   check() {
     return this.health.check([
-      () => this.checkDatabase(),
+      () => this.db.isHealthy('database'),
       () => this.queue.isHealthy('queue'),
     ]);
-  }
-
-  // The ping error comes from the driver and can hold connection details, so
-  // it stays in the logs and is not returned in the response
-  private async checkDatabase(): Promise<HealthIndicatorResult> {
-    const key = 'database';
-    const result = await this.db.pingCheck(key).withTimeout(this.dbTimeoutMs);
-    if (result[key].status === 'up') {
-      return result;
-    }
-    this.logger.error(`Cannot reach the database: ${result[key].message}`);
-    return this.healthIndicatorService.check(key).down();
   }
 }
