@@ -1,8 +1,10 @@
-import { Controller, Get } from '@nestjs/common';
+import { Controller, Get, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import {
   HealthCheckService,
   HealthCheck,
+  HealthIndicatorResult,
+  HealthIndicatorService,
   TypeOrmHealthIndicator,
 } from '@nestjs/terminus';
 import { QueueHealthIndicator } from '../../datasources/queue/queue.health';
@@ -13,6 +15,7 @@ import { parseNumberConfig } from '../../common/utils/parse-number-config';
 @Controller('health')
 @ApiTags('health')
 export class HealthController {
+  private readonly logger = new Logger(HealthController.name);
   private readonly dbTimeoutMs: number;
 
   constructor(
@@ -20,6 +23,7 @@ export class HealthController {
     private readonly health: HealthCheckService,
     private readonly db: TypeOrmHealthIndicator,
     private readonly queue: QueueHealthIndicator,
+    private readonly healthIndicatorService: HealthIndicatorService,
   ) {
     this.dbTimeoutMs = parseNumberConfig(
       'DB_HEALTH_CHECK_TIMEOUT',
@@ -39,8 +43,20 @@ export class HealthController {
   @HealthCheck()
   check() {
     return this.health.check([
-      () => this.db.pingCheck('database').withTimeout(this.dbTimeoutMs),
+      () => this.checkDatabase(),
       () => this.queue.isHealthy('queue'),
     ]);
+  }
+
+  // The ping error comes from the driver and can hold connection details, so
+  // it stays in the logs and is not returned in the response
+  private async checkDatabase(): Promise<HealthIndicatorResult> {
+    const key = 'database';
+    const result = await this.db.pingCheck(key).withTimeout(this.dbTimeoutMs);
+    if (result[key].status === 'up') {
+      return result;
+    }
+    this.logger.error(`Cannot reach the database: ${result[key].message}`);
+    return this.healthIndicatorService.check(key).down();
   }
 }

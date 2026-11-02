@@ -128,6 +128,27 @@ describe('Health endpoints', () => {
       expect(response.body.error).toStrictEqual(databaseDown);
     });
 
+    it('should not return the database error message', async () => {
+      /** The driver message can hold hosts and ports, so it is only logged. */
+      mockPingWithTimeout.mockResolvedValue({
+        database: {
+          status: 'down',
+          message: 'connect ECONNREFUSED 10.0.0.1:5432',
+          responseTime: 1,
+        },
+      });
+
+      const response = await request(app.getHttpServer())
+        .get('/health/ready')
+        .expect(503);
+
+      expect(response.body.error).toStrictEqual(databaseDown);
+      expect(response.body.details).toStrictEqual({
+        ...databaseDown,
+        ...queueUp,
+      });
+    });
+
     it('should return 503 when the queue is down', async () => {
       mockQueue.isHealthy.mockResolvedValue(queueDown);
 
