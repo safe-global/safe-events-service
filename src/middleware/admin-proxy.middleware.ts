@@ -41,14 +41,14 @@ export function rewriteAdminPaths(
 export function wrapAdminResponse(
   req: Request,
   res: Response,
-  adminRoot: string,
+  adminBasePath: string,
 ): void {
   const prefix = getForwardedPrefix(req);
   if (!prefix) return;
   const origSend = res.send.bind(res);
   (res.send as unknown) = function patchedSend(body: unknown): Response {
     if (typeof body === 'string') {
-      body = rewriteAdminPaths(body, adminRoot, prefix);
+      body = rewriteAdminPaths(body, adminBasePath, prefix);
       res.removeHeader('content-length');
     }
     return origSend(body as Parameters<Response['send']>[0]);
@@ -97,9 +97,9 @@ export function patchAdminAssetDotfiles(res: Response): void {
 export function patchAdminResponse(
   req: Request,
   res: Response,
-  adminRoot: string,
+  adminBasePath: string,
 ): void {
   patchLocationHeader(req, res);
-  wrapAdminResponse(req, res, adminRoot);
+  wrapAdminResponse(req, res, adminBasePath);
   patchAdminAssetDotfiles(res);
 }
