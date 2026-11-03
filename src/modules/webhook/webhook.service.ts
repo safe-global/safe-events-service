@@ -16,6 +16,17 @@ export class WebhookService {
     private readonly webhooksRepository: Repository<Webhook>,
   ) {}
   /**
+   * Get every webhook, active or not, sorted by url.
+   * @returns PublicWebhook list
+   */
+  async getWebhooks(): Promise<WebhookPublicDto[]> {
+    const webhooks = await this.webhooksRepository.find({
+      order: { url: 'ASC' },
+    });
+    return webhooks.map((webhook) => webhook.toPublicDto());
+  }
+
+  /**
    * Get public webhook by its ID.
    * @param publicId
    * @returns PublicWebhook

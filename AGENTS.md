@@ -21,7 +21,7 @@
   - One-shot: `bash ./scripts/run_tests.sh` (brings up `rabbitmq db db-migrations`, runs the suite).
   - Manual: `docker compose up -d rabbitmq db db-migrations` then `pnpm test` (unit) / `pnpm test:e2e` (e2e config at `test/jest-e2e.json`).
   - Single test: `pnpm test -- src/modules/webhook/webhookDispatcher.service.spec.ts` or `pnpm test -- -t "partial test name"`.
-- Tests run under `NODE_OPTIONS=--experimental-vm-modules` (ESM deps like AdminJS) — keep that when invoking jest directly.
+- Tests run under `NODE_OPTIONS=--experimental-vm-modules` (ESM deps) — keep that when invoking jest directly.
 
 ## Migrations
 
@@ -49,10 +49,11 @@ Key behaviors worth knowing before changing the dispatch path:
 - **Shutdown (SIGTERM)**: `QueueProvider.beforeApplicationShutdown` cancels the consumer, waits for in-flight messages (`AMQP_SHUTDOWN_TIMEOUT`) and closes the AMQP connection. Anything the message handlers use must be closed in `onApplicationShutdown`, not `onModuleDestroy`, which runs before the wait.
 - Response bodies are read with a byte cap (`WEBHOOK_MAX_RESPONSE_BYTES`) — they're only used for logging.
 
-## Endpoints & admin
+## Endpoints
 
-- `/health/live` (constant, no dependencies) and `/health/ready` (Terminus: database ping + RabbitMQ connection, `503` when either is down), `/events/sse/{CHECKSUMMED_SAFE_ADDRESS}` (server-sent events, filtered from the RxJS subject; gated by `SSE_AUTH_TOKEN` Basic auth when set), and `/admin` (**AdminJS** panel over the DB models, ESM-only, mounted via `modules/admin/adminjs.ts`).
-- AdminJS sits behind proxy middleware (`middleware/admin-proxy.middleware.ts`, `reverse-proxy.middleware.ts`) that rewrites asset paths so the panel works under `URL_BASE_PATH`. AdminJS assets live under a `.pnpm` dotfile dir, so static serving must allow dotfiles (`dotfiles: 'allow'`) or the assets 404 under pnpm.
+- `/health/live` (constant, no dependencies) and `/health/ready` (Terminus: database ping + RabbitMQ connection, `503` when either is down), `/events/sse/{CHECKSUMMED_SAFE_ADDRESS}` (server-sent events, filtered from the RxJS subject; gated by `SSE_AUTH_TOKEN` Basic auth when set), `/webhooks` CRUD (gated by `ADMIN_WEBHOOK_AUTH` Basic auth) and Swagger UI at the root path. There is no admin panel: devs and devops manage webhooks through `/webhooks` and Swagger.
+- In the deployed environments APISIX sits in front of the service, strips the external prefix and sends it in `X-Forwarded-Prefix` (`URL_BASE_PATH` stays unset). `middleware/reverse-proxy.middleware.ts` uses that header for `Location` redirects and the Swagger `servers` URL. Deployment config lives in `safe-events-service-infra-tf`.
+- safe-auth-service calls `/webhooks` in-cluster, so changes to that contract need both services.
 
 ## Conventions
 

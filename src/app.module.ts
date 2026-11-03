@@ -6,7 +6,6 @@ import {
 } from '@nestjs/common';
 
 import { AboutModule } from './modules/about/about.module';
-import { AdminJsModule } from './modules/admin/adminjs';
 import { ConfigModule } from '@nestjs/config';
 import { DatabaseModule } from './datasources/db/database.module';
 import { EventsModule } from './modules/events/events.module';
@@ -20,7 +19,6 @@ import { ScheduleModule } from '@nestjs/schedule';
 @Module({
   imports: [
     AboutModule,
-    AdminJsModule,
     ConfigModule.forRoot(),
     DatabaseModule,
     EventsModule,

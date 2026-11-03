@@ -55,13 +55,6 @@ updates:
         update-types:
           - minor
           - patch
-      adminjs:
-        patterns:
-          - "adminjs"
-          - "@adminjs/*"
-        update-types:
-          - minor
-          - patch
       production-dependencies:
         dependency-type: production
         update-types:

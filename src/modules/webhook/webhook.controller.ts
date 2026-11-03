@@ -44,6 +44,13 @@ export class WebhooksController {
   }
 
   @UseGuards(AdminWebhookGuard)
+  @Get()
+  @ApiOkResponse({ type: WebhookPublicDto, isArray: true })
+  async getWebhooks(): Promise<WebhookPublicDto[]> {
+    return await this.webhookService.getWebhooks();
+  }
+
+  @UseGuards(AdminWebhookGuard)
   @Get(':id')
   @ApiOkResponse({ type: WebhookPublicDto })
   @ApiNotFoundResponse({ description: 'Webhook not found' })

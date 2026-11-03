@@ -1,6 +1,5 @@
 import { randomUUID } from 'crypto';
 import type { Params } from 'nestjs-pino';
-import { ADMIN_BASE_PATH } from '../modules/admin/admin.constants';
 
 /* eslint-disable */
 const { version: packageVersion } = require('../../package.json');
@@ -10,18 +9,12 @@ const HEALTH_BASE_PATH = (process.env.URL_BASE_PATH || '') + '/health';
 
 /**
  * Requests we don't want a `httpRequest`/`httpResponse` log line for:
- * health probes (one every few seconds) and the AdminJS panel, which pulls
- * dozens of static assets per page load.
+ * health probes (one every few seconds).
  */
 export function isIgnoredRequest(url: string | undefined): boolean {
   if (!url) return false;
   const path = url.split('?')[0];
-  return (
-    path === HEALTH_BASE_PATH ||
-    path.startsWith(HEALTH_BASE_PATH + '/') ||
-    path === ADMIN_BASE_PATH ||
-    path.startsWith(ADMIN_BASE_PATH + '/')
-  );
+  return path === HEALTH_BASE_PATH || path.startsWith(HEALTH_BASE_PATH + '/');
 }
 
 export const pinoHttpOptions: Params['pinoHttp'] = {

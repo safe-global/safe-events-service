@@ -18,6 +18,7 @@ describe('WebhooksController', () => {
     createWebhook: jest.fn(),
     updateWebhook: jest.fn(),
     getWebhook: jest.fn(),
+    getWebhooks: jest.fn(),
     deleteWebhook: jest.fn(),
   };
 
@@ -87,6 +88,15 @@ describe('WebhooksController', () => {
       expect(mockWebhookService.getWebhook).toHaveBeenCalledWith(
         mockPublicDto.id,
       );
+    });
+
+    it('Should list the webhooks and return WebhookPublicDto[]', async () => {
+      /** The controller returns what the service lists. */
+      mockWebhookService.getWebhooks.mockResolvedValue([mockPublicDto]);
+
+      const result = await controller.getWebhooks();
+      expect(result).toEqual([mockPublicDto]);
+      expect(mockWebhookService.getWebhooks).toHaveBeenCalledWith();
     });
 
     it('Should update a webhook and return WebhookPublicDto', async () => {
@@ -175,6 +185,50 @@ describe('WebhooksController', () => {
       expect(res.body.description).toBe('Updated E2E Webhook');
       expect(res.body.events).toStrictEqual(['SEND_MULTISIG_TXS']);
       expect(res.body.id).toBe(publicId);
+    });
+
+    it('GET /webhooks — should return 403', async () => {
+      /** Listing webhooks needs the admin webhook auth. */
+      await request(app.getHttpServer()).get('/webhooks').expect(403);
+      await request(app.getHttpServer())
+        .get('/webhooks')
+        .set('Authorization', 'Basic other-wrong-token')
+        .expect(403);
+    });
+
+    it('GET /webhooks — should list every webhook sorted by url', async () => {
+      /** Inactive webhooks are listed too, and the list is sorted by url. */
+      await request(app.getHttpServer())
+        .get('/webhooks')
+        .set('Authorization', `Basic ${admin_webhook_auth_key}`)
+        .expect(200)
+        .expect([]);
+
+      for (const [url, isActive] of [
+        ['https://example.com/hook-b', true],
+        ['https://example.com/hook-a', false],
+      ] as const) {
+        await request(app.getHttpServer())
+          .post('/webhooks')
+          .set('Authorization', `Basic ${admin_webhook_auth_key}`)
+          .send({ ...mockRequestDto, url, isActive })
+          .expect(201);
+      }
+
+      const res = await request(app.getHttpServer())
+        .get('/webhooks')
+        .set('Authorization', `Basic ${admin_webhook_auth_key}`)
+        .expect(200);
+
+      expect(
+        res.body.map((webhook: WebhookPublicDto) => [
+          webhook.url,
+          webhook.isActive,
+        ]),
+      ).toEqual([
+        ['https://example.com/hook-a', false],
+        ['https://example.com/hook-b', true],
+      ]);
     });
 
     it('GET /webhooks/:id — should return 403', async () => {
