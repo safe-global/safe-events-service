@@ -8,8 +8,7 @@ import {
 import { AppModule } from './app.module';
 import { Logger } from 'nestjs-pino';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
-import { Request, RequestHandler, Response } from 'express';
-import { patchAdminResponse } from './middleware/admin-proxy.middleware';
+import { Request, Response } from 'express';
 import { getForwardedPrefix } from './middleware/reverse-proxy.middleware';
 
 /**
@@ -49,36 +48,6 @@ function setupSwagger(app: INestApplication, basePath: string) {
   });
 }
 
-/**
- * `@adminjs/nestjs` mounts its Express router in `onModuleInit` and then
- * reorders it to the front of the Express stack, so Nest `MiddlewareConsumer`
- * entries never run for `/admin/*`. We therefore wrap the admin layer's
- * handler after `app.listen()` and apply `patchAdminResponse`, which adapts
- * AdminJS's Location headers, HTML/JSON bodies, and static-asset serving (see
- * its docs). Proxy-prefix rewrites are no-op without `x-forwarded-prefix`.
- */
-function installAdminResponsePatch(app: INestApplication): void {
-  type ExpressLayer = { name?: string; handle: RequestHandler };
-  const expressApp = app.getHttpAdapter().getInstance() as {
-    router?: { stack: ExpressLayer[] };
-    _router?: { stack: ExpressLayer[] };
-  };
-  const stack = expressApp.router?.stack ?? expressApp._router?.stack;
-  const adminLayer = stack?.find((layer) => layer.name === 'admin');
-  if (!adminLayer) {
-    console.warn(
-      '[installAdminResponsePatch] admin layer not found in Express stack — admin response patching will not work',
-    );
-    return;
-  }
-
-  const originalHandle = adminLayer.handle;
-  adminLayer.handle = (req, res, next) => {
-    patchAdminResponse(req, res);
-    originalHandle(req, res, next);
-  };
-}
-
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
     bufferLogs: true,
@@ -97,6 +66,5 @@ async function bootstrap() {
   setupSwagger(app, basePath);
   app.useGlobalPipes(new ValidationPipe());
   await app.listen(3000);
-  installAdminResponsePatch(app);
 }
 bootstrap();

@@ -22,7 +22,9 @@ Available endpoints:
 
 - /health/live -> Liveness probe. Always returns `200` while the process is running, it does not check any dependency.
 - /health/ready -> Readiness probe. Returns `200` when the database and RabbitMQ are reachable, `503` otherwise.
-- /admin/ -> Admin panel to edit database models.
+- / -> Swagger UI with the API docs. Use it to manage webhooks.
+- /webhooks -> List, create, get, update and delete webhooks. Header `Authorization: Basic $ADMIN_WEBHOOK_AUTH` must be
+  added to the request.
 - /events/sse/{CHECKSUMMED_SAFE_ADDRESS} -> Server side events endpoint. If `SSE_AUTH_TOKEN` is defined then authentication
   will be enabled and header `Authorization: Basic $SSE_AUTH_TOKEN` must be added to the request.
 
@@ -330,11 +332,7 @@ All configuration is done through environment variables. See `.env.sample` for a
 | `AMQP_URL` | Yes | — | RabbitMQ connection URL |
 | `AMQP_EXCHANGE` | No | `safe-transaction-service-events-with-topics` | RabbitMQ topic exchange the Transaction Service publishes to. The queue is bound with routing key `#` |
 | `AMQP_QUEUE` | Yes | `safe-events-service` | RabbitMQ queue name |
-| `ADMIN_EMAIL` | Yes | — | Admin panel login email |
-| `ADMIN_PASSWORD` | Yes | — | Admin panel login password |
-| `ADMIN_COOKIE_SECRET` | Yes | — | Secret used to sign admin session cookies |
-| `ADMIN_SESSION_SECRET` | Yes | — | Secret used to encrypt admin sessions |
-| `ADMIN_WEBHOOK_AUTH` | Yes | — | Bearer token for webhook management endpoints |
+| `ADMIN_WEBHOOK_AUTH` | Yes | — | Token for the `/webhooks` endpoints (`Authorization: Basic <token>`) |
 | `BUILD_COMMIT` | No | `""` | Commit shown in `/about`. CI passes it as a Docker build argument; local builds leave it unset |
 | `SSE_AUTH_TOKEN` | No | `""` (disabled) | Base64 token for SSE endpoint (`Authorization: Basic <token>`). Auth is disabled when empty. |
 | `NODE_ENV` | No | — | Set to `production` to disable schema auto-sync and enable production mode |

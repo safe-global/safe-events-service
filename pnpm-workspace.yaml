@@ -10,15 +10,7 @@ onlyBuiltDependencies: []
 # Prevent packages from sub-dependencies using exotic specifiers
 # (git://, file://, link://) without explicit approval.
 blockExoticSubdeps: true
-# AdminJS pins @tiptap/core and @tiptap/pm to 2.1.13, but its @tiptap/*
-# extensions float to newer 2.x releases that import symbols missing in
-# 2.1.13. One 2.x version for all of them keeps the admin panel loading.
 overrides:
-  '@tiptap/core': ^2.27.3
-  '@tiptap/pm': ^2.27.3
 # @nestjs/platform-express 12.2.0 pins multer 2.4.0 (GHSA-q7qp-rjg7-q26m).
 # Remove once platform-express >= 12.3.2 is installed.
   multer: ^2.5.0
-# @tinymce/tinymce-react (AdminJS rich text editor) depends on tinymce 6,
-# which has no fix for the tinymce advisories. 7.9.3 is the first patched 7.x.
-  tinymce: ^7.9.3

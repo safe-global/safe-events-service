@@ -173,10 +173,8 @@ describe('pinoHttp request logging', () => {
       ['/health/', true],
       ['/health/liveness', true],
       ['/health?verbose=1', true],
-      ['/admin', true],
-      ['/admin/resources/Webhook', true],
       ['/healthz', false],
-      ['/administrators', false],
+      ['/admin', false],
       ['/v1/events', false],
       [undefined, false],
     ])('%s -> %s', (url, expected) => {

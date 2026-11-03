@@ -93,6 +93,27 @@ describe('Webhook service', () => {
       expect(webhook?.chains).toEqual(requestWebhook.chains);
       expect(webhook?.events.sort()).toEqual(requestWebhook.events.sort());
     });
+    it('Should list every webhook sorted by url', async () => {
+      /** getWebhooks returns active and inactive webhooks, sorted by url. */
+      expect(await webhookService.getWebhooks()).toEqual([]);
+      const second = await webhookService.createWebhook({
+        ...requestWebhook,
+        url: 'https://example.com/webhook-b',
+      });
+      const first = await webhookService.createWebhook({
+        ...requestWebhook,
+        url: 'https://example.com/webhook-a',
+        isActive: false,
+      });
+
+      const webhooks = await webhookService.getWebhooks();
+      expect(webhooks.map((webhook) => webhook.id)).toEqual([
+        first.id,
+        second.id,
+      ]);
+      expect(webhooks[0].isActive).toBe(false);
+      expect(webhooks[1]).toEqual(second);
+    });
     it('Should raise exception during upodate if webhook does not exist', async () => {
       await expect(
         webhookService.updateWebhook(
