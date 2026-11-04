@@ -1,6 +1,7 @@
 import { hostname } from 'node:os';
 import { BeforeApplicationShutdown, Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { redactUrlCredentials } from '../../common/utils/redact-url';
 import { EnvironmentVariables } from '../../config/environment';
 import { Channel, ConsumeMessage } from 'amqplib';
 import amqp, {
@@ -67,7 +68,7 @@ export class QueueProvider implements BeforeApplicationShutdown {
     const value = this.configService.get('AMQP_URL', { infer: true });
     this.logger.log({
       message: 'Using AMQP url',
-      messageContext: { amqpUrl: value },
+      messageContext: { amqpUrl: redactUrlCredentials(value) },
     });
     return value;
   }
