@@ -211,10 +211,10 @@ export function validate(
   });
   const errors = validateSync(validated);
   if (errors.length > 0) {
-    const details = errors
+    const errorMessages = errors
       .flatMap((error) => Object.values(error.constraints ?? {}))
       .join('\n  - ');
-    throw new Error(`Invalid environment configuration:\n  - ${details}`);
+    throw new Error(`Invalid environment configuration:\n  - ${errorMessages}`);
   }
   return validated;
 }
