@@ -57,6 +57,27 @@ describe('validate environment', () => {
     );
   });
 
+  it('disables SSE auth when SSE_AUTH_TOKEN is empty', () => {
+    /** An empty token is the documented way to turn SSE auth off. */
+    expect(validate({ ...REQUIRED, SSE_AUTH_TOKEN: '' }).SSE_AUTH_TOKEN).toBe(
+      '',
+    );
+  });
+
+  it('trims SSE_AUTH_TOKEN', () => {
+    /** A trailing newline from a secret file must not break the token. */
+    expect(
+      validate({ ...REQUIRED, SSE_AUTH_TOKEN: ' abc\n' }).SSE_AUTH_TOKEN,
+    ).toBe('abc');
+  });
+
+  it.each([' ', '\n', 'ab c'])('fails when SSE_AUTH_TOKEN is %j', (token) => {
+    /** A blank or broken token must not turn SSE auth off. */
+    expect(() => validate({ ...REQUIRED, SSE_AUTH_TOKEN: token })).toThrow(
+      'SSE_AUTH_TOKEN must not contain whitespace',
+    );
+  });
+
   it('treats an empty optional value as unset', () => {
     const config = validate({
       ...REQUIRED,

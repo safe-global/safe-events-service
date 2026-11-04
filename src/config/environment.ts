@@ -138,8 +138,13 @@ export class EnvironmentVariables {
   @IsNotEmpty()
   ADMIN_WEBHOOK_AUTH!: string;
 
-  // An empty token disables authentication for the SSE endpoint
+  // An empty token disables authentication for the SSE endpoint, so a
+  // whitespace-only token is kept as is and fails instead of turning it off
+  @Transform(({ value }) =>
+    typeof value === 'string' && value.trim() !== '' ? value.trim() : value,
+  )
   @IsString()
+  @Matches(/^\S*$/, { message: 'SSE_AUTH_TOKEN must not contain whitespace' })
   SSE_AUTH_TOKEN: string = '';
 
   // Events
@@ -192,19 +197,24 @@ export class EnvironmentVariables {
   WEBHOOK_MAX_RESPONSE_BYTES: number = 10_000;
 }
 
+function isUnset(key: string, value: unknown): boolean {
+  if (typeof value !== 'string') {
+    return false;
+  }
+  return value === '' || (value.trim() === '' && key !== 'SSE_AUTH_TOKEN');
+}
+
 /**
  * Validates the environment at startup, so a missing or malformed variable
  * stops the app before it connects to anything. An empty or whitespace-only
  * value is treated as unset, so it gets the default or fails when the variable
- * is required.
+ * is required. A whitespace-only `SSE_AUTH_TOKEN` is kept, so it fails.
  */
 export function validate(
   config: Record<string, unknown>,
 ): EnvironmentVariables {
   const nonEmpty = Object.fromEntries(
-    Object.entries(config).filter(
-      ([, value]) => !(typeof value === 'string' && value.trim() === ''),
-    ),
+    Object.entries(config).filter(([key, value]) => !isUnset(key, value)),
   );
   const validated = plainToInstance(EnvironmentVariables, nonEmpty, {
     enableImplicitConversion: true,

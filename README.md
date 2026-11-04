@@ -324,7 +324,7 @@ pnpm run test:cov
 
 All configuration is done through environment variables. See `.env.sample` for a full template.
 
-The environment is validated at startup (`src/config/environment.ts`). The service does not start when a required variable is missing or a value is invalid, and the error lists every problem. An empty or whitespace-only value is the same as an unset one. Booleans accept `true` or `false` in any case.
+The environment is validated at startup (`src/config/environment.ts`). The service does not start when a required variable is missing or a value is invalid, and the error lists every problem. An empty or whitespace-only value is the same as an unset one, except for `SSE_AUTH_TOKEN`, where a whitespace-only value fails. Booleans accept `true` or `false` in any case.
 
 | Variable | Required | Default | Description |
 |---|---|---|---|
@@ -338,7 +338,7 @@ The environment is validated at startup (`src/config/environment.ts`). The servi
 | `ADMIN_SESSION_SECRET` | Yes | — | Secret used to encrypt admin sessions |
 | `ADMIN_WEBHOOK_AUTH` | Yes | — | Bearer token for webhook management endpoints |
 | `BUILD_COMMIT` | No | `""` | Commit shown in `/about`. CI passes it as a Docker build argument; local builds leave it unset |
-| `SSE_AUTH_TOKEN` | No | `""` (disabled) | Base64 token for SSE endpoint (`Authorization: Basic <token>`). Auth is disabled when empty. |
+| `SSE_AUTH_TOKEN` | No | `""` (disabled) | Base64 token for SSE endpoint (`Authorization: Basic <token>`). Auth is disabled when empty. Outer whitespace is trimmed. A whitespace-only value or one with whitespace inside fails at startup. |
 | `NODE_ENV` | Yes | — | One of `production`, `development`, `dev` or `test`. TypeORM syncs the schema on startup only for `development`, `dev` and `test`; `production` relies on migrations |
 | `URL_BASE_PATH` | No | `""` | Global URL prefix (e.g. `/v1`). Must start with `/` and have no trailing `/` |
 | `DATABASE_SSL_ENABLED` | No | `false` | Enable SSL for database connection |
