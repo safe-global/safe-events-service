@@ -4,7 +4,7 @@ export class DropAdminSessions1793707879267 implements MigrationInterface {
   name = 'DropAdminSessions1793707879267';
 
   public async up(queryRunner: QueryRunner): Promise<void> {
-    await queryRunner.query(`DROP TABLE "admin_sessions"`);
+    await queryRunner.query(`DROP TABLE IF EXISTS "admin_sessions"`);
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {

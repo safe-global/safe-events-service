@@ -174,7 +174,6 @@ describe('pinoHttp request logging', () => {
       ['/health/liveness', true],
       ['/health?verbose=1', true],
       ['/healthz', false],
-      ['/admin', false],
       ['/v1/events', false],
       [undefined, false],
     ])('%s -> %s', (url, expected) => {

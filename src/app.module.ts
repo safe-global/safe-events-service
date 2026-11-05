@@ -1,9 +1,4 @@
-import {
-  MiddlewareConsumer,
-  Module,
-  NestModule,
-  RequestMethod,
-} from '@nestjs/common';
+import { Module } from '@nestjs/common';
 
 import { AboutModule } from './modules/about/about.module';
 import { ConfigModule } from '@nestjs/config';
@@ -13,7 +8,6 @@ import { HealthModule } from './modules/health/health.module';
 import { LoggerModule } from 'nestjs-pino';
 import { pinoHttpOptions } from './logging/pino-logger.config';
 import { WebhookModule } from './modules/webhook/webhook.module';
-import { ReverseProxyMiddleware } from './middleware/reverse-proxy.middleware';
 import { ScheduleModule } from '@nestjs/schedule';
 
 @Module({
@@ -28,10 +22,4 @@ import { ScheduleModule } from '@nestjs/schedule';
     WebhookModule,
   ],
 })
-export class AppModule implements NestModule {
-  configure(consumer: MiddlewareConsumer) {
-    consumer
-      .apply(ReverseProxyMiddleware)
-      .forRoutes({ path: '*', method: RequestMethod.ALL });
-  }
-}
+export class AppModule {}

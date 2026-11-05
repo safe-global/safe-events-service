@@ -25,11 +25,11 @@ import { AdminWebhookGuard } from '../../common/guards/basic-auth.guard';
 
 @ApiTags('webhooks')
 @ApiSecurity('apiKeyHeader')
+@UseGuards(AdminWebhookGuard)
 @Controller('webhooks')
 export class WebhooksController {
   constructor(private readonly webhookService: WebhookService) {}
 
-  @UseGuards(AdminWebhookGuard)
   @Post()
   @ApiBody({ type: WebhookRequestDto })
   @ApiResponse({
@@ -43,14 +43,12 @@ export class WebhooksController {
     return await this.webhookService.createWebhook(body);
   }
 
-  @UseGuards(AdminWebhookGuard)
   @Get()
   @ApiOkResponse({ type: WebhookPublicDto, isArray: true })
   async getWebhooks(): Promise<WebhookPublicDto[]> {
     return await this.webhookService.getWebhooks();
   }
 
-  @UseGuards(AdminWebhookGuard)
   @Get(':id')
   @ApiOkResponse({ type: WebhookPublicDto })
   @ApiNotFoundResponse({ description: 'Webhook not found' })
@@ -64,7 +62,6 @@ export class WebhooksController {
     return webhook;
   }
 
-  @UseGuards(AdminWebhookGuard)
   @Put(':id')
   @ApiBody({ type: WebhookRequestDto })
   @ApiResponse({
@@ -79,7 +76,6 @@ export class WebhooksController {
     return await this.webhookService.updateWebhook(publicId, body);
   }
 
-  @UseGuards(AdminWebhookGuard)
   @Delete(':id')
   @ApiResponse({
     status: 204,

@@ -9,7 +9,7 @@ import { AppModule } from './app.module';
 import { Logger } from 'nestjs-pino';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { Request, Response } from 'express';
-import { getForwardedPrefix } from './middleware/reverse-proxy.middleware';
+import { getForwardedPrefix } from './common/utils/forwarded-prefix';
 
 /**
  * Configure swagger for app

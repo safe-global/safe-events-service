@@ -52,7 +52,7 @@ Key behaviors worth knowing before changing the dispatch path:
 ## Endpoints
 
 - `/health/live` (constant, no dependencies) and `/health/ready` (Terminus: database ping + RabbitMQ connection, `503` when either is down), `/events/sse/{CHECKSUMMED_SAFE_ADDRESS}` (server-sent events, filtered from the RxJS subject; gated by `SSE_AUTH_TOKEN` Basic auth when set), `/webhooks` CRUD (gated by `ADMIN_WEBHOOK_AUTH` Basic auth) and Swagger UI at the root path. There is no admin panel: devs and devops manage webhooks through `/webhooks` and Swagger.
-- In the deployed environments APISIX sits in front of the service, strips the external prefix and sends it in `X-Forwarded-Prefix` (`URL_BASE_PATH` stays unset). `middleware/reverse-proxy.middleware.ts` uses that header for `Location` redirects and the Swagger `servers` URL. Deployment config lives in `safe-events-service-infra-tf`.
+- In the deployed environments APISIX sits in front of the service, strips the external prefix and sends it in `X-Forwarded-Prefix` (`URL_BASE_PATH` stays unset). `main.ts` uses that header (`common/utils/forwarded-prefix.ts`) for the Swagger `servers` URL, so "Try it out" calls go through APISIX. Deployment config lives in `safe-events-service-infra-tf`.
 - safe-auth-service calls `/webhooks` in-cluster, so changes to that contract need both services.
 
 ## Conventions
