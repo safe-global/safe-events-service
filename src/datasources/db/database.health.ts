@@ -5,7 +5,7 @@ import {
   HealthIndicatorService,
   TypeOrmHealthIndicator,
 } from '@nestjs/terminus';
-import { parseNumberConfig } from '../../common/utils/parse-number-config';
+import { EnvironmentVariables } from '../../config/environment';
 
 @Injectable()
 export class DatabaseHealthIndicator {
@@ -13,16 +13,13 @@ export class DatabaseHealthIndicator {
   private readonly timeoutMs: number;
 
   constructor(
-    configService: ConfigService,
+    configService: ConfigService<EnvironmentVariables, true>,
     private readonly typeOrmHealthIndicator: TypeOrmHealthIndicator,
     private readonly healthIndicatorService: HealthIndicatorService,
   ) {
-    this.timeoutMs = parseNumberConfig(
-      'DB_HEALTH_CHECK_TIMEOUT',
-      configService.get('DB_HEALTH_CHECK_TIMEOUT'),
-      5_000,
-      1,
-    );
+    this.timeoutMs = configService.get('DB_HEALTH_CHECK_TIMEOUT', {
+      infer: true,
+    });
   }
 
   // The ping error comes from the driver and can hold connection details, so

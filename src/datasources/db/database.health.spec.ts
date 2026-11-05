@@ -4,6 +4,7 @@ import {
   HealthIndicatorService,
   TypeOrmHealthIndicator,
 } from '@nestjs/terminus';
+import { EnvironmentVariables } from '../../config/environment';
 import { DatabaseHealthIndicator } from './database.health';
 
 describe('DatabaseHealthIndicator', () => {
@@ -12,8 +13,8 @@ describe('DatabaseHealthIndicator', () => {
     pingCheck: jest.fn(() => ({ withTimeout })),
   } as unknown as TypeOrmHealthIndicator;
   const configService = {
-    get: jest.fn(() => '1500'),
-  } as unknown as ConfigService;
+    get: jest.fn(() => 1500),
+  } as unknown as ConfigService<EnvironmentVariables, true>;
   const databaseHealthIndicator = new DatabaseHealthIndicator(
     configService,
     typeOrmHealthIndicator,

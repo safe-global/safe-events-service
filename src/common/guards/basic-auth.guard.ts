@@ -5,15 +5,18 @@ import {
   Logger,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { EnvironmentVariables } from '../../config/environment';
 import { safeCompare } from '../utils/safe-compare';
 
 @Injectable()
 export class BasicAuthGuard implements CanActivate {
-  constructor(private readonly configService: ConfigService) {}
+  constructor(
+    private readonly configService: ConfigService<EnvironmentVariables, true>,
+  ) {}
 
   canActivate(context: ExecutionContext): boolean | Promise<boolean> {
     const request = context.switchToHttp().getRequest();
-    const token = this.configService.get('SSE_AUTH_TOKEN', '');
+    const token = this.configService.get('SSE_AUTH_TOKEN', { infer: true });
     // If token is not set, authentication is disabled
     return (
       token === '' ||
@@ -26,7 +29,9 @@ export class BasicAuthGuard implements CanActivate {
 export class AdminWebhookGuard implements CanActivate {
   private readonly logger = new Logger(AdminWebhookGuard.name);
 
-  constructor(private readonly configService: ConfigService) {}
+  constructor(
+    private readonly configService: ConfigService<EnvironmentVariables, true>,
+  ) {}
   /**
    * Guard to protect webhooks endpoint.
    * @param context
@@ -34,7 +39,9 @@ export class AdminWebhookGuard implements CanActivate {
    */
   canActivate(context: ExecutionContext): boolean | Promise<boolean> {
     const request = context.switchToHttp().getRequest();
-    const token = this.configService.get('ADMIN_WEBHOOK_AUTH', '');
+    const token = this.configService.get('ADMIN_WEBHOOK_AUTH', {
+      infer: true,
+    });
     // Deny access when the token is not configured, otherwise the endpoint
     // would be reachable with an empty `Basic ` credential.
     if (token === '') {
