@@ -25,6 +25,7 @@ describe('Webhook entity', () => {
     webhook.sendMessages = true;
     webhook.sendReorgs = true;
     webhook.sendDelegates = true;
+    webhook.sendSafeConfigUpdates = true;
   });
 
   it('If chain is set, only those chain messages will be sent', async () => {
@@ -180,6 +181,14 @@ describe('Webhook entity', () => {
     expect(webhook.isEventRelevant(txServiceEvent)).toBe(false);
   });
 
+  it('SAFE_CONFIG_UPDATED should not be relevant if sendSafeConfigUpdates is disabled', async () => {
+    // SAFE_CONFIG_UPDATED is only relevant while the opt-in flag is enabled.
+    txServiceEvent.type = 'SAFE_CONFIG_UPDATED';
+    expect(webhook.isEventRelevant(txServiceEvent)).toBe(true);
+    webhook.sendSafeConfigUpdates = false;
+    expect(webhook.isEventRelevant(txServiceEvent)).toBe(false);
+  });
+
   it('Webhook should be converted right to public webhook', async () => {
     let public_webhook = webhook.toPublicDto();
     expect(public_webhook.id).toBe(webhook.id);
@@ -188,7 +197,7 @@ describe('Webhook entity', () => {
     expect(public_webhook.authorization).toBe(webhook.authorization);
     expect(public_webhook.chains).toHaveLength(0);
     expect(public_webhook.addresses).toHaveLength(0);
-    expect(public_webhook.events).toHaveLength(9);
+    expect(public_webhook.events).toHaveLength(10);
     expect(public_webhook.events).toContain('SEND_CONFIRMATIONS');
     expect(public_webhook.events).toContain('SEND_MULTISIG_TXS');
     expect(public_webhook.events).toContain('SEND_ETHER_TRANSFERS');
@@ -198,6 +207,7 @@ describe('Webhook entity', () => {
     expect(public_webhook.events).toContain('SEND_MESSAGES');
     expect(public_webhook.events).toContain('SEND_REORGS');
     expect(public_webhook.events).toContain('SEND_DELEGATES');
+    expect(public_webhook.events).toContain('SEND_SAFE_CONFIG_UPDATES');
     webhook.chains = ['4', '100'];
     webhook.addresses = [
       '0x0275FC2adfF11270F3EcC4D2F7Aa0a9784601Ca6',
@@ -208,7 +218,7 @@ describe('Webhook entity', () => {
     public_webhook = webhook.toPublicDto();
     expect(public_webhook.chains).toHaveLength(2);
     expect(public_webhook.addresses).toHaveLength(3);
-    expect(public_webhook.events).toHaveLength(8);
+    expect(public_webhook.events).toHaveLength(9);
     expect(public_webhook.events).not.toContain('confirmations');
   });
 
@@ -248,5 +258,6 @@ describe('Webhook entity', () => {
     expect(generated_webhook.sendSafeCreations).toBe(false);
     expect(generated_webhook.sendMessages).toBe(false);
     expect(generated_webhook.sendReorgs).toBe(false);
+    expect(generated_webhook.sendSafeConfigUpdates).toBe(false);
   });
 });

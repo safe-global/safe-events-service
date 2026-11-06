@@ -70,6 +70,7 @@ describe('Webhook service', () => {
       expect(createdWebhook?.sendSafeCreations).toBe(false);
       expect(createdWebhook?.sendMessages).toBe(false);
       expect(createdWebhook?.sendReorgs).toBe(false);
+      expect(createdWebhook?.sendSafeConfigUpdates).toBe(false);
     });
     it('Should raise a exception webhook already exists', async () => {
       const webhook = await webhookService.createWebhook(requestWebhook);

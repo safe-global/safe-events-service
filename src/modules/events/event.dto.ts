@@ -15,7 +15,8 @@ export type TxServiceEventType =
   | 'REORG_DETECTED'
   | 'NEW_DELEGATE'
   | 'UPDATED_DELEGATE'
-  | 'DELETED_DELEGATE';
+  | 'DELETED_DELEGATE'
+  | 'SAFE_CONFIG_UPDATED';
 
 export interface TxServiceEvent {
   chainId: string;
