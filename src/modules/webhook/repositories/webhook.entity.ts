@@ -52,6 +52,9 @@ export class Webhook extends BaseEntity {
   @Column({ default: true })
   sendDelegates: boolean;
 
+  @Column({ default: true })
+  sendSafeConfigUpdates: boolean;
+
   /**
    * Check if event chainId matches the one of the webhook (everything will match if webhook chains are empty). Check if event
    * type matches the flags enabled for the webhook
@@ -89,7 +92,8 @@ export class Webhook extends BaseEntity {
         (this.sendDelegates &&
           (message.type === 'NEW_DELEGATE' ||
             message.type === 'UPDATED_DELEGATE' ||
-            message.type === 'DELETED_DELEGATE')))
+            message.type === 'DELETED_DELEGATE')) ||
+        (this.sendSafeConfigUpdates && message.type === 'SAFE_CONFIG_UPDATED'))
     );
   }
 
@@ -111,6 +115,8 @@ export class Webhook extends BaseEntity {
     if (this.sendMessages) events.push(SendEventTypes.SEND_MESSAGES);
     if (this.sendReorgs) events.push(SendEventTypes.SEND_REORGS);
     if (this.sendDelegates) events.push(SendEventTypes.SEND_DELEGATES);
+    if (this.sendSafeConfigUpdates)
+      events.push(SendEventTypes.SEND_SAFE_CONFIG_UPDATES);
 
     return {
       id: this.id,
@@ -165,6 +171,9 @@ export class Webhook extends BaseEntity {
     );
     webhook.sendDelegates = public_webhook.events.includes(
       SendEventTypes.SEND_DELEGATES,
+    );
+    webhook.sendSafeConfigUpdates = public_webhook.events.includes(
+      SendEventTypes.SEND_SAFE_CONFIG_UPDATES,
     );
 
     return webhook;

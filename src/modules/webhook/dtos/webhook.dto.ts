@@ -25,6 +25,7 @@ export enum SendEventTypes {
   SEND_MESSAGES = 'SEND_MESSAGES',
   SEND_REORGS = 'SEND_REORGS',
   SEND_DELEGATES = 'SEND_DELEGATES',
+  SEND_SAFE_CONFIG_UPDATES = 'SEND_SAFE_CONFIG_UPDATES',
 }
 
 export class WebhookRequestDto {
