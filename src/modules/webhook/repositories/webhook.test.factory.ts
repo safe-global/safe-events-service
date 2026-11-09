@@ -18,6 +18,7 @@ interface WebhookOptions {
   sendMessages?: boolean;
   sendReorgs?: boolean;
   sendDelegates?: boolean;
+  sendSafeConfigUpdates?: boolean;
 }
 
 export function webhookFactory(options: WebhookOptions = {}): Webhook {
@@ -49,6 +50,8 @@ export function webhookFactory(options: WebhookOptions = {}): Webhook {
   webhook.sendMessages = options.sendMessages ?? faker.datatype.boolean();
   webhook.sendReorgs = options.sendReorgs ?? faker.datatype.boolean();
   webhook.sendDelegates = options.sendDelegates ?? faker.datatype.boolean();
+  webhook.sendSafeConfigUpdates =
+    options.sendSafeConfigUpdates ?? faker.datatype.boolean();
   return webhook;
 }
 

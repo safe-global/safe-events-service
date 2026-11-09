@@ -212,6 +212,65 @@ ones) and is documented per event below.
 }
 ```
 
+### Safe configuration updated
+
+One event per change of owners, threshold, modules, guard, module guard, fallback handler or
+master copy. The changes follow the Safe contract events: a `swapOwner` gives `REMOVED_OWNER`
+and `ADDED_OWNER`, and `addOwnerWithThreshold` or `removeOwner` give `CHANGED_THRESHOLD` only
+when the threshold value changes. The Safe creation is sent as `SAFE_CREATED`, not as this
+event.
+
+```json
+{
+  "timestamp": "<int>",
+  "address": "<Ethereum checksummed address>",
+  "type": "SAFE_CONFIG_UPDATED",
+  "txHash": "<0x-prefixed-hex-string>",
+  "change": "<string>",
+  "data": { ... },
+  "status": {
+    "owners": ["<Ethereum checksummed address>"],
+    "threshold": "<int>",
+    "nonce": "<int>",
+    "enabledModules": ["<Ethereum checksummed address>"],
+    "guard": "<Ethereum checksummed address>",
+    "moduleGuard": "<Ethereum checksummed address>",
+    "fallbackHandler": "<Ethereum checksummed address>",
+    "masterCopy": "<Ethereum checksummed address>"
+  },
+  "chainId": "<stringified-int>"
+}
+```
+
+- `timestamp`: Block time of the transaction.
+- `change` and `data`:
+
+  | `change` | `data` |
+  |---|---|
+  | `ADDED_OWNER` / `REMOVED_OWNER` | `{"owner": "<Ethereum checksummed address>"}` |
+  | `CHANGED_THRESHOLD` | `{"threshold": "<int>"}` |
+  | `ENABLED_MODULE` / `DISABLED_MODULE` | `{"module": "<Ethereum checksummed address>"}` |
+  | `CHANGED_GUARD` | `{"guard": "<Ethereum checksummed address>"}` |
+  | `CHANGED_MODULE_GUARD` | `{"moduleGuard": "<Ethereum checksummed address>"}` |
+  | `CHANGED_FALLBACK_HANDLER` | `{"fallbackHandler": "<Ethereum checksummed address>"}` |
+  | `CHANGED_MASTER_COPY` | `{"masterCopy": "<Ethereum checksummed address>"}` |
+
+- `status`: Safe configuration right after that change, not after the whole transaction. Events
+  are delivered in parallel and retried, so they can arrive out of order, and the payload has no
+  field to sort them. Do not take the `status` of the last event received as the current state of
+  the Safe; query the Transaction Service for it.
+  - Chains indexed by traces: every change of one Safe call shares the status after the call.
+    The `REMOVED_OWNER` and `ADDED_OWNER` of a `swapOwner` have the same status.
+  - Chains indexed by events: every contract event has its own status. The `REMOVED_OWNER` of a
+    `swapOwner` has one owner less, and a `removeOwner` that also changes the threshold sends
+    `REMOVED_OWNER` with the old threshold.
+  - On every chain, a MultiSend with several Safe calls gives one status per call.
+- An unset guard or module guard is the null address (`0x0000000000000000000000000000000000000000`).
+- On chains indexed by traces, a master copy change done with a `SafeMigration` delegatecall
+  (`migrateSingleton` / `migrateL2Singleton`) does not send `CHANGED_MASTER_COPY` yet.
+- The same event can be sent again if the transaction is processed again. `txHash`, `address`,
+  `change` and `data` are not unique: a MultiSend can repeat the same change in one transaction.
+
 # FAQ
 
 ## Do you have a dashboard/status page?
