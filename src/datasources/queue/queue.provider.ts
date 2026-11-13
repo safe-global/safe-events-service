@@ -17,6 +17,11 @@ const BROKER_SHUTDOWN_TIMEOUT_MS = 5_000;
 // The queue gets every event, filtering is done per webhook
 const TOPIC_ROUTING_KEY = '#';
 
+export type EventMessageHandler = (
+  messageContent: string,
+  publishedAtSeconds: number | undefined,
+) => Promise<unknown>;
+
 export type QueueConnection = {
   connection: AmqpConnectionManager;
   channel: ChannelWrapper;
@@ -288,9 +293,7 @@ export class QueueProvider implements BeforeApplicationShutdown {
   /**
    * @returns consumerTag for the event
    */
-  async subscribeToEvents(
-    func: (arg: string) => Promise<any>,
-  ): Promise<string> {
+  async subscribeToEvents(func: EventMessageHandler): Promise<string> {
     const { channel } = await this.getConnection();
     if (channel === undefined) {
       this.logger.error({
@@ -352,10 +355,14 @@ export class QueueProvider implements BeforeApplicationShutdown {
   private async processMessage(
     channel: ChannelWrapper,
     message: ConsumeMessage,
-    func: (arg: string) => Promise<any>,
+    func: EventMessageHandler,
   ): Promise<void> {
+    const publishedAtSeconds: unknown = message.properties.timestamp;
     try {
-      await func(message.content.toString());
+      await func(
+        message.content.toString(),
+        typeof publishedAtSeconds === 'number' ? publishedAtSeconds : undefined,
+      );
     } catch (error) {
       this.logger.error({
         message: 'Error processing message',

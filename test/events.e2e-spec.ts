@@ -69,15 +69,20 @@ describe('Events handling', () => {
       .spyOn(webhookDispatcherService, 'postWebhook')
       .mockImplementation(async () => postWebhookResponse);
 
+    const publishedAtSeconds = 1_700_000_000;
     const isMessagePublished = await publishMessage(
       queueProvider.getAmqpUrl(),
       queueProvider.getExchangeName(),
       queueProvider.getQueueName(),
       msg,
+      { timestamp: publishedAtSeconds },
     );
     expect(isMessagePublished).toBe(true);
     expect(processEventSpy).toHaveBeenCalledTimes(1);
-    expect(processEventSpy).toHaveBeenCalledWith(JSON.stringify(msg));
+    expect(processEventSpy).toHaveBeenCalledWith(
+      JSON.stringify(msg),
+      publishedAtSeconds,
+    );
 
     expect(postEveryWebhookSpy).toHaveBeenCalledTimes(1);
     expect(postEveryWebhookSpy).toHaveBeenCalledWith(msg);

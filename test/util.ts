@@ -1,4 +1,4 @@
-import { connect as amqplibConnect, ChannelModel } from 'amqplib';
+import { connect as amqplibConnect, ChannelModel, Options } from 'amqplib';
 
 /**
  * Publish given message to AMQP url provided
@@ -6,6 +6,7 @@ import { connect as amqplibConnect, ChannelModel } from 'amqplib';
  * @param exchange
  * @param queue
  * @param msg
+ * @param publishOptions AMQP message properties, e.g. `timestamp`
  * @returns `true` if message is published, `false` otherwise
  */
 export async function publishMessage(
@@ -13,6 +14,7 @@ export async function publishMessage(
   exchange: string,
   queue: string,
   msg: object,
+  publishOptions?: Options.Publish,
 ): Promise<boolean> {
   const conn: ChannelModel = await amqplibConnect(amqpUrl);
   const channel = await conn.createChannel();
@@ -25,6 +27,7 @@ export async function publishMessage(
     // Same format as the Transaction Service, `{chainId}.{type}.{address}`
     '1.TEST.0x0',
     Buffer.from(JSON.stringify(msg)),
+    publishOptions,
   );
   await channel.close();
   await conn.close();

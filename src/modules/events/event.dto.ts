@@ -22,6 +22,8 @@ export interface TxServiceEvent {
   chainId: string;
   address: string;
   type: TxServiceEventType;
+  // Unix seconds
+  timestamp?: number;
   // It can have more properties
   [otherProperties: string]: unknown;
 }

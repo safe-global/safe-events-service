@@ -1,6 +1,9 @@
 import { Test } from '@nestjs/testing';
 import { EventsService } from './events.service';
-import { QueueProvider } from '../../datasources/queue/queue.provider';
+import {
+  EventMessageHandler,
+  QueueProvider,
+} from '../../datasources/queue/queue.provider';
 import { TxServiceEventType } from './event.dto';
 import { Logger } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
@@ -12,8 +15,7 @@ describe('EventsService', () => {
   let webhookDispatcherService: WebhookDispatcherService;
   const queueProvider = {
     /* eslint-disable @typescript-eslint/no-unused-vars */
-    subscribeToEvents: async (_: (_: string) => Promise<string>) =>
-      'exampleTag',
+    subscribeToEvents: async (_: EventMessageHandler) => 'exampleTag',
   };
 
   /* eslint-enable @typescript-eslint/no-unused-vars */
@@ -87,6 +89,93 @@ describe('EventsService', () => {
         message: 'Processing event',
         messageContext: { event: msg },
       });
+    });
+
+    it('should log the delivery lag from the publish time and the event lag from the event timestamp', async () => {
+      /** `deliveryLagMs` starts at the AMQP publish time, `eventLagMs` at the event payload `timestamp`. */
+      const mockedNowMs = 1_700_001_200_500;
+      jest.spyOn(Date, 'now').mockReturnValue(mockedNowMs);
+      const loggerSpy = jest.spyOn(Logger.prototype, 'log');
+      const txServiceEvent = {
+        chainId: '1',
+        type: 'INCOMING_TOKEN' as TxServiceEventType,
+        address: '0x0275FC2adfF11270F3EcC4D2F7Aa0a9784601Ca6',
+        // Indexed 20 minutes after the block
+        timestamp: 1_700_000_000,
+      };
+      const publishedAtSeconds = 1_700_001_200;
+
+      await eventsService.processEvent(
+        JSON.stringify(txServiceEvent),
+        publishedAtSeconds,
+      );
+      expect(loggerSpy).toHaveBeenCalledWith({
+        message: 'Processing event',
+        messageContext: {
+          event: txServiceEvent,
+          deliveryLagMs: 500,
+          eventLagMs: 1_200_500,
+        },
+      });
+    });
+
+    it('should not log the delivery lag when the message has no publish time', async () => {
+      /** Producers that do not set the AMQP `timestamp` property give no delivery lag. */
+      jest.spyOn(Date, 'now').mockReturnValue(1_700_000_042_500);
+      const loggerSpy = jest.spyOn(Logger.prototype, 'log');
+      const txServiceEvent = {
+        chainId: '1',
+        type: 'PENDING_MULTISIG_TRANSACTION' as TxServiceEventType,
+        address: '0x0275FC2adfF11270F3EcC4D2F7Aa0a9784601Ca6',
+        timestamp: 1_700_000_000,
+      };
+
+      await eventsService.processEvent(JSON.stringify(txServiceEvent));
+      expect(loggerSpy).toHaveBeenCalledWith({
+        message: 'Processing event',
+        messageContext: { event: txServiceEvent, eventLagMs: 42_500 },
+      });
+    });
+
+    it.each([
+      ['missing', undefined],
+      ['a string', '1700000000'],
+      ['null', null],
+    ])(
+      'should not log the event lag when the event timestamp is %s',
+      async (_, timestamp) => {
+        /** Only a numeric event `timestamp` gives an event lag. */
+        jest.spyOn(Date, 'now').mockReturnValue(1_700_000_001_000);
+        const loggerSpy = jest.spyOn(Logger.prototype, 'log');
+        const txServiceEvent = {
+          chainId: '1',
+          type: 'EXECUTED_MULTISIG_TRANSACTION' as TxServiceEventType,
+          address: '0x0275FC2adfF11270F3EcC4D2F7Aa0a9784601Ca6',
+          timestamp,
+        };
+
+        await eventsService.processEvent(
+          JSON.stringify(txServiceEvent),
+          1_700_000_000,
+        );
+        expect(loggerSpy).toHaveBeenCalledWith({
+          message: 'Processing event',
+          messageContext: {
+            event: JSON.parse(JSON.stringify(txServiceEvent)),
+            deliveryLagMs: 1_000,
+          },
+        });
+      },
+    );
+
+    it('should not log an invalid event as processed', async () => {
+      /** Events rejected by validation are never delivered, so they add no delivery lag sample. */
+      const loggerSpy = jest.spyOn(Logger.prototype, 'log');
+
+      await eventsService.processEvent(
+        JSON.stringify({ chainId: '1', timestamp: 1_700_000_000 }),
+      );
+      expect(loggerSpy).not.toHaveBeenCalled();
     });
 
     it('should log the parsing error for a message that is not JSON', async () => {
