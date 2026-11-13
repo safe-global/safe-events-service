@@ -185,6 +185,43 @@ describe('QueueProvider', () => {
       expect(typeof result).toEqual('string');
       expect(result.length).toBeGreaterThanOrEqual(1);
     });
+
+    it.each([
+      [
+        'the AMQP timestamp property',
+        { timestamp: 1_700_000_000 },
+        1_700_000_000,
+      ],
+      ['undefined without the AMQP timestamp property', {}, undefined],
+    ])(
+      'should pass %s as the publish time',
+      async (_, publishOptions, expectedPublishedAtSeconds) => {
+        /** The handler gets the message body and the AMQP `timestamp` set by the producer. */
+        const { channel } = await queueProvider.getConnection();
+        await channel.waitForConnect();
+        await channel.purgeQueue(queueProvider.getQueueName());
+        let markReceived: () => void = () => {};
+        const received = new Promise<void>(
+          (resolve) => (markReceived = resolve),
+        );
+        const handler = jest.fn(async () => markReceived());
+        await queueProvider.subscribeToEvents(handler);
+
+        await channel.publish(
+          queueProvider.getExchangeName(),
+          '1.SAFE_CREATED.0x1',
+          { type: 'SAFE_CREATED' },
+          publishOptions,
+        );
+        await received;
+
+        expect(handler).toHaveBeenCalledWith(
+          '{"type":"SAFE_CREATED"}',
+          expectedPublishedAtSeconds,
+        );
+        await channel.cancelAll();
+      },
+    );
   });
 
   describe('shutdown', () => {

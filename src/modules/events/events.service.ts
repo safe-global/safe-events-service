@@ -30,8 +30,9 @@ export class EventsService implements OnApplicationBootstrap {
   }
 
   listenToEvents(): Promise<string> {
-    return this.queueProvider.subscribeToEvents((msg: string) =>
-      this.processEvent(msg),
+    return this.queueProvider.subscribeToEvents(
+      (messageContent, publishedAtSeconds) =>
+        this.processEvent(messageContent, publishedAtSeconds),
     );
   }
 
@@ -77,18 +78,20 @@ export class EventsService implements OnApplicationBootstrap {
     );
   }
 
-  processEvent(message: string): Promise<(WebhookResponse | undefined)[]> {
+  private getMsSinceUnixSeconds(unixSeconds: unknown): number | undefined {
+    if (typeof unixSeconds !== 'number') {
+      return undefined;
+    }
+    return Date.now() - unixSeconds * 1000;
+  }
+
+  processEvent(
+    message: string,
+    publishedAtSeconds?: number,
+  ): Promise<(WebhookResponse | undefined)[]> {
     let txServiceEvent: TxServiceEvent;
     try {
       txServiceEvent = JSON.parse(message);
-      if (this.eventsLogEnabled) {
-        this.logger.log({
-          message: 'Processing event',
-          messageContext: {
-            event: txServiceEvent,
-          },
-        });
-      }
     } catch (error) {
       this.logger.error({
         message: 'Cannot parse message as JSON',
@@ -108,6 +111,18 @@ export class EventsService implements OnApplicationBootstrap {
         messageContext: { event: message },
       });
       return Promise.resolve([undefined]);
+    }
+
+    // The Datadog delivery lag SLO reads `deliveryLagMs` from this log line
+    if (this.eventsLogEnabled) {
+      this.logger.log({
+        message: 'Processing event',
+        messageContext: {
+          event: txServiceEvent,
+          deliveryLagMs: this.getMsSinceUnixSeconds(publishedAtSeconds),
+          eventLagMs: this.getMsSinceUnixSeconds(txServiceEvent.timestamp),
+        },
+      });
     }
 
     this.pushEventToEventsObservable(txServiceEvent);
