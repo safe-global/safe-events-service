@@ -8,4 +8,7 @@ bash ./scripts/db_run_migrations_production.sh
 # AdminJS writes its frontend bundle here at startup. The app directory of the
 # image is not writable by the runtime user.
 export ADMIN_JS_TMP_DIR="${ADMIN_JS_TMP_DIR:-${TMPDIR:-/tmp}/adminjs}"
+
+. ./scripts/datadog_tracer.sh
+
 exec node dist/main.js
