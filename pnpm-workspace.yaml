@@ -10,6 +10,12 @@ onlyBuiltDependencies: []
 # Prevent packages from sub-dependencies using exotic specifiers
 # (git://, file://, link://) without explicit approval.
 blockExoticSubdeps: true
+# adminjs creates a virtual Babel entry file at the project root to resolve its
+# .babelrc.json at runtime. pnpm strict hoisting prevents Babel from finding
+# adminjs's own babel plugins from that path, so we hoist them to root node_modules.
+publicHoistPattern:
+  - '@babel/plugin-syntax-import-assertions'
+  - '@babel/plugin-syntax-import-attributes'
 # AdminJS pins @tiptap/core and @tiptap/pm to 2.1.13, but its @tiptap/*
 # extensions float to newer 2.x releases that import symbols missing in
 # 2.1.13. One 2.x version for all of them keeps the admin panel loading.

@@ -1,3 +1,5 @@
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { Logger, Module } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Pool } from 'pg';
@@ -22,6 +24,9 @@ async function buildAdminJsModule() {
     return { module: AdminJsTestModule };
   }
 
+  // AdminJS writes its frontend bundle to this directory at startup, and the
+  // runtime user cannot write to the app directory of the Docker image.
+  process.env.ADMIN_JS_TMP_DIR ??= join(tmpdir(), 'adminjs');
   const { default: AdminJS } = await import('adminjs');
   const { Resource, Database } = await import('@adminjs/typeorm');
   AdminJS.registerAdapter({ Resource, Database });
