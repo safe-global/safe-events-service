@@ -413,6 +413,7 @@ The environment is validated at startup (`src/config/environment.ts`). The servi
 | `WEBHOOK_AUTO_DISABLE` | No | `false` | Auto-disable webhooks that exceed the failure threshold |
 | `WEBHOOK_FAILURE_THRESHOLD` | No | `90` | Failure rate percentage (0–100) above which a webhook is auto-disabled |
 | `WEBHOOK_HEALTH_MINUTES_WINDOW` | No | `60` | Rolling window in minutes used to compute per-webhook failure rates |
+| `DD_APM_ENABLED` | No | `false` | Truthy (`true`, `y`, `yes`, `t`, `on`, `1`, any case) starts the service with the `dd-trace` tracer. Read by `scripts/docker_run.sh`, not by the app. Other tracer settings use the standard `DD_*` variables. Not the Datadog Agent setting of the same name |
 | `LOG_LEVEL` | No | `info` | Log verbosity, case-insensitive: `trace`, `debug`, `log`, `info`, `warn`, `error`, `fatal` |
 | `EVENTS_LOG_ENABLED` | No | `true` | Log one line per incoming event, with the ms since the message was published (`deliveryLagMs`, from the AMQP `timestamp` property) and since the event happened (`eventLagMs`, from the event `timestamp`). Set to `false` to cut log volume, this also removes the delivery lag metric |
 | `WEBHOOK_MAX_RESPONSE_BYTES` | No | `10000` | Max bytes of a webhook response body read for logging |
