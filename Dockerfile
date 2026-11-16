@@ -1,46 +1,46 @@
 #
-# BUILD CONTAINER
+# BASE
 #
-FROM node:24 AS base
-RUN corepack enable
-USER node
+FROM node:24.22.3-slim AS base
 WORKDIR /app
-COPY --chown=node:node package.json pnpm-lock.yaml pnpm-workspace.yaml tsconfig*.json ./
+COPY package.json ./
+RUN corepack enable pnpm && corepack install
+COPY pnpm-lock.yaml pnpm-workspace.yaml ./
 
-# Install dependencies
-RUN pnpm install --frozen-lockfile --ignore-scripts
+#
+# PRODUCTION DEPENDENCIES
+#
+FROM base AS prod-deps
+RUN --mount=type=cache,id=pnpm,target=/var/cache/pnpm \
+    pnpm install --store-dir /var/cache/pnpm --frozen-lockfile --prod --ignore-scripts
 
-# Copy source code
-COPY --chown=node:node . .
-
-# Build application
+#
+# BUILD
+#
+FROM base AS build
+RUN --mount=type=cache,id=pnpm,target=/var/cache/pnpm \
+    pnpm install --store-dir /var/cache/pnpm --frozen-lockfile --ignore-scripts
+COPY . .
 ENV NODE_ENV=production
-RUN pnpm run build
-
-# Clean and reinstall only production dependencies
-ENV CI=true
-RUN pnpm prune --prod --ignore-scripts
+RUN pnpm run build && rm -rf node_modules src
 
 #
 # PRODUCTION CONTAINER
 #
-FROM node:24 AS production
+FROM node:24.22.3-slim AS production
 ENV NODE_ENV=production
-USER node
-EXPOSE 3000
 WORKDIR /app
 
-# Copy built application and production node_modules from base stage
+COPY --from=prod-deps /app/node_modules ./node_modules
+# The runtime files are the build context that .dockerignore allows, plus dist
+COPY --from=build /app ./
 
-COPY --chown=node:node --from=base /app/node_modules ./node_modules
-COPY --chown=node:node --from=base /app/dist ./dist
-COPY --chown=node:node --from=base /app/scripts ./scripts
-COPY --chown=node:node --from=base /app/package.json ./
+USER node
+EXPOSE 3000
 
 # Declared after the build steps so a new commit does not invalidate the
 # cached layers above
 ARG BUILD_COMMIT
 ENV BUILD_COMMIT=${BUILD_COMMIT}
 
-# Start the application
 CMD [ "/bin/bash", "./scripts/docker_run.sh" ]

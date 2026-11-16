@@ -1,4 +1,9 @@
-Dockerfile
-.dockerignore
-node_modules
-dist
+*
+!src
+!scripts
+!package.json
+!pnpm-lock.yaml
+!pnpm-workspace.yaml
+!tsconfig*.json
+!nest-cli.json
+**/*.spec.ts
