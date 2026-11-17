@@ -1,22 +1,11 @@
 import { execFileSync } from 'node:child_process';
-import { join } from 'node:path';
 
-const DATADOG_TRACER_SCRIPT = join(
-  process.cwd(),
-  'scripts',
-  'datadog_tracer.sh',
-);
 const DD_TRACE_IMPORT = '--import dd-trace/initialize.mjs';
 
 function getNodeOptions(environment: Record<string, string>): string {
   return execFileSync(
     'bash',
-    [
-      '-c',
-      '. "$1"; printf "%s" "${NODE_OPTIONS:-}"',
-      'bash',
-      DATADOG_TRACER_SCRIPT,
-    ],
+    ['-c', '. ./scripts/datadog_tracer.sh; printf "%s" "${NODE_OPTIONS:-}"'],
     { env: { PATH: process.env.PATH, ...environment }, encoding: 'utf8' },
   );
 }
