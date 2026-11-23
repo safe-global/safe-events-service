@@ -1,7 +1,7 @@
 #
 # BASE
 #
-FROM node:24.22.3-slim AS base
+FROM node:26.13.1-slim AS base
 WORKDIR /app
 COPY package.json ./
 RUN corepack enable pnpm && corepack install
@@ -27,7 +27,7 @@ RUN pnpm run build && rm -rf node_modules src
 #
 # PRODUCTION CONTAINER
 #
-FROM node:24.22.3-slim AS production
+FROM node:26.13.1-slim AS production
 ENV NODE_ENV=production
 WORKDIR /app
 
