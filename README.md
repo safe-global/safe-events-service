@@ -417,6 +417,7 @@ The environment is validated at startup (`src/config/environment.ts`). The servi
 | `LOG_LEVEL` | No | `info` | Log verbosity, case-insensitive: `trace`, `debug`, `log`, `info`, `warn`, `error`, `fatal` |
 | `EVENTS_LOG_ENABLED` | No | `true` | Log one line per incoming event, with the ms since the message was published (`deliveryLagMs`, from the AMQP `timestamp` property) and since the event happened (`eventLagMs`, from the event `timestamp`). Set to `false` to cut log volume, this also removes the delivery lag metric |
 | `WEBHOOK_MAX_RESPONSE_BYTES` | No | `10000` | Max bytes of a webhook response body read for logging |
+| `WEBHOOK_ALLOW_NON_PUBLIC_TARGETS` | No | `false` | Allow webhook URLs that point to non public addresses (localhost, private and link-local ranges, single-label names, `*.local`, `*.internal`, `*.svc`). Only for local development. When `false`, the API rejects these URLs and the HTTP client refuses to connect to them after DNS resolution |
 
 ## Creating database migrations
 

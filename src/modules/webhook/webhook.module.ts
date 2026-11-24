@@ -11,6 +11,7 @@ import { ConfigService } from '@nestjs/config';
 import { EnvironmentVariables } from '../../config/environment';
 import { WebhooksController } from './webhook.controller';
 import { Agent, Dispatcher, RetryAgent } from 'undici';
+import { buildPublicAddressConnector } from './public-address';
 
 const WEBHOOK_RETRYABLE_STATUS_CODES = [500, 502, 503, 504];
 const WEBHOOK_RETRYABLE_ERROR_CODES = [
@@ -44,13 +45,19 @@ function createWebhookAgent(
   const connectionsPerHost =
     configService.get('HTTP_CONNECTIONS_PER_HOST', { infer: true }) ?? null;
   const clientTtl = configService.get('HTTP_CLIENT_TTL', { infer: true });
+  const allowNonPublicTargets = configService.get(
+    'WEBHOOK_ALLOW_NON_PUBLIC_TARGETS',
+    { infer: true },
+  );
 
   // Requests target the webhook hostname, so each host has its own pool and
   // TLS servername, and Node picks the address family on connect, falling back
   // to IPv4 when IPv6 is unreachable. Rewriting the origin to a resolved IP, as
   // undici's DNS interceptor does, loses both.
   const agent = new Agent({
-    connectTimeout: timeout,
+    connect: allowNonPublicTargets
+      ? { timeout }
+      : buildPublicAddressConnector({ timeout }),
     headersTimeout: timeout,
     bodyTimeout: timeout,
     // Sockets stay open between events. A target that receives events less

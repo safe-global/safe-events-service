@@ -195,6 +195,11 @@ export class EnvironmentVariables {
   @IsInt()
   @Min(0)
   WEBHOOK_MAX_RESPONSE_BYTES: number = 10_000;
+
+  // Only for local development
+  @ToBoolean()
+  @IsBoolean()
+  WEBHOOK_ALLOW_NON_PUBLIC_TARGETS: boolean = false;
 }
 
 function isUnset(key: string, value: unknown): boolean {

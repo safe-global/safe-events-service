@@ -10,6 +10,7 @@ import { DataSource, Repository } from 'typeorm';
 import {
   WebhookAlreadyExists,
   WebhookDoesNotExist,
+  WebhookUrlNotPublic,
 } from './exceptions/webhook.exceptions';
 
 describe('Webhook service', () => {
@@ -140,6 +141,34 @@ describe('Webhook service', () => {
         where: { id: createdWebhook.id },
       });
       expect(storedWebhook).toBeNull();
+    });
+  });
+  describe('Non public webhook urls', () => {
+    it.each([
+      'http://localhost:3000/webhook',
+      'http://safe-transaction-service.default.svc.cluster.local/api',
+      'http://169.254.169.254/latest/meta-data/',
+      'http://[::1]/webhook',
+    ])('Should not create a webhook for %s', async (url) => {
+      // Nothing is stored when the url is rejected
+      await expect(
+        webhookService.createWebhook({ ...requestWebhook, url }),
+      ).rejects.toThrow(new WebhookUrlNotPublic());
+      expect(await webhookRepository.count()).toBe(0);
+    });
+    it('Should not update a webhook to a non public url', async () => {
+      // The stored url is kept when the new one is rejected
+      const createdWebhook = await webhookService.createWebhook(requestWebhook);
+      await expect(
+        webhookService.updateWebhook(createdWebhook.id, {
+          ...requestWebhook,
+          url: 'http://10.0.0.1/webhook',
+        }),
+      ).rejects.toThrow(new WebhookUrlNotPublic());
+      const storedWebhook = await webhookRepository.findOneBy({
+        id: createdWebhook.id,
+      });
+      expect(storedWebhook?.url).toBe(requestWebhook.url);
     });
   });
 });
