@@ -26,6 +26,7 @@ describe('public-address', () => {
       '::ffff:127.0.0.1',
       '::ffff:a9fe:a9fe',
       '64:ff9b::7f00:1',
+      '::ffff:0:a9fe:a9fe',
       '2002:7f00:1::',
       'fd00::1',
       'fe80::1',
@@ -64,6 +65,7 @@ describe('public-address', () => {
       'http://10.0.0.5:8080/webhook',
       'http://[::1]:8080/webhook',
       'http://[::ffff:127.0.0.1]/webhook',
+      'http://[::ffff:0:a9fe:a9fe]/webhook',
       'http://webhook-receiver:8080/webhook',
     ])('rejects %s', (url) => {
       // Internal names, single-label names and non public IPs in any notation
