@@ -148,10 +148,13 @@ describe('public-address', () => {
       'http://localhost',
       'https://127.0.0.1',
       'https://localhost',
+      'http://[::1]',
+      'https://[::1]',
     ])(
       'does not connect to a server on %s and does not retry',
       async (origin) => {
-        // Covers both the IP literal check and the lookup, over TCP and TLS
+        // Covers the IP literal check (IPv4 and bracketed IPv6) and the
+        // lookup, over TCP and TLS
         const agent = new RetryAgent(
           new Agent({
             connect: buildPublicAddressConnector({ timeout: 1000 }),
