@@ -2,7 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { WebhookService } from './webhook.service';
 import { WebhooksController } from './webhook.controller';
 import { WebhookPublicDto, WebhookRequestDto } from './dtos/webhook.dto';
-import { INestApplication } from '@nestjs/common';
+import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { AppModule } from '../../app.module';
 import request from 'supertest';
 import { DataSource, Repository } from 'typeorm';
@@ -26,6 +26,7 @@ describe('WebhooksController', () => {
       imports: [AppModule],
     }).compile();
     app = moduleFixture.createNestApplication();
+    app.useGlobalPipes(new ValidationPipe());
     await app.init();
 
     const dataSource = moduleFixture.get<DataSource>(DataSource);
@@ -133,6 +134,23 @@ describe('WebhooksController', () => {
       expect(res.body.url).toBe(mockRequestDto.url);
       expect(res.body.chains).toEqual(mockRequestDto.chains);
       expect(res.body.events.sort()).toEqual(mockRequestDto.events.sort());
+    });
+
+    it.each([
+      'ftp://example.com/hook',
+      'example.com/hook',
+      'http://localhost:3000/hook',
+      'http://webhook-receiver:8080/hook',
+      'http://safe-transaction-service.default.svc.cluster.local/hook',
+      'http://169.254.169.254/latest/meta-data/',
+    ])('POST /webhooks — should reject %s', async (url) => {
+      // Scheme errors come from the DTO, host errors from the service
+      await request(app.getHttpServer())
+        .post('/webhooks')
+        .set('Authorization', `Basic ${admin_webhook_auth_key}`)
+        .send({ ...mockRequestDto, url })
+        .expect(400);
+      expect(await webhookRepository.count()).toBe(0);
     });
 
     it('PUT /webhooks/:id — should return 403', async () => {

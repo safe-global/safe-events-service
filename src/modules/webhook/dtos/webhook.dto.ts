@@ -39,7 +39,11 @@ export class WebhookRequestDto {
   @ApiProperty({ description: 'Target URL where webhook events will be sent' })
   @IsDefined({ message: 'URL is required' })
   @IsNotEmpty({ message: 'URL must not be empty' })
-  @IsUrl()
+  @IsUrl({
+    protocols: ['http', 'https'],
+    require_protocol: true,
+    require_tld: false,
+  })
   @MaxLength(300, { message: 'Url must not exceed 300 characters' })
   url: string;
 

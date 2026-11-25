@@ -7,14 +7,35 @@ import { plainToInstance } from 'class-transformer';
 import {
   WebhookAlreadyExists,
   WebhookDoesNotExist,
+  WebhookUrlNotPublic,
 } from './exceptions/webhook.exceptions';
 import { DUPLICATED_KEY_ERROR } from '../../datasources/db/postgres.errors';
+import { Injectable } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import { EnvironmentVariables } from '../../config/environment';
+import { hasPublicHost } from './public-address';
 
+@Injectable()
 export class WebhookService {
+  private readonly allowNonPublicTargets: boolean;
+
   constructor(
     @InjectRepository(Webhook)
     private readonly webhooksRepository: Repository<Webhook>,
-  ) {}
+    configService: ConfigService<EnvironmentVariables, true>,
+  ) {
+    this.allowNonPublicTargets = configService.get(
+      'WEBHOOK_ALLOW_NON_PUBLIC_TARGETS',
+      { infer: true },
+    );
+  }
+
+  private assertWebhookUrlIsAllowed(url: string): void {
+    if (!this.allowNonPublicTargets && !hasPublicHost(url)) {
+      throw new WebhookUrlNotPublic();
+    }
+  }
+
   /**
    * Get public webhook by its ID.
    * @param publicId
@@ -34,6 +55,7 @@ export class WebhookService {
   async createWebhook(
     requestData: WebhookRequestDto,
   ): Promise<WebhookPublicDto> {
+    this.assertWebhookUrlIsAllowed(requestData.url);
     const publicId = randomUUID();
     const webhookDto = {
       ...requestData,
@@ -69,6 +91,7 @@ export class WebhookService {
     if (webhookStored == null) {
       throw new WebhookDoesNotExist();
     }
+    this.assertWebhookUrlIsAllowed(requestData.url);
     const webhookDto = {
       ...requestData,
       id: webhookStored.id,
